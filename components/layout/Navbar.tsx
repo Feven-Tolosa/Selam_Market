@@ -4,7 +4,7 @@ import Image from 'next/image'
 
 export default function Navbar() {
   return (
-    <header className='bg-[#b6f0fa] text-gray-700 shadow-md'>
+    <header className='bg-[#b6f0fa] text-gray-700 shadow-md sticky top-0 z-50'>
       <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'>
         <div className='flex justify-between h-16 items-center'>
           {/* Logo */}
