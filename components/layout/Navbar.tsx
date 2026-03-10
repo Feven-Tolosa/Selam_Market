@@ -28,7 +28,13 @@ export default function Navbar() {
       <div className='max-w-7xl mx-auto px-4 flex h-16 items-center justify-between'>
         {/* Logo */}
         <Link href='/'>
-          <Image src='/logo.png' alt='Logo' width={120} height={40} />
+          <Image
+            src='/logo.png'
+            alt='Logo'
+            width={120}
+            height={40}
+            className='pt-5'
+          />
         </Link>
 
         {/* Search */}
@@ -64,7 +70,7 @@ export default function Navbar() {
                 className='flex items-center gap-1'
               >
                 <Store size={18} />
-                Become Vendor
+                Vendor
               </Link>
 
               <button onClick={handleLogout}>

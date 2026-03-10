@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { useRouter } from 'next/navigation'
+import toast from 'react-hot-toast'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -23,10 +24,10 @@ export default function LoginPage() {
     setLoading(false)
 
     if (error) {
-      alert(error.message)
+      toast.error(error.message)
       return
     }
-
+    toast.success('Logged in successfully!')
     router.push('/')
   }
 
