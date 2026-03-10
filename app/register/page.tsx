@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { useRouter } from 'next/navigation'
+import toast from 'react-hot-toast'
 
 export default function RegisterPage() {
   const router = useRouter()
@@ -29,11 +30,11 @@ export default function RegisterPage() {
     setLoading(false)
 
     if (error) {
-      alert(error.message)
+      toast.error(error.message)
       return
     }
 
-    alert('Account created successfully!')
+    toast.success('Account created successfully! <br /> Please check your email to confirm your account.  ')
     router.push('/login')
   }
 
