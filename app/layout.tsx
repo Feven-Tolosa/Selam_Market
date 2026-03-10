@@ -3,6 +3,7 @@ import { Geist, Geist_Mono, JetBrains_Mono } from 'next/font/google'
 import './globals.css'
 import { cn } from '@/lib/utils'
 import Navbar from '@/components/layout/Navbar'
+import { Toaster } from 'react-hot-toast'
 
 const jetbrainsMono = JetBrains_Mono({
   subsets: ['latin'],
@@ -36,6 +37,7 @@ export default function RootLayout({
       >
         <Navbar />
         {children}
+        <Toaster />
       </body>
     </html>
   )

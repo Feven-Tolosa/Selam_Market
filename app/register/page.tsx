@@ -1,88 +1,86 @@
-import { UserPlus } from 'lucide-react'
+'use client'
+
+import { useState } from 'react'
+import { supabase } from '@/lib/supabaseClient'
+import { useRouter } from 'next/navigation'
 
 export default function RegisterPage() {
+  const router = useRouter()
+
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [name, setName] = useState('')
+  const [loading, setLoading] = useState(false)
+
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setLoading(true)
+
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          full_name: name,
+        },
+      },
+    })
+
+    setLoading(false)
+
+    if (error) {
+      alert(error.message)
+      return
+    }
+
+    alert('Account created successfully!')
+    router.push('/login')
+  }
+
   return (
     <>
       <main className='min-h-screen bg-white flex items-center justify-center px-4'>
         <div className='w-full max-w-md border rounded-xl shadow-sm p-8'>
-          {/* Title */}
-          <div className='text-center mb-8'>
-            <div className='flex justify-center mb-4'>
-              <div className='bg-[#10b5cb]/10 p-3 rounded-full'>
-                <UserPlus className='text-[#10b5cb]' size={26} />
-              </div>
-            </div>
+          <h1 className='text-2xl font-semibold text-center mb-6'>
+            Create an account
+          </h1>
 
-            <h1 className='text-2xl font-semibold text-gray-800'>
-              Create an account
-            </h1>
+          <form onSubmit={handleRegister} className='space-y-4'>
+            <input
+              type='text'
+              placeholder='Full name'
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className='w-full border rounded-md px-4 py-2 focus:ring-2 focus:ring-[#10b5cb]'
+              required
+            />
 
-            <p className='text-gray-500 text-sm mt-1'>
-              Join the marketplace and start exploring
-            </p>
-          </div>
+            <input
+              type='email'
+              placeholder='Email'
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className='w-full border rounded-md px-4 py-2 focus:ring-2 focus:ring-[#10b5cb]'
+              required
+            />
 
-          {/* Form */}
-          <form className='space-y-5'>
-            {/* Name */}
-            <div>
-              <label className='text-sm text-gray-600'>Full Name</label>
-              <input
-                type='text'
-                placeholder='John Doe'
-                className='w-full mt-1 px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#10b5cb]'
-              />
-            </div>
+            <input
+              type='password'
+              placeholder='Password'
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className='w-full border rounded-md px-4 py-2 focus:ring-2 focus:ring-[#10b5cb]'
+              required
+            />
 
-            {/* Email */}
-            <div>
-              <label className='text-sm text-gray-600'>Email</label>
-              <input
-                type='email'
-                placeholder='example@email.com'
-                className='w-full mt-1 px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#10b5cb]'
-              />
-            </div>
-
-            {/* Password */}
-            <div>
-              <label className='text-sm text-gray-600'>Password</label>
-              <input
-                type='password'
-                placeholder='Enter password'
-                className='w-full mt-1 px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#10b5cb]'
-              />
-            </div>
-
-            {/* Confirm Password */}
-            <div>
-              <label className='text-sm text-gray-600'>Confirm Password</label>
-              <input
-                type='password'
-                placeholder='Confirm password'
-                className='w-full mt-1 px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#10b5cb]'
-              />
-            </div>
-
-            {/* Button */}
             <button
               type='submit'
-              className='w-full bg-[#10b5cb] hover:bg-[#0e9fb3] text-white py-2 rounded-md font-medium transition'
+              disabled={loading}
+              className='w-full bg-[#10b5cb] text-white py-2 rounded-md hover:bg-[#0e9fb3]'
             >
-              Create Account
+              {loading ? 'Creating...' : 'Create Account'}
             </button>
           </form>
-
-          {/* Login link */}
-          <p className='text-center text-sm text-gray-500 mt-6'>
-            Already have an account?{' '}
-            <a
-              href='/login'
-              className='text-[#10b5cb] font-medium hover:underline'
-            >
-              Sign in
-            </a>
-          </p>
         </div>
       </main>
     </>
