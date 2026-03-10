@@ -1,6 +1,48 @@
 import { Store } from 'lucide-react'
 
-export default function VendorOnboarding() {
+import { supabase } from '@/lib/supabaseClient'
+import { redirect } from 'next/navigation'
+
+export default async function VendorOnboarding() {
+  //*********Todo: vendor_approved************
+
+  // const { data } = await supabase.auth.getUser()
+  // const user = data.user
+  // if (!user) {
+  //   redirect('/login')
+  // }
+
+  // const { data: profile } = await supabase
+  //   .from('profiles')
+  //   .select('is_vendor_approved')
+  //   .eq('id', user.id)
+  //   .single()
+
+  // if (!profile?.is_vendor_approved) {
+  //   return (
+  //     <>
+  //       <div className='p-10 text-center'>
+  //         <h1 className='text-xl font-semibold'>Vendor access not approved</h1>
+  //         <p className='text-gray-500 mt-2'>
+  //           Please wait until the admin approves your vendor account.
+  //         </p>
+  //       </div>
+  //     </>
+  //   )
+  // }
+
+  // *********on userData.user, first fetch the authenticated user And Save Vendor Data********
+
+  // const { data: userData } = await supabase.auth.getUser()
+
+  // await supabase.from('vendors').insert({
+  //   user_id: userData.user.id,
+  //   business_name,
+  //   phone,
+  //   location,
+  //   description,
+  // })
+
   return (
     <>
       <main className='min-h-screen bg-white flex justify-center px-4 py-12'>
