@@ -154,6 +154,7 @@ export default function Footer() {
           </div>
 
           {/* Payment icons */}
+
           {/* <div className='flex items-center gap-4'>
             <Image src='/visa.png' alt='Visa' width={40} height={25} />
             <Image
