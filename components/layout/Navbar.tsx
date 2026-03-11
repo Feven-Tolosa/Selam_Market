@@ -24,7 +24,7 @@ export default function Navbar() {
   }
 
   return (
-    <header className='bg-[#b6f0fa] text-gray-700 shadow-sm'>
+    <header className='bg-[#b6f0fa] text-gray-700 shadow-sm sticky top-0 z-50'>
       <div className='max-w-7xl mx-auto px-4 flex h-16 items-center justify-between'>
         {/* Logo */}
         <Link href='/'>

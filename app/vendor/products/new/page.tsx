@@ -43,7 +43,7 @@ export default function AddProductPage() {
         description,
         price,
         image_url,
-        vendor_id: vendor.id,
+        // vendor_id: vendor.id,
       },
     ])
 

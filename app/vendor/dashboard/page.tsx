@@ -1,21 +1,30 @@
-import Link from 'next/link'
+import { supabase } from '@/lib/supabaseClient'
 
-export default function VendorDashboard() {
+export default async function VendorDashboard() {
+  const { data: products } = await supabase.from('products').select('*')
+
+  const totalProducts = products?.length || 0
+
   return (
-    <div className='max-w-6xl mx-auto py-16'>
-      <div className='flex justify-between items-center mb-8'>
-        <h1 className='text-2xl font-semibold'>Vendor Dashboard</h1>
+    <div>
+      <h1 className='text-2xl font-semibold mb-8'>Dashboard Overview</h1>
 
-        <Link
-          href='/vendor/products/new'
-          className='bg-[#10b5cb] text-white px-5 py-2 rounded'
-        >
-          Add Product
-        </Link>
-      </div>
+      {/* Stats */}
+      <div className='grid grid-cols-3 gap-6'>
+        <div className='bg-white border rounded-lg p-6'>
+          <p className='text-gray-500 text-sm'>Total Products</p>
+          <p className='text-2xl font-bold text-[#10b5cb]'>{totalProducts}</p>
+        </div>
 
-      <div className='border rounded-lg p-10 text-center text-gray-500'>
-        Your products will appear here.
+        <div className='bg-white border rounded-lg p-6'>
+          <p className='text-gray-500 text-sm'>Orders</p>
+          <p className='text-2xl font-bold text-[#10b5cb]'>0</p>
+        </div>
+
+        <div className='bg-white border rounded-lg p-6'>
+          <p className='text-gray-500 text-sm'>Revenue</p>
+          <p className='text-2xl font-bold text-[#10b5cb]'>$0</p>
+        </div>
       </div>
     </div>
   )
