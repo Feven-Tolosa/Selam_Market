@@ -4,6 +4,7 @@ import './globals.css'
 import { cn } from '@/lib/utils'
 import Navbar from '@/components/layout/Navbar'
 import { Toaster } from 'react-hot-toast'
+import Footer from '@/components/layout/Footer'
 
 const jetbrainsMono = JetBrains_Mono({
   subsets: ['latin'],
@@ -38,6 +39,7 @@ export default function RootLayout({
         <Navbar />
         {children}
         <Toaster />
+        <Footer />
       </body>
     </html>
   )
