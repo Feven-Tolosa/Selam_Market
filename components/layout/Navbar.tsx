@@ -5,6 +5,7 @@ import { ShoppingCart, User, Menu, Store } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabaseClient'
+import LanguageSwitcher from '../Language/LanguageSwitcher'
 
 export default function Navbar() {
   const [user, setUser] = useState<{ id: string; email?: string } | null>(null)
@@ -36,7 +37,7 @@ export default function Navbar() {
             className='pt-5'
           />
         </Link>
-
+        <LanguageSwitcher />
         {/* Search */}
         <div className='flex-1 px-6'>
           <input
