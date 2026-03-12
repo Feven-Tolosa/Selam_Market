@@ -34,7 +34,9 @@ export default function RegisterPage() {
       return
     }
 
-    toast.success('Account created successfully! <br /> Please check your email to confirm your account.  ')
+    toast.success(
+      'Account created successfully! Please check your email to confirm your account.  ',
+    )
     router.push('/login')
   }
 

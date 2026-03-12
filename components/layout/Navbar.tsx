@@ -74,9 +74,9 @@ export default function Navbar() {
                 Vendor
               </Link>
 
-              <button onClick={handleLogout}>
+              <Link href='/vendor/dashboard' onClick={handleLogout}>
                 <User size={22} />
-              </button>
+              </Link>
             </>
           )}
         </div>

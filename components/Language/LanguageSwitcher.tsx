@@ -1,21 +1,42 @@
 'use client'
 
-import { useState } from 'react'
+import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+
+import { Globe } from 'lucide-react'
 
 export default function LanguageSwitcher() {
-  const [lang, setLang] = useState('en')
-
-  const changeLang = (language: string) => {
-    setLang(language)
-    localStorage.setItem('lang', language)
+  const changeLanguage = (lang: string) => {
+    localStorage.setItem('lang', lang)
     window.location.reload()
   }
 
   return (
-    <div className='flex gap-2'>
-      <button onClick={() => changeLang('en')}>EN</button>
-      <button onClick={() => changeLang('am')}>አማ</button>
-      <button onClick={() => changeLang('om')}>OM</button>
-    </div>
+    <DropdownMenu>
+      <DropdownMenuTrigger>
+        <Button variant='ghost' size='icon'>
+          <Globe className='w-5 h-5' />
+        </Button>
+      </DropdownMenuTrigger>
+
+      <DropdownMenuContent align='end'>
+        <DropdownMenuItem onClick={() => changeLanguage('en')}>
+          English
+        </DropdownMenuItem>
+
+        <DropdownMenuItem onClick={() => changeLanguage('am')}>
+          አማርኛ
+        </DropdownMenuItem>
+
+        <DropdownMenuItem onClick={() => changeLanguage('om')}>
+          Afaan Oromo
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }
