@@ -44,8 +44,8 @@ export default function WhyLocal() {
                 key={index}
                 className='bg-white p-6 rounded-xl shadow-sm border hover:shadow-md transition'
               >
-                <div className='w-12 h-12 flex items-center justify-center rounded-lg bg-primary/10 mb-4'>
-                  <Icon className='w-6 h-6 text-primary' />
+                <div className='w-12 h-12 flex items-center justify-center rounded-lg bg-[#10b5cb]/10 mb-4'>
+                  <Icon className='w-6 h-6 text-[#10b5cb]' />
                 </div>
 
                 <h3 className='font-semibold text-lg mb-2'>{feature.title}</h3>
