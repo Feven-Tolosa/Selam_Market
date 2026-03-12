@@ -1,71 +1,108 @@
+'use client'
+
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { Search, Store } from 'lucide-react'
 
+const slides = [
+  {
+    image: '/image/hero1.png',
+    title: 'Discover products from',
+    highlight: ' local vendors',
+    description:
+      'Explore thousands of products from trusted sellers in your area.',
+  },
+  {
+    image: '/image/hero2.png',
+    title: 'Shop fresh and quality',
+    highlight: ' marketplace deals',
+    description:
+      'Find amazing discounts and support small businesses near you.',
+  },
+  {
+    image: '/image/hero5.png',
+    title: 'Grow your business as a',
+    highlight: ' trusted vendor',
+    description: 'Join our platform and reach thousands of customers today.',
+  },
+]
+
 export default function HeroSection() {
+  const [current, setCurrent] = useState(0)
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrent((prev) => (prev + 1) % slides.length)
+    }, 5000) // change every 5 seconds
+
+    return () => clearInterval(interval)
+  }, [])
+
   return (
-    <>
-      <main className='bg-white'>
-        {/* HERO */}
-        <section className='max-w-7xl mx-auto px-6 py-20'>
-          <div className='grid md:grid-cols-2 gap-12 items-center'>
-            {/* Left content */}
-            <div>
-              <h1 className='text-4xl md:text-5xl font-bold text-gray-800 leading-tight'>
-                Discover products from
-                <span className='text-[#10b5cb]'> local vendors</span>
-              </h1>
+    <main className='relative w-full h-[90vh] overflow-hidden'>
+      {/* Background Images */}
+      {slides.map((slide, index) => (
+        <div
+          key={index}
+          className={`absolute inset-0 transition-opacity duration-1000 ${
+            index === current ? 'opacity-100' : 'opacity-0'
+          }`}
+          style={{
+            backgroundImage: `url(${slide.image})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+          }}
+        />
+      ))}
 
-              <p className='text-gray-500 mt-4 text-lg'>
-                Explore thousands of products from trusted sellers in your area.
-                Support local businesses and find what you need quickly.
-              </p>
+      {/* Dark Overlay */}
+      <div className='absolute inset-0 bg-black/50' />
 
-              {/* Search */}
-              <div className='mt-8 flex items-center border rounded-lg overflow-hidden shadow-sm'>
-                <input
-                  type='text'
-                  placeholder='Search products...'
-                  className='flex-1 px-4 py-3 outline-none'
-                />
+      {/* Content */}
+      <section className='relative z-10 max-w-7xl mx-auto px-6 h-full flex items-center'>
+        <div className='max-w-2xl text-white'>
+          <h1 className='text-4xl md:text-5xl font-bold leading-tight'>
+            {slides[current].title}
+            <span className='text-[#10b5cb]'>{slides[current].highlight}</span>
+          </h1>
 
-                <button className='bg-[#10b5cb] hover:bg-[#0e9fb3] text-white px-6 py-3 flex items-center gap-2'>
-                  <Search size={18} />
-                  Search
-                </button>
-              </div>
+          <p className='mt-4 text-lg text-gray-200'>
+            {slides[current].description}
+          </p>
 
-              {/* Buttons */}
-              <div className='flex gap-4 mt-6'>
-                <Link
-                  href='/products'
-                  className='bg-[#10b5cb] hover:bg-[#0e9fb3] text-white px-6 py-3 rounded-md font-medium'
-                >
-                  Browse Products
-                </Link>
+          {/* Search */}
+          <div className='mt-8 flex items-center bg-white rounded-lg overflow-hidden shadow-lg'>
+            <input
+              type='text'
+              placeholder='Search products...'
+              className='flex-1 px-4 py-3 outline-none text-gray-700'
+            />
 
-                <Link
-                  href='/vendor/onboarding'
-                  className='border border-[#10b5cb] text-[#10b5cb] px-6 py-3 rounded-md flex items-center gap-2 hover:bg-[#10b5cb]/10'
-                >
-                  <Store size={18} />
-                  Become a Vendor
-                </Link>
-              </div>
-            </div>
-
-            {/* Right illustration */}
-            <div className='hidden md:flex justify-center'>
-              <div className='bg-[#10b5cb]/10 rounded-2xl p-10'>
-                <img
-                  src='/hero-marketplace.png'
-                  alt='Marketplace'
-                  className='w-[420px]'
-                />
-              </div>
-            </div>
+            <button className='bg-[#10b5cb] hover:bg-[#0e9fb3] text-white px-6 py-3 flex items-center gap-2'>
+              <Search size={18} />
+              Search
+            </button>
           </div>
-        </section>
-      </main>
-    </>
+
+          {/* Buttons */}
+          <div className='flex gap-4 mt-6'>
+            <Link
+              href='/products'
+              className='bg-[#10b5cb] hover:bg-[#0e9fb3] text-white px-6 py-3 rounded-md font-medium'
+            >
+              Browse Products
+            </Link>
+
+            <Link
+              href='/vendor/onboarding'
+              className='border border-white text-white px-6 py-3 rounded-md flex items-center gap-2 hover:bg-white/20'
+            >
+              <Store size={18} />
+              Become a Vendor
+            </Link>
+          </div>
+        </div>
+      </section>
+    </main>
   )
 }
