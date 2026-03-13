@@ -43,7 +43,7 @@ export default function Navbar() {
           <input
             type='text'
             placeholder='Search products...'
-            className='w-full rounded-md py-2 px-4 bg-white border focus:ring-2 focus:ring-[#10b5cb]'
+            className='w-full rounded-md py-2 px-4 bg-white border focus:border-[#10b5cb]'
           />
         </div>
 
@@ -52,33 +52,34 @@ export default function Navbar() {
           <button>
             <ShoppingCart size={22} />
           </button>
+          <>
+            {user ? (
+              <>
+                <Link
+                  href='/vendor/onboarding'
+                  className='flex items-center gap-1'
+                >
+                  <Store size={18} />
+                  Vendor
+                </Link>
 
-          {!user ? (
-            <>
-              <Link href='/login'>Login</Link>
+                <Link href='/vendor/dashboard' onClick={handleLogout}>
+                  <User size={22} />
+                </Link>
+              </>
+            ) : (
+              <>
+                <Link href='/login'>Login</Link>
 
-              <Link
-                href='/register'
-                className='bg-[#10b5cb] text-white px-4 py-1.5 rounded-md'
-              >
-                Register
-              </Link>
-            </>
-          ) : (
-            <>
-              <Link
-                href='/vendor/onboarding'
-                className='flex items-center gap-1'
-              >
-                <Store size={18} />
-                Vendor
-              </Link>
-
-              <Link href='/vendor/dashboard' onClick={handleLogout}>
-                <User size={22} />
-              </Link>
-            </>
-          )}
+                <Link
+                  href='/register'
+                  className='bg-[#10b5cb] text-white px-4 py-1.5 rounded-md'
+                >
+                  Register
+                </Link>
+              </>
+            )}
+          </>
         </div>
       </div>
     </header>

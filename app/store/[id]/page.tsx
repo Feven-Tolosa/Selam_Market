@@ -24,7 +24,15 @@ export default async function Store({ params }: Props) {
   if (!vendor) {
     return <div className='p-10'>Store not found</div>
   }
+  const { data: reviews } = await supabase
+    .from('vendor_reviews')
+    .select('rating')
+    .eq('vendor_id', params.id)
 
+  const averageRating =
+    reviews && reviews.length > 0
+      ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
+      : 0
   return (
     <div className='bg-white'>
       {/* Banner */}
@@ -53,6 +61,15 @@ export default async function Store({ params }: Props) {
           {/* Store info */}
           <div className='flex-1'>
             <h1 className='text-3xl font-bold'>{vendor.store_name}</h1>
+            <div className='flex items-center gap-2 mt-2'>
+              <span className='text-yellow-500 text-lg'>⭐</span>
+
+              <span className='font-medium'>{averageRating.toFixed(1)}</span>
+
+              <span className='text-gray-500 text-sm'>
+                ({reviews?.length ?? 0} reviews)
+              </span>
+            </div>
 
             <p className='text-gray-600 mt-1'>
               {vendor.location ?? 'Local Vendor'}
