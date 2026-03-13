@@ -2,6 +2,7 @@ import { Store } from 'lucide-react'
 
 import { supabase } from '@/lib/supabaseClient'
 import { redirect } from 'next/navigation'
+import Link from 'next/link'
 
 export default async function VendorOnboarding() {
   //*********Todo: vendor_approved************
@@ -70,6 +71,7 @@ export default async function VendorOnboarding() {
             <div>
               <label className='text-sm text-gray-600'>Business Name</label>
               <input
+                required
                 type='text'
                 placeholder='Your shop name'
                 className='w-full mt-1 px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#10b5cb]'
@@ -80,6 +82,7 @@ export default async function VendorOnboarding() {
             <div>
               <label className='text-sm text-gray-600'>Phone Number</label>
               <input
+                required
                 type='text'
                 placeholder='+251...'
                 className='w-full mt-1 px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#10b5cb]'
@@ -90,6 +93,7 @@ export default async function VendorOnboarding() {
             <div>
               <label className='text-sm text-gray-600'>Location</label>
               <input
+                required
                 type='text'
                 placeholder='City / Area'
                 className='w-full mt-1 px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#10b5cb]'
@@ -102,6 +106,7 @@ export default async function VendorOnboarding() {
                 Business Description
               </label>
               <textarea
+                required
                 rows={4}
                 placeholder='Describe your business...'
                 className='w-full mt-1 px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#10b5cb]'
@@ -113,7 +118,7 @@ export default async function VendorOnboarding() {
               type='submit'
               className='w-full bg-[#10b5cb] hover:bg-[#0e9fb3] text-white py-2 rounded-md font-medium transition'
             >
-              Create Vendor Account
+              <Link href='/vendor/dashboard'>Create Vendor Account</Link>
             </button>
           </form>
         </div>

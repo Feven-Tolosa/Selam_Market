@@ -15,6 +15,12 @@ export default function VendorLayout({
 
         <nav className='p-4 space-y-2'>
           <Link
+            href='/vendor/dashboard/profile'
+            className='block px-4 py-2 rounded hover:bg-[#10b5cb]/10'
+          >
+            Store Profile
+          </Link>
+          <Link
             href='/vendor/dashboard'
             className='block px-4 py-2 rounded hover:bg-[#10b5cb]/10'
           >

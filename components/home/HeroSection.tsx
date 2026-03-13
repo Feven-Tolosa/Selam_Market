@@ -18,7 +18,7 @@ export default function HeroSection() {
       ...t.hero.slide2,
     },
     {
-      image: '/image/hero3.png',
+      image: '/image/hero5.png',
       ...t.hero.slide3,
     },
   ]
@@ -28,7 +28,7 @@ export default function HeroSection() {
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrent((prev) => (prev + 1) % slides.length)
-    }, 5000)
+    }, 9000)
 
     return () => clearInterval(interval)
   }, [slides.length])
