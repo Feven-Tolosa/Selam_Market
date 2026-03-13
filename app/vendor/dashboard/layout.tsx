@@ -8,7 +8,7 @@ export default function VendorLayout({
   return (
     <div className='flex min-h-screen bg-gray-50'>
       {/* Sidebar */}
-      <aside className='w-64 bg-white border-r'>
+      <aside className='w-64 bg-white border-r sticky top-0 h-screen'>
         <div className='p-6 border-b'>
           <h2 className='font-semibold text-lg text-[#10b5cb]'>Vendor Panel</h2>
         </div>

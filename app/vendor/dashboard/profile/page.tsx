@@ -27,6 +27,16 @@ export default function VendorProfile() {
   }
   const [products, setProducts] = useState<Product[]>([])
 
+  async function deleteProduct(productId: string) {
+    const confirmDelete = confirm('Delete this product?')
+
+    if (!confirmDelete) return
+
+    await supabase.from('products').delete().eq('id', productId)
+
+    setProducts(products.filter((p) => p.id !== productId))
+  }
+
   useEffect(() => {
     async function loadVendor() {
       const { data: userData } = await supabase.auth.getUser()
@@ -227,6 +237,7 @@ export default function VendorProfile() {
               key={product.id}
               className='border rounded-xl overflow-hidden bg-white hover:shadow-md transition'
             >
+              {/* Image */}
               <div className='h-36 bg-gray-100'>
                 <img
                   src={product.image_url || '/placeholder.png'}
@@ -234,6 +245,7 @@ export default function VendorProfile() {
                 />
               </div>
 
+              {/* Info */}
               <div className='p-3'>
                 <h3 className='text-sm font-medium line-clamp-2'>
                   {product.name}
@@ -242,6 +254,23 @@ export default function VendorProfile() {
                 <p className='text-[#10b5cb] font-semibold mt-1'>
                   ${product.price}
                 </p>
+
+                {/* Control buttons */}
+                <div className='flex justify-between mt-3 text-sm'>
+                  <a
+                    href={`/vendor/products/edit/${product.id}`}
+                    className='text-blue-500 hover:underline'
+                  >
+                    Edit
+                  </a>
+
+                  <button
+                    onClick={() => deleteProduct(product.id)}
+                    className='text-red-500 hover:underline'
+                  >
+                    Delete
+                  </button>
+                </div>
               </div>
             </div>
           ))}
