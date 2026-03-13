@@ -19,6 +19,14 @@ export default function VendorProfile() {
 
   const [vendorId, setVendorId] = useState('')
 
+  type Product = {
+    id: string
+    name: string
+    price: number
+    image_url: string | null
+  }
+  const [products, setProducts] = useState<Product[]>([])
+
   useEffect(() => {
     async function loadVendor() {
       const { data: userData } = await supabase.auth.getUser()
@@ -27,22 +35,29 @@ export default function VendorProfile() {
 
       if (!user) return
 
-      const { data } = await supabase
+      const { data: vendor } = await supabase
         .from('vendors')
         .select('*')
         .eq('user_id', user.id)
         .single()
 
-      if (data) {
-        setVendorId(data.id)
-        setStoreName(data.store_name || '')
-        setDescription(data.description || '')
-        setEmail(data.email || '')
-        setPhone(data.phone || '')
-        setLocation(data.location || '')
+      if (vendor) {
+        setVendorId(vendor.id)
+        setStoreName(vendor.store_name || '')
+        setDescription(vendor.description || '')
+        setEmail(vendor.email || '')
+        setPhone(vendor.phone || '')
+        setLocation(vendor.location || '')
 
-        if (data.logo_url) setLogoPreview(data.logo_url)
-        if (data.banner_url) setBannerPreview(data.banner_url)
+        if (vendor.logo_url) setLogoPreview(vendor.logo_url)
+        if (vendor.banner_url) setBannerPreview(vendor.banner_url)
+
+        const { data: vendorProducts } = await supabase
+          .from('products')
+          .select('id,name,price,image_url')
+          .eq('vendor_id', vendor.id)
+
+        setProducts(vendorProducts || [])
       }
     }
 
@@ -191,6 +206,46 @@ export default function VendorProfile() {
         <button className='bg-[#10b5cb] text-white px-6 py-3 rounded-lg hover:bg-[#0ea3b7]'>
           Save Profile
         </button>
+      </div>
+      {/* Vendor products */}
+
+      <div className='mt-12'>
+        <div className='flex justify-between items-center mb-6'>
+          <h2 className='text-xl font-semibold'>My Products</h2>
+
+          <a
+            href='/vendor/products/new'
+            className='bg-[#10b5cb] text-white px-4 py-2 rounded'
+          >
+            Add Product
+          </a>
+        </div>
+
+        <div className='grid grid-cols-2 md:grid-cols-4 gap-6'>
+          {products.map((product) => (
+            <div
+              key={product.id}
+              className='border rounded-xl overflow-hidden bg-white hover:shadow-md transition'
+            >
+              <div className='h-36 bg-gray-100'>
+                <img
+                  src={product.image_url || '/placeholder.png'}
+                  className='w-full h-full object-cover'
+                />
+              </div>
+
+              <div className='p-3'>
+                <h3 className='text-sm font-medium line-clamp-2'>
+                  {product.name}
+                </h3>
+
+                <p className='text-[#10b5cb] font-semibold mt-1'>
+                  ${product.price}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     </form>
   )
