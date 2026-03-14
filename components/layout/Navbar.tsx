@@ -74,7 +74,7 @@ export default function Navbar() {
                 Vendor
               </Link>
 
-              <Link href='/vendor/dashboard' onClick={handleLogout}>
+              <Link href='/' onClick={handleLogout}>
                 <User size={22} />
               </Link>
             </>
