@@ -1,5 +1,7 @@
+'use client'
 import { supabase } from '@/lib/supabaseClient'
 import Image from 'next/image'
+import { useEffect, useState } from 'react'
 
 type Product = {
   id: string
@@ -337,6 +339,6 @@ export default function VendorProfile() {
           ))}
         </div>
       </div>
-    </div>
+    </form>
   )
 }
