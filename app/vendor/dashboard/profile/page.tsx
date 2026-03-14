@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import Image from 'next/image'
+import toast from 'react-hot-toast'
 
 export default function VendorProfile() {
   const [storeName, setStoreName] = useState('')
@@ -102,7 +103,8 @@ export default function VendorProfile() {
 
     await supabase
       .from('vendors')
-      .update({
+      .insert({
+        id: vendorId,
         store_name: storeName,
         description,
         email,
@@ -113,7 +115,7 @@ export default function VendorProfile() {
       })
       .eq('id', vendorId)
 
-    alert('Profile updated')
+    toast.success('Profile updated')
   }
 
   return (
