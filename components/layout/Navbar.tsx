@@ -107,8 +107,8 @@ export default function Navbar() {
           ) : (
             <div
               className='relative'
-              onMouseEnter={() => setOpen(true)}
-              onMouseLeave={() => setOpen(false)}
+              onDoubleClick={() => setOpen(true)}
+              onClick={() => setOpen(false)}
             >
               {/* User Icon */}
               <button className='flex items-center gap-1 hover:text-[#10b5cb] transition'>

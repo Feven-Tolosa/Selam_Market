@@ -1,19 +1,30 @@
 'use client'
 
 import { User } from 'lucide-react'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabaseClient'
+import { useRouter } from 'next/navigation'
 
-export default function AdminHeader({ userEmail }: { userEmail: string }) {
+export default function AdminNavbar() {
+  const [userEmail, setUserEmail] = useState('Admin')
   const [open, setOpen] = useState(false)
+  const router = useRouter()
+
+  useEffect(() => {
+    const getUser = async () => {
+      const { data } = await supabase.auth.getUser()
+      if (data.user) setUserEmail(data.user.email || 'Admin')
+    }
+    getUser()
+  }, [])
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
-    window.location.href = '/'
+    router.push('/')
   }
 
   return (
-    <header className='flex justify-end items-center gap-4 p-4 border-b bg-white'>
+    <header className='bg-white border-b flex justify-end items-center px-6 py-4 sticky top-0 z-50'>
       <div
         className='relative'
         onMouseEnter={() => setOpen(true)}
