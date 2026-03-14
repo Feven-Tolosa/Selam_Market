@@ -45,16 +45,32 @@ export default function AdminDashboard() {
     getUser()
   }, [])
 
-  // Approve / Reject Vendor Request
+  // Approve vendor request
   const handleVendorRequest = async (id: string, action: string) => {
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('vendor_requests')
       .update({ status: action })
       .eq('id', id)
+      .select() // return updated row
 
     if (error) return toast.error(error.message)
+
     toast.success(`Vendor request ${action}`)
-    fetchData()
+
+    // If approved,  send a notification or trigger redirection
+    if (action === 'approved' && data?.length) {
+      const vendorUserId = data[0].user_id
+      // Option 1: Add a notification in a table
+      await supabase.from('notifications').insert({
+        user_id: vendorUserId,
+        message:
+          'Your vendor request has been approved! Please create your vendor profile.',
+        type: 'vendor_approved',
+        read: false,
+      })
+    }
+
+    fetchData() // refresh table
   }
 
   if (loading) return <p className='p-10'>Loading...</p>

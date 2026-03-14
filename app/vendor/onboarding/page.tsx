@@ -3,15 +3,75 @@
 import { Store } from 'lucide-react'
 import { supabase } from '@/lib/supabaseClient'
 import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import toast from 'react-hot-toast'
+import { RealtimePostgresChangesPayload } from '@supabase/supabase-js'
+
+type VendorRequestType = {
+  status: string
+  id: string
+  store_name: string
+  user_id: string
+}
 
 export default function VendorOnboarding() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
+  const [userId, setUserId] = useState<string | null>(null)
+
+  // Get currently logged-in user
+  useEffect(() => {
+    const getUser = async () => {
+      const { data, error } = await supabase.auth.getUser()
+      if (error || !data.user) {
+        toast.error('You must be logged in to create a vendor account')
+        return
+      }
+      setUserId(data.user.id)
+    }
+    getUser()
+  }, [])
+
+  // Real-time subscription for vendor approval
+  useEffect(() => {
+    if (!userId) return
+
+    // Create a channel for vendor requests updates
+    const channel = supabase.channel(`vendor-approval-${userId}`)
+
+    channel
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'vendor_requests',
+          filter: `user_id=eq.${userId}`,
+        },
+        (payload: RealtimePostgresChangesPayload<VendorRequestType>) => {
+          if (payload.new.status === 'approved') {
+            toast.success('Your vendor request has been approved!')
+            router.push('/vendor/profile/create')
+          } else if (payload.new.status === 'rejected') {
+            toast.error('Your vendor request has been rejected')
+          }
+        },
+      )
+      .subscribe()
+
+    // Cleanup subscription on unmount
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [userId, router])
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
+    if (!userId) {
+      toast.error('User not logged in')
+      return
+    }
+
     setLoading(true)
 
     const formData = new FormData(e.currentTarget)
@@ -20,24 +80,14 @@ export default function VendorOnboarding() {
     const location = formData.get('location') as string
     const description = formData.get('description') as string
 
-    // Get currently logged in user
-    const { data, error: userError } = await supabase.auth.getUser()
-    if (userError || !data.user) {
-      toast.error('You must be logged in to create a vendor account')
-      setLoading(false)
-      return
-    }
-
-    const user = data.user
-
     // Insert vendor request
     const { error } = await supabase.from('vendor_requests').insert({
-      user_id: user.id,
+      user_id: userId,
       store_name: storeName,
       phone,
       location,
       description,
-      status: 'pending', // default status
+      status: 'pending',
     })
 
     if (error) {
