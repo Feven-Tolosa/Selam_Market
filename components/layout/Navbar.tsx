@@ -53,7 +53,7 @@ export default function Navbar() {
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
-    window.location.href = '/'
+    window.location.reload()
   }
 
   return (
@@ -118,7 +118,7 @@ export default function Navbar() {
 
               {/* Dropdown */}
               {open && (
-                <div className='absolute right-0 mt-3 w-44 bg-white border rounded-lg shadow-md overflow-hidden animate-in fade-in slide-in-from-top-2'>
+                <div className='absolute right-0 mt-2 w-44 bg-white border rounded-lg shadow-md overflow-hidden animate-in fade-in slide-in-from-top-2'>
                   <Link
                     href='/vendor/onboarding'
                     className='flex items-center gap-2 px-4 py-2 hover:bg-gray-50'

@@ -27,16 +27,33 @@ export default function RegisterPage() {
       },
     })
 
-    setLoading(false)
-
     if (error) {
       toast.error(error.message)
+      setLoading(false)
       return
     }
+    const user = data.user
+
+    if (user) {
+      const { error: insertError } = await supabase.from('users').insert({
+        id: user.id,
+        email: user.email,
+        full_name: name,
+        role: 'user',
+      })
+
+      if (insertError) {
+        console.error(insertError)
+        toast.error(insertError.message)
+      }
+    }
+
+    setLoading(false)
 
     toast.success(
-      'Account created successfully! Please check your email to confirm your account.  ',
+      'Account created successfully! Please check your email to confirm your account.',
     )
+
     router.push('/login')
   }
 
