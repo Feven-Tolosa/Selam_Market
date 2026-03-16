@@ -18,7 +18,7 @@ export default function VendorProfile() {
   const [logoPreview, setLogoPreview] = useState('/avatar-placeholder.png')
   const [bannerPreview, setBannerPreview] = useState('/banner-placeholder.jpg')
 
-  const [vendorId, setVendorId] = useState('')
+  const [vendorId, setVendorId] = useState<string | null>(null)
 
   type Product = {
     id: string
@@ -26,22 +26,27 @@ export default function VendorProfile() {
     price: number
     image_url: string | null
   }
+
   const [products, setProducts] = useState<Product[]>([])
 
   async function deleteProduct(productId: string) {
     const confirmDelete = confirm('Delete this product?')
-
     if (!confirmDelete) return
 
-    await supabase.from('products').delete().eq('id', productId)
+    const { error } = await supabase
+      .from('products')
+      .delete()
+      .eq('id', productId)
 
-    setProducts(products.filter((p) => p.id !== productId))
+    if (!error) {
+      setProducts(products.filter((p) => p.id !== productId))
+      toast.success('Product deleted')
+    }
   }
 
   useEffect(() => {
     async function loadVendor() {
       const { data: userData } = await supabase.auth.getUser()
-
       const user = userData.user
 
       if (!user) return
@@ -52,59 +57,69 @@ export default function VendorProfile() {
         .eq('user_id', user.id)
         .single()
 
-      if (vendor) {
-        setVendorId(vendor.id)
-        setStoreName(vendor.store_name || '')
-        setDescription(vendor.description || '')
-        setEmail(vendor.email || '')
-        setPhone(vendor.phone || '')
-        setLocation(vendor.location || '')
+      if (!vendor) return
 
-        if (vendor.logo_url) setLogoPreview(vendor.logo_url)
-        if (vendor.banner_url) setBannerPreview(vendor.banner_url)
+      setVendorId(vendor.id)
+      setStoreName(vendor.store_name || '')
+      setDescription(vendor.description || '')
+      setEmail(vendor.email || '')
+      setPhone(vendor.phone || '')
+      setLocation(vendor.location || '')
 
-        const { data: vendorProducts } = await supabase
-          .from('products')
-          .select('id,name,price,image_url')
-          .eq('vendor_id', vendor.id)
+      if (vendor.logo_url) setLogoPreview(vendor.logo_url)
+      if (vendor.banner_url) setBannerPreview(vendor.banner_url)
 
-        setProducts(vendorProducts || [])
-      }
+      const { data: vendorProducts } = await supabase
+        .from('products')
+        .select('id,name,price,image_url')
+        .eq('vendor_id', vendor.id)
+
+      setProducts(vendorProducts || [])
     }
 
     loadVendor()
   }, [])
 
+  async function uploadImage(file: File, bucket: string) {
+    const fileName = `${Date.now()}-${file.name}`
+
+    const { data, error } = await supabase.storage
+      .from(bucket)
+      .upload(fileName, file)
+
+    if (error) {
+      toast.error('Image upload failed')
+      return null
+    }
+
+    const { data: publicUrl } = supabase.storage
+      .from(bucket)
+      .getPublicUrl(data.path)
+
+    return publicUrl.publicUrl
+  }
+
   async function handleSave(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
+
+    if (!vendorId) return
 
     let logo_url = logoPreview
     let banner_url = bannerPreview
 
     if (logo) {
-      const fileName = `${Date.now()}-${logo.name}`
-
-      const { data } = await supabase.storage
-        .from('vendor-logos')
-        .upload(fileName, logo)
-
-      logo_url = data?.path || logoPreview
+      const uploadedLogo = await uploadImage(logo, 'vendor-logos')
+      if (uploadedLogo) logo_url = uploadedLogo
     }
 
     if (banner) {
-      const fileName = `${Date.now()}-${banner.name}`
-
-      const { data } = await supabase.storage
-        .from('vendor-banners')
-        .upload(fileName, banner)
-
-      banner_url = data?.path || bannerPreview
+      const uploadedBanner = await uploadImage(banner, 'vendor-banners')
+      if (uploadedBanner) banner_url = uploadedBanner
     }
 
-    await supabase
+    const { error } = await supabase
       .from('vendors')
-      .insert({
-        id: vendorId,
+      .update({
         store_name: storeName,
         description,
         email,
@@ -115,7 +130,12 @@ export default function VendorProfile() {
       })
       .eq('id', vendorId)
 
-    toast.success('Profile updated')
+    if (error) {
+      toast.error('Update failed')
+      return
+    }
+
+    toast.success('Profile updated successfully')
   }
 
   return (
@@ -137,7 +157,7 @@ export default function VendorProfile() {
         />
       </div>
 
-      {/* Avatar + name */}
+      {/* Avatar */}
       <div className='flex items-center gap-6 -mt-10 px-4'>
         <div className='relative'>
           <Image
@@ -172,9 +192,8 @@ export default function VendorProfile() {
         </div>
       </div>
 
-      {/* Info cards */}
+      {/* Info */}
       <div className='grid md:grid-cols-2 gap-6 mt-10'>
-        {/* Store info */}
         <div className='bg-white border rounded-xl p-6 space-y-4'>
           <h2 className='font-semibold text-lg'>Store Information</h2>
 
@@ -186,7 +205,6 @@ export default function VendorProfile() {
           />
         </div>
 
-        {/* Contact */}
         <div className='bg-white border rounded-xl p-6 space-y-4'>
           <h2 className='font-semibold text-lg'>Contact Information</h2>
 
@@ -213,70 +231,10 @@ export default function VendorProfile() {
         </div>
       </div>
 
-      {/* Save button */}
       <div className='mt-8'>
         <button className='bg-[#10b5cb] text-white px-6 py-3 rounded-lg hover:bg-[#0ea3b7]'>
           Save Profile
         </button>
-      </div>
-      {/* Vendor products */}
-
-      <div className='mt-12'>
-        <div className='flex justify-between items-center mb-6'>
-          <h2 className='text-xl font-semibold'>My Products</h2>
-
-          <a
-            href='/vendor/products/new'
-            className='bg-[#10b5cb] text-white px-4 py-2 rounded'
-          >
-            Add Product
-          </a>
-        </div>
-
-        <div className='grid grid-cols-2 md:grid-cols-4 gap-6'>
-          {products.map((product) => (
-            <div
-              key={product.id}
-              className='border rounded-xl overflow-hidden bg-white hover:shadow-md transition'
-            >
-              {/* Image */}
-              <div className='h-36 bg-gray-100'>
-                <img
-                  src={product.image_url || '/placeholder.png'}
-                  className='w-full h-full object-cover'
-                />
-              </div>
-
-              {/* Info */}
-              <div className='p-3'>
-                <h3 className='text-sm font-medium line-clamp-2'>
-                  {product.name}
-                </h3>
-
-                <p className='text-[#10b5cb] font-semibold mt-1'>
-                  ${product.price}
-                </p>
-
-                {/* Control buttons */}
-                <div className='flex justify-between mt-3 text-sm'>
-                  <a
-                    href={`/vendor/products/edit/${product.id}`}
-                    className='text-blue-500 hover:underline'
-                  >
-                    Edit
-                  </a>
-
-                  <button
-                    onClick={() => deleteProduct(product.id)}
-                    className='text-red-500 hover:underline'
-                  >
-                    Delete
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
       </div>
     </form>
   )
