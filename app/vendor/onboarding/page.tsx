@@ -8,10 +8,10 @@ import toast from 'react-hot-toast'
 import { RealtimePostgresChangesPayload } from '@supabase/supabase-js'
 
 type VendorRequestType = {
-  status: string
   id: string
   store_name: string
   user_id: string
+  status: string
 }
 
 export default function VendorOnboarding() {

@@ -130,9 +130,10 @@ export default function Navbar() {
                   {user.role === 'admin' && (
                     <Link
                       href='/admin'
-                      className='px-4 py-2 block hover:bg-gray-50'
+                      className='flex items-center gap-2 px-4 py-2 hover:bg-gray-50'
                     >
-                      Admin Panel
+                      <User size={16} />
+                      Admin
                     </Link>
                   )}
 
