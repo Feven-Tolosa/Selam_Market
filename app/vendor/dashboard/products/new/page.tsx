@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { useRouter } from 'next/navigation'
 import { useVendor } from '@/lib/VendorContext'
+import toast from 'react-hot-toast'
 
 export default function AddProductPage() {
   const router = useRouter()
@@ -78,7 +79,7 @@ export default function AddProductPage() {
       return
     }
 
-    alert('Product created!')
+    toast.success('Product created successfully!')
     router.push('../../dashboard')
   }
 
