@@ -25,7 +25,7 @@ export default function ChatWindow({ currentUserId }: ChatProps) {
   useEffect(() => {
     async function fetchMessages() {
       const { data } = await supabase
-        .from<Message>('messages')
+        .from('messages')
         .select('*')
         .eq('chat_id', chatId)
         .order('created_at', { ascending: true })
@@ -47,7 +47,7 @@ export default function ChatWindow({ currentUserId }: ChatProps) {
           filter: `chat_id=eq.${chatId}`,
         },
         (payload) => {
-          setMessages((prev) => [...prev, payload.new])
+          setMessages((prev) => [...prev, payload.new as Message])
         },
       )
       .subscribe()

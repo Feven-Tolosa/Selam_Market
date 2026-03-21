@@ -22,7 +22,7 @@ export default function ChatList({ currentUserId, isAdmin }: Props) {
   useEffect(() => {
     async function fetchChats() {
       let query = supabase
-        .from<Chat>('chats')
+        .from('chats')
         .select('*')
         .order('updated_at', { ascending: false })
       if (!isAdmin) {
