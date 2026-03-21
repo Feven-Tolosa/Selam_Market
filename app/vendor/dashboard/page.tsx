@@ -1,4 +1,5 @@
 'use client'
+
 import { supabase } from '@/lib/supabaseClient'
 import Image from 'next/image'
 import { useEffect, useState } from 'react'
@@ -13,50 +14,50 @@ type Product = {
 export default function VendorProfile() {
   const [vendorId, setVendorId] = useState<string>('')
 
-  const [storeName, setStoreName] = useState<string>('')
-  const [description, setDescription] = useState<string>('')
+  const [storeName, setStoreName] = useState('')
+  const [description, setDescription] = useState('')
 
-  const [email, setEmail] = useState<string>('')
-  const [phone, setPhone] = useState<string>('')
-  const [location, setLocation] = useState<string>('')
+  const [email, setEmail] = useState('')
+  const [phone, setPhone] = useState('')
+  const [location, setLocation] = useState('')
 
   const [logo, setLogo] = useState<File | null>(null)
   const [banner, setBanner] = useState<File | null>(null)
 
-  const [logoPreview, setLogoPreview] = useState<string>(
-    '/avatar-placeholder.png',
-  )
-  const [bannerPreview, setBannerPreview] = useState<string>(
-    '/banner-placeholder.jpg',
-  )
+  const [logoPreview, setLogoPreview] = useState('/avatar-placeholder.png')
+  const [bannerPreview, setBannerPreview] = useState('/banner-placeholder.jpg')
 
   const [products, setProducts] = useState<Product[]>([])
 
-  const [loading, setLoading] = useState<boolean>(false)
+  const [loading, setLoading] = useState(false)
 
   // -------------------------
-  // Load Vendor Data
+  // Load Vendor Data (FIXED)
   // -------------------------
 
   useEffect(() => {
     async function loadVendor() {
       const { data: userData } = await supabase.auth.getUser()
-
       const user = userData.user
+
       if (!user) return
 
       const { data: vendor, error } = await supabase
         .from('vendors')
         .select('*')
         .eq('user_id', user.id)
-        .single()
+        .maybeSingle() // ✅ FIX (no crash)
 
       if (error) {
         console.error(error)
         return
       }
 
-      if (!vendor) return
+      // 🚨 If vendor not created yet
+      if (!vendor) {
+        alert('Your vendor account is not approved yet.')
+        return
+      }
 
       setVendorId(vendor.id)
 
@@ -66,6 +67,7 @@ export default function VendorProfile() {
       setPhone(vendor.phone ?? '')
       setLocation(vendor.location ?? '')
 
+      // Logo
       if (vendor.logo_url) {
         const { data } = supabase.storage
           .from('vendor-logos')
@@ -74,6 +76,7 @@ export default function VendorProfile() {
         setLogoPreview(data.publicUrl)
       }
 
+      // Banner
       if (vendor.banner_url) {
         const { data } = supabase.storage
           .from('vendor-banners')
@@ -82,6 +85,7 @@ export default function VendorProfile() {
         setBannerPreview(data.publicUrl)
       }
 
+      // Products
       const { data: vendorProducts } = await supabase
         .from('products')
         .select('id,name,price,image_url')
@@ -115,13 +119,10 @@ export default function VendorProfile() {
   }
 
   // -------------------------
-  // Upload File
+  // Upload File (IMPROVED)
   // -------------------------
 
-  async function uploadFile(
-    file: File,
-    bucket: string,
-  ): Promise<string | null> {
+  async function uploadFile(file: File, bucket: string) {
     const fileName = `${Date.now()}-${file.name}`
 
     const { data, error } = await supabase.storage
@@ -137,23 +138,28 @@ export default function VendorProfile() {
   }
 
   // -------------------------
-  // Save Profile
+  // Save Profile (FIXED)
   // -------------------------
 
   async function handleSave(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
 
+    if (!vendorId) {
+      alert('Vendor not found')
+      return
+    }
+
     setLoading(true)
 
-    let logo_url = null
-    let banner_url = null
+    let logo_url: string | undefined
+    let banner_url: string | undefined
 
     if (logo) {
-      logo_url = await uploadFile(logo, 'vendor-logos')
+      logo_url = (await uploadFile(logo, 'vendor-logos')) || undefined
     }
 
     if (banner) {
-      banner_url = await uploadFile(banner, 'vendor-banners')
+      banner_url = (await uploadFile(banner, 'vendor-banners')) || undefined
     }
 
     const { error } = await supabase
@@ -183,7 +189,6 @@ export default function VendorProfile() {
   return (
     <form onSubmit={handleSave} className='space-y-8'>
       {/* Banner */}
-
       <div className='relative h-48 rounded-xl overflow-hidden bg-gray-100'>
         <Image src={bannerPreview} alt='banner' fill className='object-cover' />
 
@@ -201,7 +206,6 @@ export default function VendorProfile() {
       </div>
 
       {/* Avatar */}
-
       <div className='flex items-center gap-6 -mt-10 px-4'>
         <div className='relative'>
           <Image
@@ -217,7 +221,6 @@ export default function VendorProfile() {
             className='absolute bottom-0 left-0 text-xs'
             onChange={(e) => {
               const file = e.target.files?.[0]
-
               if (file) {
                 setLogo(file)
                 setLogoPreview(URL.createObjectURL(file))
@@ -234,7 +237,6 @@ export default function VendorProfile() {
       </div>
 
       {/* Store Info */}
-
       <div className='grid md:grid-cols-2 gap-6'>
         <div className='bg-white border rounded-xl p-6 space-y-4'>
           <h2 className='font-semibold text-lg'>Store Information</h2>
@@ -274,7 +276,6 @@ export default function VendorProfile() {
       </div>
 
       {/* Save Button */}
-
       <button
         disabled={loading}
         className='bg-[#10b5cb] text-white px-6 py-3 rounded-lg hover:bg-[#0ea3b7]'
@@ -283,7 +284,6 @@ export default function VendorProfile() {
       </button>
 
       {/* Products */}
-
       <div className='mt-12'>
         <div className='flex justify-between items-center mb-6'>
           <h2 className='text-xl font-semibold'>My Products</h2>
