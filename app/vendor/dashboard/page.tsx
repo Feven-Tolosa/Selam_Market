@@ -289,7 +289,7 @@ export default function VendorProfile() {
           <h2 className='text-xl font-semibold'>My Products</h2>
 
           <a
-            href='/vendor/products/new'
+            href='/vendor/dashboard/products/new'
             className='bg-[#10b5cb] text-white px-4 py-2 rounded'
           >
             Add Product

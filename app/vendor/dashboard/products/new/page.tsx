@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { useRouter } from 'next/navigation'
+import { useVendor } from '@/lib/VendorContext'
 
 export default function AddProductPage() {
   const router = useRouter()
@@ -14,59 +15,103 @@ export default function AddProductPage() {
   const [image, setImage] = useState<File | null>(null)
   const [preview, setPreview] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const { vendorId, loading: vendorLoading } = useVendor()
 
-  //  HANDLE IMAGE + PREVIEW
+  // IMAGE PREVIEW
   const handleImageChange = (file: File) => {
     setImage(file)
     setPreview(URL.createObjectURL(file))
   }
 
-  //  UPLOAD IMAGE TO SUPABASE
+  // UPLOAD IMAGE
   const uploadImage = async () => {
     if (!image) return null
 
     const fileExt = image.name.split('.').pop()
     const fileName = `${Date.now()}.${fileExt}`
 
-    const { data, error } = await supabase.storage
+    const { error } = await supabase.storage
       .from('product-images')
-      .upload(fileName, image, {
-        cacheControl: '3600',
-        upsert: false,
-      })
-
-    console.log('UPLOAD:', data, error)
+      .upload(fileName, image)
 
     if (error) {
       alert('Image upload failed: ' + error.message)
       return null
     }
 
-    const { data: publicUrlData } = supabase.storage
+    const { data } = supabase.storage
       .from('product-images')
       .getPublicUrl(fileName)
 
-    return publicUrlData.publicUrl
+    return data.publicUrl
   }
 
-  //  CREATE PRODUCT
+  // CREATE PRODUCT (FIXED)
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
 
+    // ✅ 1. Get user
+    const { data: userData } = await supabase.auth.getUser()
+    const user = userData.user
+
+    if (!user) {
+      alert('User not found')
+      setLoading(false)
+      return
+    }
+
+    // ✅ 2. Get vendor
+    const { data: vendor, error: vendorError } = await supabase
+      .from('vendors')
+      .select('id')
+      .eq('user_id', user.id)
+      .maybeSingle()
+
+    if (vendorError) {
+      console.error(vendorError)
+      alert('Error fetching vendor')
+      setLoading(false)
+      return
+    }
+
+    if (!vendor) {
+      alert('Vendor not found (RLS issue likely)')
+      setLoading(false)
+      return
+    }
+
+    // ✅ 3. Upload image
     const imageUrl = await uploadImage()
 
-    const { data, error } = await supabase.from('products').insert([
+    if (!vendorId) {
+      alert('You are not a vendor or not approved yet')
+      return
+    }
+
+    await supabase.from('products').insert({
+      name,
+      price: Number(price),
+      description,
+      category,
+      image_url: imageUrl || '',
+      vendor_id: vendorId,
+    })
+    console.log('USER:', user)
+    console.log('VENDOR RESULT:', vendor)
+    console.log('VENDOR ID:', vendor?.id)
+
+    // ✅ 4. Insert product WITH vendor_id
+    const { error } = await supabase.from('products').insert([
       {
         name,
         price: Number(price),
         description,
         category,
-        image_url: imageUrl || '',
+        image_url: imageUrl,
+        vendor_id: vendor.id, // 🔥 THIS IS THE KEY FIX
       },
     ])
-
-    console.log('INSERT:', data, error)
 
     setLoading(false)
 
@@ -75,7 +120,9 @@ export default function AddProductPage() {
       return
     }
 
-    router.push('/vendor/dashboard/products')
+    alert('Product created successfully!')
+
+    router.push('/vendor/profile') // or your products page
   }
 
   return (
@@ -109,7 +156,7 @@ export default function AddProductPage() {
         {/* CATEGORY */}
         <input
           type='text'
-          placeholder='Category (e.g. Shoes, Electronics)'
+          placeholder='Category'
           className='w-full border p-3 rounded-lg'
           value={category}
           onChange={(e) => setCategory(e.target.value)}
@@ -124,7 +171,7 @@ export default function AddProductPage() {
           rows={4}
         />
 
-        {/* IMAGE INPUT */}
+        {/* IMAGE */}
         <div>
           <label className='block mb-2 text-sm font-medium'>
             Product Image
@@ -132,7 +179,7 @@ export default function AddProductPage() {
 
           <input
             type='file'
-            accept='image/png, image/jpeg, image/webp'
+            accept='image/*'
             onChange={(e) => {
               if (e.target.files?.[0]) {
                 handleImageChange(e.target.files[0])
@@ -140,15 +187,11 @@ export default function AddProductPage() {
             }}
           />
 
-          {/* PREVIEW */}
           {preview && (
-            <div className='mt-4'>
-              <img
-                src={preview}
-                alt='Preview'
-                className='w-40 h-40 object-cover rounded-lg border'
-              />
-            </div>
+            <img
+              src={preview}
+              className='w-40 h-40 mt-4 object-cover rounded-lg border'
+            />
           )}
         </div>
 

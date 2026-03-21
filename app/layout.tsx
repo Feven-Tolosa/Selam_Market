@@ -4,7 +4,7 @@ import './globals.css'
 import { cn } from '@/lib/utils'
 import Navbar from '@/components/layout/Navbar'
 import { Toaster } from 'react-hot-toast'
-import Footer from '@/components/layout/Footer'
+import { VendorProvider } from '@/lib/VendorContext'
 
 const jetbrainsMono = JetBrains_Mono({
   subsets: ['latin'],
@@ -37,9 +37,11 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <Navbar />
-        {children}
-        <Toaster />
+        <VendorProvider>
+          <Navbar />
+          {children}
+          <Toaster />
+        </VendorProvider>
       </body>
     </html>
   )
