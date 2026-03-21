@@ -49,47 +49,20 @@ export default function AddProductPage() {
   // CREATE PRODUCT (FIXED)
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    if (loading) return // 🚨 prevents double submit
+
     setLoading(true)
 
-    // ✅ 1. Get user
-    const { data: userData } = await supabase.auth.getUser()
-    const user = userData.user
-
-    if (!user) {
-      alert('User not found')
+    if (!vendorId) {
+      alert('You are not a vendor')
       setLoading(false)
       return
     }
 
-    // ✅ 2. Get vendor
-    const { data: vendor, error: vendorError } = await supabase
-      .from('vendors')
-      .select('id')
-      .eq('user_id', user.id)
-      .maybeSingle()
-
-    if (vendorError) {
-      console.error(vendorError)
-      alert('Error fetching vendor')
-      setLoading(false)
-      return
-    }
-
-    if (!vendor) {
-      alert('Vendor not found (RLS issue likely)')
-      setLoading(false)
-      return
-    }
-
-    // ✅ 3. Upload image
     const imageUrl = await uploadImage()
 
-    if (!vendorId) {
-      alert('You are not a vendor or not approved yet')
-      return
-    }
-
-    await supabase.from('products').insert({
+    const { error } = await supabase.from('products').insert({
       name,
       price: Number(price),
       description,
@@ -97,32 +70,16 @@ export default function AddProductPage() {
       image_url: imageUrl || '',
       vendor_id: vendorId,
     })
-    console.log('USER:', user)
-    console.log('VENDOR RESULT:', vendor)
-    console.log('VENDOR ID:', vendor?.id)
-
-    // ✅ 4. Insert product WITH vendor_id
-    const { error } = await supabase.from('products').insert([
-      {
-        name,
-        price: Number(price),
-        description,
-        category,
-        image_url: imageUrl,
-        vendor_id: vendor.id, // 🔥 THIS IS THE KEY FIX
-      },
-    ])
 
     setLoading(false)
 
     if (error) {
-      alert('Error: ' + error.message)
+      alert(error.message)
       return
     }
 
-    alert('Product created successfully!')
-
-    router.push('/vendor/profile') // or your products page
+    alert('Product created!')
+    router.push('../../dashboard')
   }
 
   return (
