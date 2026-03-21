@@ -45,32 +45,43 @@ export default function AdminDashboard() {
     getUser()
   }, [])
 
-  // Approve vendor request
   const handleVendorRequest = async (id: string, action: string) => {
     const { data, error } = await supabase
       .from('vendor_requests')
       .update({ status: action })
       .eq('id', id)
-      .select() // return updated row
+      .select()
 
     if (error) return toast.error(error.message)
 
     toast.success(`Vendor request ${action}`)
 
-    // If approved,  send a notification or trigger redirection
+    // 🚀 If approved → create vendor profile
     if (action === 'approved' && data?.length) {
-      const vendorUserId = data[0].user_id
-      // Option 1: Add a notification in a table
+      const request = data[0]
+
+      // ✅ 1. Create vendor profile
+      const { error: vendorError } = await supabase.from('vendors').insert({
+        user_id: request.user_id,
+        store_name: request.store_name,
+        description: request.store_description,
+      })
+
+      if (vendorError) {
+        console.error(vendorError)
+        return toast.error('Failed to create vendor profile')
+      }
+
+      // ✅ 2. Notify user
       await supabase.from('notifications').insert({
-        user_id: vendorUserId,
-        message:
-          'Your vendor request has been approved! Please create your vendor profile.',
+        user_id: request.user_id,
+        message: 'Your vendor account is approved! You can now add products.',
         type: 'vendor_approved',
         read: false,
       })
     }
 
-    fetchData() // refresh table
+    fetchData()
   }
 
   if (loading) return <p className='p-10'>Loading...</p>
