@@ -1,53 +1,37 @@
 import { supabase } from '@/lib/supabaseClient'
-import Image from 'next/image'
-import Link from 'next/link'
+import type { Category, Product } from '@/types'
 
 export default async function CategoryPage({
   params,
 }: {
   params: { slug: string }
 }) {
-  const { slug } = params
-
-  const { data: products, error } = await supabase
-    .from('products')
+  // ✅ get category
+  const { data: category } = await supabase
+    .from('categories')
     .select('*')
-    .eq('category', slug)
+    .eq('slug', params.slug)
+    .single<Category>()
 
-  if (error) {
-    return <p className='p-6'>Error loading products</p>
+  if (!category) {
+    return <p>Category not found</p>
   }
 
+  // ✅ get products
+  const { data: products } = await supabase
+    .from('products')
+    .select('*')
+    .eq('category_id', category.id)
+    .returns<Product[]>()
+
   return (
-    <div className='max-w-7xl mx-auto px-6 py-10'>
-      <h1 className='text-2xl font-semibold mb-6 capitalize'>
-        {slug} Products
-      </h1>
+    <div className='p-6'>
+      <h1 className='text-xl font-bold mb-4'>{category.name}</h1>
 
-      {products?.length === 0 && <p>No products found in this category.</p>}
-
-      <div className='grid grid-cols-2 md:grid-cols-4 gap-6'>
+      <div className='grid grid-cols-2 md:grid-cols-4 gap-4'>
         {products?.map((product) => (
-          <div key={product.id} className='border rounded-lg p-4'>
-            {product.image_url && (
-              <Image
-                src={product.image_url}
-                alt={product.name}
-                width={200}
-                height={200}
-                className='rounded-md object-cover'
-              />
-            )}
-
-            <h2 className='mt-2 font-medium'>{product.name}</h2>
-            <p className='text-gray-500 text-sm'>${product.price}</p>
-
-            <Link
-              href={`/product/${product.id}`}
-              className='text-[#10b5cb] text-sm mt-2 inline-block'
-            >
-              View Product
-            </Link>
+          <div key={product.id} className='border p-3'>
+            {product.name}
           </div>
         ))}
       </div>

@@ -1,28 +1,49 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { useRouter } from 'next/navigation'
 import { useVendor } from '@/lib/VendorContext'
 import toast from 'react-hot-toast'
+import type { Category } from '@/types'
 
 export default function AddProductPage() {
   const router = useRouter()
+  const { vendorId } = useVendor()
 
   const [name, setName] = useState('')
   const [price, setPrice] = useState('')
   const [description, setDescription] = useState('')
-  const [category, setCategory] = useState('')
+  const [categoryId, setCategoryId] = useState('') // ✅ now dynamic
+  const [categories, setCategories] = useState<Category[]>([]) // dynamic categories
   const [image, setImage] = useState<File | null>(null)
   const [preview, setPreview] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
-  const { vendorId, loading: vendorLoading } = useVendor()
 
   // IMAGE PREVIEW
   const handleImageChange = (file: File) => {
     setImage(file)
     setPreview(URL.createObjectURL(file))
   }
+
+  // FETCH CATEGORIES
+  useEffect(() => {
+    let isMounted = true
+    const fetchCategories = async () => {
+      const { data } = await supabase
+        .from('categories')
+        .select('*')
+        .returns<Category[]>()
+
+      if (isMounted && data) {
+        setCategories(data)
+      }
+    }
+    fetchCategories()
+    return () => {
+      isMounted = false
+    }
+  }, [])
 
   // UPLOAD IMAGE
   const uploadImage = async () => {
@@ -47,11 +68,10 @@ export default function AddProductPage() {
     return data.publicUrl
   }
 
-  // CREATE PRODUCT (FIXED)
+  // CREATE PRODUCT
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-
-    if (loading) return // 🚨 prevents double submit
+    if (loading) return
 
     setLoading(true)
 
@@ -67,7 +87,7 @@ export default function AddProductPage() {
       name,
       price: Number(price),
       description,
-      category,
+      category_id: categoryId, // ✅ dynamic
       image_url: imageUrl || '',
       vendor_id: vendorId,
     })
@@ -111,27 +131,19 @@ export default function AddProductPage() {
           required
         />
 
-        {/* CATEGORY */}
-        <input
-          type='text'
-          placeholder='Category'
-          className='w-full border p-3 rounded-lg'
-          value={category}
-          onChange={(e) => setCategory(e.target.value)}
-        />
+        {/* CATEGORY DROPDOWN (dynamic, same style) */}
         <select
-          value={category}
-          onChange={(e) => setCategory(e.target.value)}
-          className='border p-2 rounded w-full'
+          value={categoryId}
+          onChange={(e) => setCategoryId(e.target.value)}
+          className='w-full border p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#10b5cb]'
           required
         >
           <option value=''>Select Category</option>
-          <option value='electronics'>Electronics</option>
-          <option value='clothing'>Clothing</option>
-          <option value='furniture'>Furniture</option>
-          <option value='computers'>Computers</option>
-          <option value='accessories'>Accessories</option>
-          <option value='home'>Home Goods</option>
+          {categories.map((cat) => (
+            <option key={cat.id} value={cat.id}>
+              {cat.name}
+            </option>
+          ))}
         </select>
 
         {/* DESCRIPTION */}
