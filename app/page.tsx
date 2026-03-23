@@ -13,7 +13,7 @@ export default function Home() {
     <>
       <HeroSection />
       <CategoriesSection />
-      <FeaturedProducts />
+      <FeaturedProducts userId={''} />
       <WhyLocal />
       <PopularVendors />
       <HowItWorks />
