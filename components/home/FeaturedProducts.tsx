@@ -4,46 +4,91 @@ import Link from 'next/link'
 export default async function FeaturedProducts() {
   const { data: products } = await supabase
     .from('products')
-    .select('*')
+    .select(
+      `
+      id,
+      name,
+      description,
+      price,
+      image_url,
+      vendors (
+        id,
+        store_name
+      )
+    `,
+    )
     .limit(8)
 
   return (
-    <section className='py-20 bg-linear-to-b from-white to-gray-50'>
+    <section className='py-20 bg-gradient-to-b from-white to-gray-50'>
       <div className='max-w-7xl mx-auto px-6'>
-        <div className='flex justify-between items-center mb-8'>
-          <h2 className='text-2xl font-semibold text-gray-800'>
-            Featured Products
-          </h2>
+        {/* Header */}
+        <div className='flex items-center justify-between mb-10'>
+          <div>
+            <h2 className='text-3xl font-bold text-gray-900'>
+              Featured Products
+            </h2>
+            <p className='text-gray-500 mt-1 text-sm'>
+              Discover top products from trusted vendors
+            </p>
+          </div>
 
-          <Link href='/products' className='text-[#10b5cb] hover:underline'>
-            View all
+          <Link
+            href='/products'
+            className='text-sm font-medium text-[#10b5cb] hover:underline'
+          >
+            View all →
           </Link>
         </div>
 
-        <div className='grid grid-cols-2 md:grid-cols-4 gap-6'>
+        {/* Grid */}
+        <div className='grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8'>
           {products?.map((product) => (
             <Link
               key={product.id}
               href={`/product/${product.id}`}
-              className='bg-white rounded-xl border hover:shadow-md transition'
+              className='group bg-white rounded-2xl border hover:shadow-xl transition-all duration-300 overflow-hidden'
             >
-              <img
-                src={product.image_url || '/placeholder.png'}
-                alt={product.name}
-                className='w-full h-48 object-cover rounded-t-xl'
-              />
+              {/* Image */}
+              <div className='relative'>
+                <img
+                  src={product.image_url || '/placeholder.png'}
+                  alt={product.name}
+                  className='w-full h-52 object-cover group-hover:scale-105 transition'
+                />
 
+                {/* Badge */}
+                <span className='absolute top-3 left-3 bg-[#10b5cb] text-white text-xs px-3 py-1 rounded-full shadow'>
+                  New
+                </span>
+              </div>
+
+              {/* Content */}
               <div className='p-4'>
-                <h3 className='font-medium text-gray-800 line-clamp-1'>
+                {/* Vendor */}
+                <p className='text-xs text-gray-400 mb-1'>
+                  {product.vendors?.store_name || 'Unknown Vendor'}
+                </p>
+
+                {/* Title */}
+                <h3 className='font-semibold text-gray-900 line-clamp-1'>
                   {product.name}
                 </h3>
 
+                {/* Description */}
                 <p className='text-sm text-gray-500 mt-1 line-clamp-2'>
                   {product.description}
                 </p>
 
-                <div className='mt-3 text-[#10b5cb] font-semibold'>
-                  ${product.price}
+                {/* Footer */}
+                <div className='mt-4 flex items-center justify-between'>
+                  <span className='text-[#10b5cb] font-bold text-lg'>
+                    ${product.price}
+                  </span>
+
+                  <button className='text-xs px-3 py-1 border rounded-lg hover:bg-gray-100 transition'>
+                    View
+                  </button>
                 </div>
               </div>
             </Link>

@@ -23,7 +23,7 @@ type Product = {
   vendors: Vendor[] | null
 }
 
-export default function FeaturedProducts() {
+export default function FeaturedProductsWithRatAndWishlist() {
   const { user, loading } = useUser()
 
   const [products, setProducts] = useState<Product[]>([])

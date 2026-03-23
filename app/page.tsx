@@ -1,5 +1,5 @@
 import CategoriesSection from '@/components/home/CategoriesSection'
-import FeaturedProducts from '@/components/home/FeaturedWithRateAndWishlist'
+import FeaturedProducts from '@/components/home/FeaturedProducts'
 import HeroSection from '@/components/home/HeroSection'
 import HowItWorks from '@/components/home/HowItWorks'
 import Newsletter from '@/components/home/Newsletter'
@@ -13,7 +13,7 @@ export default function Home() {
     <>
       <HeroSection />
       <CategoriesSection />
-      {/* <FeaturedProducts /> */}
+      <FeaturedProducts />
       <WhyLocal />
       <PopularVendors />
       <HowItWorks />
