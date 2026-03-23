@@ -119,6 +119,20 @@ export default function AddProductPage() {
           value={category}
           onChange={(e) => setCategory(e.target.value)}
         />
+        <select
+          value={category}
+          onChange={(e) => setCategory(e.target.value)}
+          className='border p-2 rounded w-full'
+          required
+        >
+          <option value=''>Select Category</option>
+          <option value='electronics'>Electronics</option>
+          <option value='clothing'>Clothing</option>
+          <option value='furniture'>Furniture</option>
+          <option value='computers'>Computers</option>
+          <option value='accessories'>Accessories</option>
+          <option value='home'>Home Goods</option>
+        </select>
 
         {/* DESCRIPTION */}
         <textarea

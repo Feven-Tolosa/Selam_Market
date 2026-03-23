@@ -1,3 +1,5 @@
+'use client'
+
 import Link from 'next/link'
 import { Smartphone, Shirt, Sofa, Laptop, Watch, Home } from 'lucide-react'
 
@@ -26,7 +28,7 @@ export default function CategoriesSection() {
               <Link
                 key={cat.slug}
                 href={`/category/${cat.slug}`}
-                className='border rounded-xl p-6 flex flex-col items-center justify-center hover:border-[#10b5cb] hover:shadow-sm transition'
+                className='border rounded-xl p-6 flex flex-col items-center justify-center hover:border-[#10b5cb] hover:shadow-md transition cursor-pointer'
               >
                 <div className='bg-[#10b5cb]/10 p-3 rounded-full mb-3'>
                   <Icon className='text-[#10b5cb]' size={22} />
