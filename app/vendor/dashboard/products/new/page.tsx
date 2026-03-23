@@ -56,7 +56,7 @@ export default function AddProductPage() {
     setLoading(true)
 
     if (!vendorId) {
-      toast.error('You must be logged in to create a vendor account')
+      alert('You are not a vendor')
       setLoading(false)
       return
     }
