@@ -6,18 +6,16 @@ export default async function CategoryPage({
 }: {
   params: { slug: string }
 }) {
-  // ✅ get category
   const { data: category } = await supabase
     .from('categories')
     .select('*')
     .eq('slug', params.slug)
-    .single<Category>()
+    .maybeSingle<Category>()
 
   if (!category) {
-    return <p>Category not found</p>
+    return <p className='p-6'>Category not found</p>
   }
 
-  // ✅ get products
   const { data: products } = await supabase
     .from('products')
     .select('*')
@@ -25,14 +23,18 @@ export default async function CategoryPage({
     .returns<Product[]>()
 
   return (
-    <div className='p-6'>
-      <h1 className='text-xl font-bold mb-4'>{category.name}</h1>
+    <div className='max-w-7xl mx-auto px-6 py-10'>
+      <div className='flex justify-between mb-6'>
+        <h1 className='text-2xl font-semibold'>{category.name}</h1>
 
-      <div className='grid grid-cols-2 md:grid-cols-4 gap-4'>
+        <span className='text-gray-500 text-sm'>
+          {products?.length || 0} products
+        </span>
+      </div>
+
+      <div className='grid grid-cols-2 md:grid-cols-4 gap-6'>
         {products?.map((product) => (
-          <div key={product.id} className='border p-3'>
-            {product.name}
-          </div>
+          <div key={product.id}>{product.name}</div>
         ))}
       </div>
     </div>
