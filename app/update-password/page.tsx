@@ -53,7 +53,7 @@ export default function UpdatePasswordPage() {
   }
 
   return (
-    <main className='min-h-screen flex items-center justify-center'>
+    <main className='max-h-screen pt-8 flex items-center justify-center'>
       <form
         onSubmit={handleUpdate}
         className='w-full max-w-md p-6 border rounded-xl space-y-4'

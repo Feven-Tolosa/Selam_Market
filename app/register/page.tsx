@@ -76,7 +76,7 @@ export default function RegisterPage() {
   }
 
   return (
-    <main className='max-h-screen my-4 flex items-center justify-center'>
+    <main className='max-h-screen pt-4 flex items-center justify-center'>
       <div className='w-full max-w-md p-6 border rounded-xl space-y-4'>
         <h1 className='text-xl font-semibold text-center'>Create Account</h1>
 
