@@ -1,241 +1,274 @@
-'use client'
+// 'use client'
 
-import { useEffect, useState } from 'react'
-import { supabase } from '@/lib/supabaseClient'
-import Image from 'next/image'
-import toast from 'react-hot-toast'
+// import { useEffect, useState } from 'react'
+// import { supabase } from '@/lib/supabaseClient'
+// import Image from 'next/image'
+// import toast from 'react-hot-toast'
+// import dynamic from 'next/dynamic'
 
-export default function VendorProfile() {
-  const [storeName, setStoreName] = useState('')
-  const [description, setDescription] = useState('')
-  const [email, setEmail] = useState('')
-  const [phone, setPhone] = useState('')
-  const [location, setLocation] = useState('')
+// export default function VendorProfile() {
+//   const [storeName, setStoreName] = useState('')
+//   const [description, setDescription] = useState('')
+//   const [email, setEmail] = useState('')
+//   const [phone, setPhone] = useState('')
+//   const [location, setLocation] = useState('')
 
-  const [logo, setLogo] = useState<File | null>(null)
-  const [banner, setBanner] = useState<File | null>(null)
+//   const [logo, setLogo] = useState<File | null>(null)
+//   const [banner, setBanner] = useState<File | null>(null)
 
-  const [logoPreview, setLogoPreview] = useState('/avatar-placeholder.png')
-  const [bannerPreview, setBannerPreview] = useState('/banner-placeholder.jpg')
+//   const [logoPreview, setLogoPreview] = useState('/avatar-placeholder.png')
+//   const [bannerPreview, setBannerPreview] = useState('/banner-placeholder.jpg')
 
-  const [vendorId, setVendorId] = useState<string | null>(null)
+//   const [vendorId, setVendorId] = useState<string | null>(null)
 
-  type Product = {
-    id: string
-    name: string
-    price: number
-    image_url: string | null
-  }
+//   const [latitude, setLatitude] = useState<number | null>(null)
+//   const [longitude, setLongitude] = useState<number | null>(null)
+//   const LocationPicker = dynamic(
+//     () => import('@/components/vendor/LocationPicker'),
+//     {
+//       ssr: false,
+//     },
+//   )
 
-  const [products, setProducts] = useState<Product[]>([])
+//   type Product = {
+//     id: string
+//     name: string
+//     price: number
+//     image_url: string | null
+//   }
 
-  async function deleteProduct(productId: string) {
-    const confirmDelete = confirm('Delete this product?')
-    if (!confirmDelete) return
+//   const [products, setProducts] = useState<Product[]>([])
 
-    const { error } = await supabase
-      .from('products')
-      .delete()
-      .eq('id', productId)
+//   async function deleteProduct(productId: string) {
+//     const confirmDelete = confirm('Delete this product?')
+//     if (!confirmDelete) return
 
-    if (!error) {
-      setProducts(products.filter((p) => p.id !== productId))
-      toast.success('Product deleted')
-    }
-  }
+//     const { error } = await supabase
+//       .from('products')
+//       .delete()
+//       .eq('id', productId)
 
-  useEffect(() => {
-    async function loadVendor() {
-      const { data: userData } = await supabase.auth.getUser()
-      const user = userData.user
+//     if (!error) {
+//       setProducts(products.filter((p) => p.id !== productId))
+//       toast.success('Product deleted')
+//     }
+//   }
 
-      if (!user) return
+//   useEffect(() => {
+//     async function loadVendor() {
+//       const { data: userData } = await supabase.auth.getUser()
+//       const user = userData.user
 
-      const { data: vendor } = await supabase
-        .from('vendors')
-        .select('*')
-        .eq('user_id', user.id)
-        .single()
+//       if (!user) return
 
-      if (!vendor) return
+//       const { data: vendor } = await supabase
+//         .from('vendors')
+//         .select('*')
+//         .eq('user_id', user.id)
+//         .single()
 
-      setVendorId(vendor.id)
-      setStoreName(vendor.store_name || '')
-      setDescription(vendor.description || '')
-      setEmail(vendor.email || '')
-      setPhone(vendor.phone || '')
-      setLocation(vendor.location || '')
+//       if (!vendor) return
 
-      if (vendor.logo_url) setLogoPreview(vendor.logo_url)
-      if (vendor.banner_url) setBannerPreview(vendor.banner_url)
+//       setVendorId(vendor.id)
+//       setStoreName(vendor.store_name || '')
+//       setDescription(vendor.description || '')
+//       setEmail(vendor.email || '')
+//       setPhone(vendor.phone || '')
+//       setLocation(vendor.location || '')
+//       setLatitude(vendor.latitude || null)
+//       setLongitude(vendor.longitude || null)
 
-      const { data: vendorProducts } = await supabase
-        .from('products')
-        .select('id,name,price,image_url')
-        .eq('vendor_id', vendor.id)
+//       if (vendor.logo_url) setLogoPreview(vendor.logo_url)
+//       if (vendor.banner_url) setBannerPreview(vendor.banner_url)
 
-      setProducts(vendorProducts || [])
-    }
+//       const { data: vendorProducts } = await supabase
+//         .from('products')
+//         .select('id,name,price,image_url')
+//         .eq('vendor_id', vendor.id)
 
-    loadVendor()
-  }, [])
+//       setProducts(vendorProducts || [])
+//     }
 
-  async function uploadImage(file: File, bucket: string) {
-    const fileName = `${Date.now()}-${file.name}`
+//     loadVendor()
+//   }, [])
 
-    const { data, error } = await supabase.storage
-      .from(bucket)
-      .upload(fileName, file)
+//   async function uploadImage(file: File, bucket: string) {
+//     const fileName = `${Date.now()}-${file.name}`
 
-    if (error) {
-      toast.error('Image upload failed')
-      return null
-    }
+//     const { data, error } = await supabase.storage
+//       .from(bucket)
+//       .upload(fileName, file)
 
-    const { data: publicUrl } = supabase.storage
-      .from(bucket)
-      .getPublicUrl(data.path)
+//     if (error) {
+//       toast.error('Image upload failed')
+//       return null
+//     }
 
-    return publicUrl.publicUrl
-  }
+//     const { data: publicUrl } = supabase.storage
+//       .from(bucket)
+//       .getPublicUrl(data.path)
 
-  async function handleSave(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault()
+//     return publicUrl.publicUrl
+//   }
 
-    if (!vendorId) return
+//   async function handleSave(e: React.FormEvent<HTMLFormElement>) {
+//     e.preventDefault()
 
-    let logo_url = logoPreview
-    let banner_url = bannerPreview
+//     if (!vendorId) return
 
-    if (logo) {
-      const uploadedLogo = await uploadImage(logo, 'vendor-logos')
-      if (uploadedLogo) logo_url = uploadedLogo
-    }
+//     let logo_url = logoPreview
+//     let banner_url = bannerPreview
 
-    if (banner) {
-      const uploadedBanner = await uploadImage(banner, 'vendor-banners')
-      if (uploadedBanner) banner_url = uploadedBanner
-    }
+//     if (logo) {
+//       const uploadedLogo = await uploadImage(logo, 'vendor-logos')
+//       if (uploadedLogo) logo_url = uploadedLogo
+//     }
 
-    const { error } = await supabase
-      .from('vendors')
-      .update({
-        store_name: storeName,
-        description,
-        email,
-        phone,
-        location,
-        logo_url,
-        banner_url,
-      })
-      .eq('id', vendorId)
+//     if (banner) {
+//       const uploadedBanner = await uploadImage(banner, 'vendor-banners')
+//       if (uploadedBanner) banner_url = uploadedBanner
+//     }
 
-    if (error) {
-      toast.error('Update failed')
-      return
-    }
+//     const { error } = await supabase
+//       .from('vendors')
+//       .update({
+//         store_name: storeName,
+//         description,
+//         email,
+//         phone,
+//         location,
+//         logo_url,
+//         banner_url,
+//         latitude,
+//         longitude,
+//       })
+//       .eq('id', vendorId)
 
-    toast.success('Profile updated successfully')
-  }
+//     if (error) {
+//       toast.error('Update failed')
+//       return
+//     }
 
-  return (
-    <form onSubmit={handleSave}>
-      {/* Banner */}
-      <div className='relative h-48 bg-gray-100 rounded-xl overflow-hidden'>
-        <Image src={bannerPreview} alt='banner' fill className='object-cover' />
+//     toast.success('Profile updated successfully')
+//   }
 
-        <input
-          type='file'
-          className='absolute bottom-3 right-3 text-sm'
-          onChange={(e) => {
-            const file = e.target.files?.[0]
-            if (file) {
-              setBanner(file)
-              setBannerPreview(URL.createObjectURL(file))
-            }
-          }}
-        />
-      </div>
+//   return (
+//     <form onSubmit={handleSave}>
+//       {/* Banner */}
+//       <div className='relative h-48 bg-gray-100 rounded-xl overflow-hidden'>
+//         <Image src={bannerPreview} alt='banner' fill className='object-cover' />
 
-      {/* Avatar */}
-      <div className='flex items-center gap-6 -mt-10 px-4'>
-        <div className='relative'>
-          <Image
-            src={logoPreview}
-            alt='logo'
-            width={90}
-            height={90}
-            className='rounded-full border-4 border-white object-cover'
-          />
+//         <input
+//           type='file'
+//           className='absolute bottom-3 right-3 text-sm'
+//           onChange={(e) => {
+//             const file = e.target.files?.[0]
+//             if (file) {
+//               setBanner(file)
+//               setBannerPreview(URL.createObjectURL(file))
+//             }
+//           }}
+//         />
+//       </div>
 
-          <input
-            type='file'
-            className='absolute bottom-0 left-0 text-xs'
-            onChange={(e) => {
-              const file = e.target.files?.[0]
-              if (file) {
-                setLogo(file)
-                setLogoPreview(URL.createObjectURL(file))
-              }
-            }}
-          />
-        </div>
+//       {/* Avatar */}
+//       <div className='flex items-center gap-6 -mt-10 px-4'>
+//         <div className='relative'>
+//           <Image
+//             src={logoPreview}
+//             alt='logo'
+//             width={90}
+//             height={90}
+//             className='rounded-full border-4 border-white object-cover'
+//           />
 
-        <div>
-          <input
-            value={storeName}
-            onChange={(e) => setStoreName(e.target.value)}
-            className='text-xl font-semibold border-none focus:outline-none'
-          />
+//           <input
+//             type='file'
+//             className='absolute bottom-0 left-0 text-xs'
+//             onChange={(e) => {
+//               const file = e.target.files?.[0]
+//               if (file) {
+//                 setLogo(file)
+//                 setLogoPreview(URL.createObjectURL(file))
+//               }
+//             }}
+//           />
+//         </div>
 
-          <p className='text-gray-500 text-sm'>Vendor Store</p>
-        </div>
-      </div>
+//         <div>
+//           <input
+//             value={storeName}
+//             onChange={(e) => setStoreName(e.target.value)}
+//             className='text-xl font-semibold border-none focus:outline-none'
+//           />
 
-      {/* Info */}
-      <div className='grid md:grid-cols-2 gap-6 mt-10'>
-        <div className='bg-white border rounded-xl p-6 space-y-4'>
-          <h2 className='font-semibold text-lg'>Store Information</h2>
+//           <p className='text-gray-500 text-sm'>Vendor Store</p>
+//         </div>
+//       </div>
 
-          <textarea
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder='Store description'
-            className='w-full border p-3 rounded'
-          />
-        </div>
+//       {/* Info */}
+//       <div className='grid md:grid-cols-2 gap-6 mt-10'>
+//         <div className='bg-white border rounded-xl p-6 space-y-4'>
+//           <h2 className='font-semibold text-lg'>Store Information</h2>
 
-        <div className='bg-white border rounded-xl p-6 space-y-4'>
-          <h2 className='font-semibold text-lg'>Contact Information</h2>
+//           <textarea
+//             value={description}
+//             onChange={(e) => setDescription(e.target.value)}
+//             placeholder='Store description'
+//             className='w-full border p-3 rounded'
+//           />
+//         </div>
 
-          <input
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder='Email'
-            className='w-full border p-3 rounded'
-          />
+//         <div className='bg-white border rounded-xl p-6 space-y-4'>
+//           <h2 className='font-semibold text-lg'>Contact Information</h2>
 
-          <input
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            placeholder='Phone'
-            className='w-full border p-3 rounded'
-          />
+//           <input
+//             value={email}
+//             onChange={(e) => setEmail(e.target.value)}
+//             placeholder='Email'
+//             className='w-full border p-3 rounded'
+//           />
 
-          <input
-            value={location}
-            onChange={(e) => setLocation(e.target.value)}
-            placeholder='Location'
-            className='w-full border p-3 rounded'
-          />
-        </div>
-      </div>
+//           <input
+//             value={phone}
+//             onChange={(e) => setPhone(e.target.value)}
+//             placeholder='Phone'
+//             className='w-full border p-3 rounded'
+//           />
 
-      <div className='mt-8'>
-        <button className='bg-[#10b5cb] text-white px-6 py-3 rounded-lg hover:bg-[#0ea3b7]'>
-          Save Profile
-        </button>
-      </div>
-    </form>
-  )
-}
+//           <input
+//             value={location}
+//             onChange={(e) => setLocation(e.target.value)}
+//             placeholder='Location'
+//             className='w-full border p-3 rounded'
+//           />
+//         </div>
+//       </div>
+
+//       <div className='bg-white border rounded-xl p-6 space-y-4 mt-6'>
+//         <h2 className='font-semibold text-lg'>Store Location (Map)</h2>
+
+//         <LocationPicker
+//           lat={latitude}
+//           lng={longitude}
+//           onSelect={(lat, lng) => {
+//             setLatitude(lat)
+//             setLongitude(lng)
+//           }}
+//         />
+
+//         {latitude && longitude && (
+//           <p className='text-sm text-gray-500'>
+//             Selected: {latitude.toFixed(5)}, {longitude.toFixed(5)}
+//           </p>
+//         )}
+//       </div>
+
+//       <div className='mt-8'>
+//         <button className='bg-[#10b5cb] text-white px-6 py-3 rounded-lg hover:bg-[#0ea3b7]'>
+//           Save Profile
+//         </button>
+//       </div>
+//     </form>
+//   )
+// }

@@ -2,7 +2,9 @@
 
 import { supabase } from '@/lib/supabaseClient'
 import Image from 'next/image'
+import Link from 'next/link'
 import { useEffect, useState } from 'react'
+import dynamic from 'next/dynamic'
 
 type Product = {
   id: string
@@ -30,6 +32,15 @@ export default function VendorProfile() {
   const [products, setProducts] = useState<Product[]>([])
 
   const [loading, setLoading] = useState(false)
+
+  const [latitude, setLatitude] = useState<number | null>(null)
+  const [longitude, setLongitude] = useState<number | null>(null)
+  const LocationPicker = dynamic(
+    () => import('@/components/vendor/LocationPicker'),
+    {
+      ssr: false,
+    },
+  )
 
   // -------------------------
   // Load Vendor Data (FIXED)
@@ -66,6 +77,9 @@ export default function VendorProfile() {
       setEmail(vendor.email ?? '')
       setPhone(vendor.phone ?? '')
       setLocation(vendor.location ?? '')
+
+      setLatitude(vendor.latitude || null)
+      setLongitude(vendor.longitude || null)
 
       // Logo
       if (vendor.logo_url) {
@@ -275,6 +289,25 @@ export default function VendorProfile() {
         </div>
       </div>
 
+      <div className='h-75 w-full'>
+        <h2 className='font-semibold text-lg'>Store Location (Map)</h2>
+
+        <LocationPicker
+          lat={latitude}
+          lng={longitude}
+          onSelect={(lat, lng) => {
+            setLatitude(lat)
+            setLongitude(lng)
+          }}
+        />
+
+        {latitude && longitude && (
+          <p className='text-sm text-gray-500'>
+            Selected: {latitude.toFixed(5)}, {longitude.toFixed(5)}
+          </p>
+        )}
+      </div>
+
       {/* Save Button */}
       <button
         disabled={loading}
@@ -288,12 +321,12 @@ export default function VendorProfile() {
         <div className='flex justify-between items-center mb-6'>
           <h2 className='text-xl font-semibold'>My Products</h2>
 
-          <a
+          <Link
             href='/vendor/dashboard/products/new'
             className='bg-[#10b5cb] text-white px-4 py-2 rounded'
           >
             Add Product
-          </a>
+          </Link>
         </div>
 
         <div className='grid grid-cols-2 md:grid-cols-4 gap-6'>
