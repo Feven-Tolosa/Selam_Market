@@ -55,6 +55,16 @@ export default function LoginPage() {
               className='w-full border rounded-md px-4 py-2 focus:ring-2 focus:ring-[#10b5cb]'
               required
             />
+            {/* Forgot Password */}
+            <p className='text-right text-sm'>
+              <button
+                type='button'
+                onClick={() => router.push('/forgot-password')}
+                className='text-[#10b5cb] hover:underline'
+              >
+                Forgot Password?
+              </button>
+            </p>
 
             <button
               type='submit'
