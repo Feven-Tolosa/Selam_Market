@@ -31,6 +31,11 @@ export default function RegisterPage() {
     return 'Strong'
   }
 
+  const getStrengthColor = (score: number) => {
+    if (score <= 2) return 'bg-red-500'
+    if (score === 3 || score === 4) return 'bg-yellow-400'
+    return 'bg-green-500'
+  }
   const strength = getPasswordStrength(password)
 
   const handleRegister = async (e: React.FormEvent) => {
@@ -106,14 +111,25 @@ export default function RegisterPage() {
           {/* ✅ Strength Bar */}
           <div className='h-2 w-full bg-gray-200 rounded'>
             <div
-              className='h-2 rounded transition-all'
+              className={`h-2 rounded transition-all duration-300 ${getStrengthColor(strength)}`}
               style={{ width: `${(strength / 5) * 100}%` }}
             />
           </div>
 
+          {/* ✅ Strength Label */}
           <p className='text-xs'>
             Strength:{' '}
-            <span className='font-semibold'>{getStrengthLabel(strength)}</span>
+            <span
+              className={`font-semibold ${
+                strength <= 2
+                  ? 'text-red-500'
+                  : strength <= 4
+                    ? 'text-yellow-500'
+                    : 'text-green-600'
+              }`}
+            >
+              {getStrengthLabel(strength)}
+            </span>
           </p>
 
           {/* ✅ Checklist */}
