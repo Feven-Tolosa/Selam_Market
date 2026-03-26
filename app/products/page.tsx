@@ -3,7 +3,11 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import type { Product, Category } from '@/types'
+import Link from 'next/link'
 
+type product = {
+  category_name?: string
+}
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([])
   const [categories, setCategories] = useState<Category[]>([])
@@ -86,23 +90,35 @@ export default function ProductsPage() {
       {/* GRID */}
       <div className='grid grid-cols-2 md:grid-cols-4 gap-6'>
         {filtered.map((product) => (
-          <div
+          <Link
             key={product.id}
-            className='group border rounded-xl overflow-hidden hover:shadow-lg transition bg-white'
+            href={`/products/${product.id}`}
+            className='group border rounded-xl overflow-hidden hover:shadow-lg transition bg-white cursor-pointer'
           >
-            {product.image_url && (
-              <img
-                src={product.image_url}
-                className='w-full h-48 object-cover group-hover:scale-105 transition'
-              />
-            )}
+            <img
+              src={product.image_url || '/placeholder.png'}
+              className='w-full h-48 object-cover group-hover:scale-105 transition'
+            />
 
             <div className='p-4'>
-              <h2 className='font-medium'>{product.name}</h2>
-              <p className='text-[#10b5cb] font-semibold'>${product.price}</p>
+              <h2 className='font-medium line-clamp-2'>{product.name}</h2>
+              <p className='text-[#10b5cb] font-semibold mt-1'>
+                ${product.price.toFixed(2)}
+              </p>
+              {product.category_name && (
+                <p className='text-gray-500 text-sm mt-1'>
+                  {product.category_name}
+                </p>
+              )}
             </div>
-          </div>
+          </Link>
         ))}
+
+        {filtered.length === 0 && (
+          <p className='col-span-full text-center text-gray-500 mt-10'>
+            No products found.
+          </p>
+        )}
       </div>
     </div>
   )

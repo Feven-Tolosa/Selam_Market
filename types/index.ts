@@ -13,4 +13,5 @@ export type Product = {
   price: number
   image_url: string | null
   category_id: string
+  category_name?: string
 }
