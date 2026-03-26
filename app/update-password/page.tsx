@@ -9,10 +9,32 @@ export default function UpdatePasswordPage() {
   const router = useRouter()
 
   const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
   const [loading, setLoading] = useState(false)
+
+  const validatePassword = (password: string) => {
+    const regex =
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&.#^()_\-+=])[A-Za-z\d@$!%*?&.#^()_\-+=]{8,}$/
+    return regex.test(password)
+  }
 
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    // ✅ Check match
+    if (password !== confirmPassword) {
+      toast.error('Passwords do not match')
+      return
+    }
+
+    // ✅ Check strength
+    if (!validatePassword(password)) {
+      toast.error(
+        'Password must be 8+ chars, include uppercase, lowercase, number, and special character',
+      )
+      return
+    }
+
     setLoading(true)
 
     const { error } = await supabase.auth.updateUser({
@@ -46,6 +68,21 @@ export default function UpdatePasswordPage() {
           onChange={(e) => setPassword(e.target.value)}
           required
         />
+
+        <input
+          type='password'
+          placeholder='Confirm password'
+          className='w-full border px-4 py-2 rounded-md'
+          value={confirmPassword}
+          onChange={(e) => setConfirmPassword(e.target.value)}
+          required
+        />
+
+        {/* ✅ Password Rules UI */}
+        <p className='text-xs text-gray-500'>
+          Must contain at least 8 characters, uppercase, lowercase, number, and
+          special character.
+        </p>
 
         <button
           type='submit'
