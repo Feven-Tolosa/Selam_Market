@@ -5,6 +5,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import dynamic from 'next/dynamic'
+import toast from 'react-hot-toast/headless'
 
 type Product = {
   id: string
@@ -66,7 +67,7 @@ export default function VendorProfile() {
 
       // 🚨 If vendor not created yet
       if (!vendor) {
-        alert('Your vendor account is not approved yet.')
+        toast.error('Your vendor account is not approved yet.')
         return
       }
 
@@ -125,7 +126,7 @@ export default function VendorProfile() {
       .eq('id', productId)
 
     if (error) {
-      alert('Delete failed')
+      toast.error('Delete failed')
       return
     }
 
@@ -159,7 +160,7 @@ export default function VendorProfile() {
     e.preventDefault()
 
     if (!vendorId) {
-      alert('Vendor not found')
+      toast.error('Vendor not found')
       return
     }
 
@@ -184,6 +185,8 @@ export default function VendorProfile() {
         email,
         phone,
         location,
+        latitude,
+        longitude,
         ...(logo_url && { logo_url }),
         ...(banner_url && { banner_url }),
       })
@@ -192,12 +195,12 @@ export default function VendorProfile() {
     setLoading(false)
 
     if (error) {
-      alert('Update failed')
+      toast.error('Update failed')
       console.error(error)
       return
     }
 
-    alert('Profile updated successfully!')
+    toast.success('Profile updated successfully!')
   }
 
   return (
