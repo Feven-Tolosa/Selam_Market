@@ -4,14 +4,20 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Star } from 'lucide-react'
 
 interface Vendor {
   id: string
   store_name: string
   description: string
   image_url: string | null
+  banner_url: string
+  logo_url: string
   location: string
+  email: string
+  phone: string
+  latitude: number
+  longitude: number
+  created_at: string
   rating: number
 }
 
@@ -19,11 +25,15 @@ export default function TopVendors() {
   const [vendors, setVendors] = useState<Vendor[]>([])
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    fetchVendors()
-  }, [])
+  const getImageUrl = (bucket: string, path: string | null | undefined) => {
+    if (!path) return '/placeholder.jpg'
 
-  async function fetchVendors(): Promise<void> {
+    const { data } = supabase.storage.from(bucket).getPublicUrl(path)
+
+    return data.publicUrl || '/placeholder.jpg'
+  }
+
+  const fetchTopVendors = async () => {
     const { data, error } = await supabase
       .from('vendors')
       .select('*')
@@ -32,43 +42,61 @@ export default function TopVendors() {
 
     if (error) {
       console.error('Error fetching vendors:', error.message)
-    } else if (data) {
-      setVendors(data)
+      setLoading(false)
+      return
     }
 
+    setVendors(data || [])
     setLoading(false)
   }
+  useEffect(() => {
+    fetchTopVendors()
+  }, [])
 
   if (loading) {
     return <p className='text-center py-10'>Loading vendors...</p>
   }
 
   return (
-    <section className='py-12 px-6'>
-      <h2 className='text-2xl font-bold mb-6'>Top Vendors</h2>
+    <section className='py-10 px-4'>
+      <h2 className='text-2xl font-bold mb-6 text-center'>Top Vendors</h2>
 
-      <div className='grid grid-cols-1 md:grid-cols-3 gap-6'>
+      <div className='grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6'>
         {vendors.map((vendor) => (
           <Link
             key={vendor.id}
             href={`/vendors/${vendor.id}`}
-            className='border rounded-lg p-4 hover:shadow-md transition'
+            className='border rounded-xl overflow-hidden shadow hover:shadow-lg transition'
           >
-            <Image
-              src={vendor.image_url || '/placeholder.png'}
-              alt={vendor.store_name}
-              width={400}
-              height={250}
-              className='rounded-md object-cover'
-            />
+            <div className='relative h-40'>
+              <Image
+                src={getImageUrl('vendor-banners', vendor.banner_url)}
+                alt={vendor.store_name}
+                fill
+                className='object-cover'
+              />
+            </div>
 
-            <h3 className='text-lg font-semibold mt-3'>{vendor.store_name}</h3>
+            <div className='p-4'>
+              <div className='flex items-center gap-3 mb-2'>
+                <Image
+                  src={getImageUrl('vendor-logos', vendor.logo_url)}
+                  alt='logo'
+                  width={40}
+                  height={40}
+                  className='rounded-full object-cover'
+                />
+                <h3 className='font-semibold'>{vendor.store_name}</h3>
+              </div>
 
-            <p className='text-sm text-gray-500'>{vendor.location}</p>
+              <p className='text-sm text-gray-500 line-clamp-2'>
+                {vendor.description}
+              </p>
 
-            <div className='flex items-center mt-2'>
-              <Star className='w-4 h-4 text-yellow-500' />
-              <span className='ml-1 text-sm'>{vendor.rating ?? 0}</span>
+              <div className='mt-2 flex justify-between text-sm'>
+                <span>{vendor.location}</span>
+                <span>⭐ {vendor.rating || 0}</span>
+              </div>
             </div>
           </Link>
         ))}
