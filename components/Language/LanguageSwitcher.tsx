@@ -18,11 +18,11 @@ export default function LanguageSwitcher() {
 
   return (
     <DropdownMenu>
-      <div>
+      <DropdownMenuTrigger asChild>
         <Button variant='ghost' size='icon'>
           <Globe className='w-5 h-5' />
         </Button>
-      </div>
+      </DropdownMenuTrigger>
 
       <DropdownMenuContent align='end'>
         <DropdownMenuItem onClick={() => changeLanguage('en')}>
