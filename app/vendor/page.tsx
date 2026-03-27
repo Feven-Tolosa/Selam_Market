@@ -273,7 +273,7 @@ export default function VendorsPage() {
           {vendors.map((vendor) => (
             <Link
               key={vendor.id}
-              href={`/vendors/${vendor.id}`}
+              href={`/vendor/${vendor.id}`}
               className='border rounded-lg overflow-hidden hover:shadow-lg transition'
             >
               <div className='relative h-40'>
