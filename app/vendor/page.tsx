@@ -80,6 +80,58 @@ export default function VendorsPage() {
   const fetchVendors = async () => {
     setLoading(true)
 
+    try {
+      // ✅ If user location exists → use RPC (BEST PERFORMANCE)
+      if (coords) {
+        const { data, error } = await supabase.rpc('nearby_vendors', {
+          user_lat: coords.lat,
+          user_lng: coords.lng,
+          radius_km: 10,
+        })
+
+        if (error) throw error
+
+        setVendors(data || [])
+        setLoading(false)
+        return
+      }
+
+      // ✅ Otherwise fallback to normal search
+      let query = supabase.from('vendors').select(`
+        *,
+        products (
+          name,
+          category
+        )
+      `)
+
+      if (search) {
+        query = query.ilike('store_name', `%${search}%`)
+      }
+
+      if (location) {
+        query = query.ilike('location', `%${location}%`)
+      }
+
+      if (product) {
+        query = query.ilike('products.name', `%${product}%`)
+      }
+
+      if (category) {
+        query = query.eq('products.category', category)
+      }
+
+      const { data, error } = await query
+
+      if (error) throw error
+
+      setVendors(data || [])
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setLoading(false)
+    }
+
     let query = supabase.from('vendors').select(`
         *,
         products (
@@ -173,12 +225,17 @@ export default function VendorsPage() {
           className='border p-2 rounded'
         />
 
-        <input
-          placeholder='Category...'
+        <select
           value={category}
           onChange={(e) => setCategory(e.target.value)}
           className='border p-2 rounded'
-        />
+        >
+          <option value=''>All Categories</option>
+          <option value='electronics'>Electronics</option>
+          <option value='fashion'>Fashion</option>
+          <option value='furniture'>Furniture</option>
+          <option value='food'>Food</option>
+        </select>
 
         <button
           onClick={getUserLocation}
