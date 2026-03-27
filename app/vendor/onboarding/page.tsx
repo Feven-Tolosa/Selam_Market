@@ -96,7 +96,7 @@ export default function VendorOnboarding() {
 
     toast.success('Vendor request submitted successfully!')
     setLoading(false)
-    router.push('/vendor/dashboard')
+    router.push('/')
   }
 
   return (

@@ -4,6 +4,20 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import Image from 'next/image'
 import Link from 'next/link'
+import dynamic from 'next/dynamic'
+
+import { useMapEvents } from 'react-leaflet'
+
+function MapEvents({ onMove }: { onMove: (lat: number, lng: number) => void }) {
+  useMapEvents({
+    moveend: (e) => {
+      const center = e.target.getCenter()
+      onMove(center.lat, center.lng)
+    },
+  })
+
+  return null
+}
 
 interface Product {
   name: string
@@ -40,6 +54,10 @@ export default function VendorsPage() {
     const { data } = supabase.storage.from(bucket).getPublicUrl(path)
     return data.publicUrl
   }
+
+  const VendorsMap = dynamic(() => import('@/components/vendor/VendorsMap'), {
+    ssr: false,
+  })
 
   // ✅ Get user location
   const getUserLocation = () => {
@@ -300,6 +318,14 @@ export default function VendorsPage() {
               </div>
             </Link>
           ))}
+          {/* <VendorsMap vendors={vendors} />
+          <MapEvents onMove={(lat, lng) => setCoords({ lat, lng })} />
+          <button
+            onClick={fetchVendors}
+            className='bg-[#10b5cb] text-white px-4 py-2 rounded mt-2'
+          >
+            Search this area
+          </button> */}
         </div>
       )}
     </div>
