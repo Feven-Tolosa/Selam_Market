@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabaseClient'
+import Image from 'next/image'
 import Link from 'next/link'
 
 export default async function FeaturedProducts() {
@@ -20,7 +21,7 @@ export default async function FeaturedProducts() {
     .limit(8)
 
   return (
-    <section className='py-20 bg-gradient-to-b from-white to-gray-50'>
+    <section className='py-20 bg-linear-to-b from-white to-gray-50'>
       <div className='max-w-7xl mx-auto px-6'>
         {/* Header */}
         <div className='flex items-center justify-between mb-10'>
@@ -51,9 +52,11 @@ export default async function FeaturedProducts() {
             >
               {/* Image */}
               <div className='relative'>
-                <img
+                <Image
                   src={product.image_url || '/placeholder.png'}
                   alt={product.name}
+                  width={300}
+                  height={200}
                   className='w-full h-52 object-cover group-hover:scale-105 transition'
                 />
 

@@ -59,8 +59,21 @@ export default function TopVendors() {
 
   return (
     <section className='py-10 px-4'>
-      <h2 className='text-2xl font-bold mb-6 text-center'>Top Vendors</h2>
-
+      {/* Section header */}
+      <div className='flex items-center justify-between mb-10'>
+        <div>
+          <h2 className='text-3xl font-bold text-gray-900'>Popular Vendors</h2>
+          <p className='text-gray-500 mt-1 text-sm'>
+            Discover trusted local vendors and explore their products.
+          </p>
+        </div>
+        <Link
+          href='/vendor'
+          className='text-sm font-medium text-[#10b5cb] hover:underline'
+        >
+          View all →
+        </Link>
+      </div>
       <div className='grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6'>
         {vendors.map((vendor) => (
           <Link
