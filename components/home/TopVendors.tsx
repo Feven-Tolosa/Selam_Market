@@ -78,7 +78,7 @@ export default function TopVendors() {
         {vendors.map((vendor) => (
           <Link
             key={vendor.id}
-            href={`/vendors/${vendor.id}`}
+            href={`/vendor/${vendor.id}`}
             className='border rounded-xl overflow-hidden shadow hover:shadow-lg transition'
           >
             <div className='relative h-40'>
