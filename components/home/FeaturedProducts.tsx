@@ -47,7 +47,7 @@ export default async function FeaturedProducts() {
           {products?.map((product) => (
             <Link
               key={product.id}
-              href={`/product/${product.id}`}
+              href={`/products/${product.id}`}
               className='group bg-white rounded-2xl border hover:shadow-xl transition-all duration-300 overflow-hidden'
             >
               {/* Image */}
