@@ -25,3 +25,18 @@ export type Vendor = {
   latitude: number // Add latitude and longitude properties
   longitude: number // Add latitude and longitude properties
 }
+
+export interface Message {
+  id: string
+  conversation_id: string
+  sender_id: string
+  content: string
+  created_at: string
+}
+
+export interface Conversation {
+  id: string
+  customer_id: string
+  vendor_id: string
+  created_at: string
+}

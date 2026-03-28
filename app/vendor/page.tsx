@@ -99,7 +99,7 @@ export default function VendorsPage() {
     setLoading(true)
 
     try {
-      // ✅ If user location exists → use RPC (BEST PERFORMANCE)
+      // ✅ If user location exists → 
       if (coords) {
         const { data, error } = await supabase.rpc('nearby_vendors', {
           user_lat: coords.lat,
@@ -114,7 +114,7 @@ export default function VendorsPage() {
         return
       }
 
-      // ✅ Otherwise fallback to normal search
+      // ✅ Otherwise it fallback to normal search
       let query = supabase.from('vendors').select(`
         *,
         products (
