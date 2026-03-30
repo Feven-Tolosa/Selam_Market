@@ -23,10 +23,8 @@ export default function ChatOverlay() {
   const { isOpen, vendorId, closeChat } = useChatStore()
 
   const [userId, setUserId] = useState<string | null>(null)
-
   const [activeConversation, setActiveConversation] =
     useState<Conversation | null>(null)
-
   const [messages, setMessages] = useState<Message[]>([])
   const [newMessage, setNewMessage] = useState('')
   const [loading, setLoading] = useState(false)
@@ -34,12 +32,16 @@ export default function ChatOverlay() {
   const bottomRef = useRef<HTMLDivElement>(null)
 
   // -------------------------
-  // GET USER
+  // GET CURRENT USER
   // -------------------------
   useEffect(() => {
     const loadUser = async () => {
-      const { data } = await supabase.auth.getUser()
-      setUserId(data.user?.id || null)
+      const { data, error } = await supabase.auth.getUser()
+      if (error) {
+        console.error('User fetch error:', error)
+        return
+      }
+      setUserId(data.user?.id ?? null)
     }
 
     loadUser()
@@ -53,45 +55,49 @@ export default function ChatOverlay() {
 
     const initConversation = async () => {
       setLoading(true)
+      try {
+        // 🔹 Fetch vendor's user_id
+        const { data: vendorData, error: vendorError } = await supabase
+          .from('vendors')
+          .select('user_id')
+          .eq('id', vendorId)
+          .single()
 
-      // 🔍 find existing conversation
-      const { data: existing, error } = await supabase
-        .from('conversations')
-        .select('*')
-        .eq('customer_id', userId)
-        .eq('vendor_id', vendorId)
-        .maybeSingle()
+        if (vendorError || !vendorData) throw vendorError
+        const vendorUserId = vendorData.user_id
 
-      if (error) {
-        console.error('Conversation fetch error:', error)
+        // 🔹 Check for existing conversation
+        const { data: existing, error: fetchError } = await supabase
+          .from('conversations')
+          .select('*')
+          .eq('customer_id', userId)
+          .eq('vendor_id', vendorUserId)
+          .maybeSingle()
+
+        if (fetchError) throw fetchError
+
+        if (existing) {
+          setActiveConversation(existing)
+          return
+        }
+
+        // 🔹 Create new conversation if none exists
+        const { data: newConv, error: createError } = await supabase
+          .from('conversations')
+          .insert({
+            customer_id: userId,
+            vendor_id: vendorUserId,
+          })
+          .select()
+          .single()
+
+        if (createError) throw createError
+        setActiveConversation(newConv)
+      } catch (err) {
+        console.error('Conversation init error:', err)
+      } finally {
         setLoading(false)
-        return
       }
-
-      if (existing) {
-        setActiveConversation(existing)
-        setLoading(false)
-        return
-      }
-
-      // ➕ create new conversation
-      const { data: newConv, error: createError } = await supabase
-        .from('conversations')
-        .insert({
-          customer_id: userId,
-          vendor_id: vendorId,
-        })
-        .select()
-        .single()
-
-      if (createError) {
-        console.error('Conversation create error:', createError)
-        setLoading(false)
-        return
-      }
-
-      setActiveConversation(newConv)
-      setLoading(false)
     }
 
     initConversation()
@@ -102,6 +108,8 @@ export default function ChatOverlay() {
   // -------------------------
   useEffect(() => {
     if (!activeConversation) return
+
+    let isMounted = true
 
     const loadMessages = async () => {
       const { data, error } = await supabase
@@ -115,12 +123,11 @@ export default function ChatOverlay() {
         return
       }
 
-      setMessages(data || [])
+      if (isMounted) setMessages(data ?? [])
     }
 
     loadMessages()
 
-    // 🔴 REALTIME SUBSCRIPTION
     const channel = supabase
       .channel(`chat-${activeConversation.id}`)
       .on(
@@ -139,6 +146,7 @@ export default function ChatOverlay() {
       .subscribe()
 
     return () => {
+      isMounted = false
       supabase.removeChannel(channel)
     }
   }, [activeConversation])
@@ -147,11 +155,10 @@ export default function ChatOverlay() {
   // SEND MESSAGE
   // -------------------------
   const sendMessage = async () => {
-    if (!newMessage.trim()) return
-    if (!activeConversation || !userId) return
+    if (!newMessage.trim() || !activeConversation || !userId) return
 
     const text = newMessage.trim()
-    setNewMessage('')
+    setNewMessage('') // optimistic UI
 
     const { error } = await supabase.from('messages').insert({
       conversation_id: activeConversation.id,
@@ -161,8 +168,7 @@ export default function ChatOverlay() {
 
     if (error) {
       console.error('Send error:', error)
-      setNewMessage(text) // restore message if failed
-      return
+      setNewMessage(text) // rollback
     }
   }
 
@@ -177,7 +183,7 @@ export default function ChatOverlay() {
   }
 
   // -------------------------
-  // AUTO SCROLL
+  // AUTO SCROLL TO BOTTOM
   // -------------------------
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -197,7 +203,7 @@ export default function ChatOverlay() {
   }
 
   return (
-    <div className='fixed bottom-5 right-5 w-380px h-125 bg-white shadow-xl rounded-xl flex flex-col z-50'>
+    <div className='fixed bottom-5 right-5 w-[380px] h-[500px] bg-white shadow-xl rounded-xl flex flex-col z-50'>
       {/* HEADER */}
       <div className='p-3 border-b flex justify-between items-center'>
         <p className='font-semibold'>Chat</p>
@@ -214,7 +220,6 @@ export default function ChatOverlay() {
 
         {messages.map((msg) => {
           const isMine = msg.sender_id === userId
-
           return (
             <div
               key={msg.id}
@@ -242,7 +247,8 @@ export default function ChatOverlay() {
 
         <button
           onClick={sendMessage}
-          className='bg-[#10b5cb] text-white px-4 rounded'
+          disabled={!activeConversation}
+          className='bg-[#10b5cb] text-white px-4 rounded disabled:opacity-50'
         >
           Send
         </button>
