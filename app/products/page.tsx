@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import type { Product, Category } from '@/types'
 import Link from 'next/link'
+import Image from 'next/image'
 
 type product = {
   category_name?: string
@@ -95,7 +96,10 @@ export default function ProductsPage() {
             href={`/products/${product.id}`}
             className='group border rounded-xl overflow-hidden hover:shadow-lg transition bg-white cursor-pointer'
           >
-            <img
+            <Image
+              alt={product.name}
+              width={300}
+              height={300}
               src={product.image_url || '/placeholder.png'}
               className='w-full h-48 object-cover group-hover:scale-105 transition'
             />

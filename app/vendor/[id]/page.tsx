@@ -3,9 +3,9 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { useParams, useRouter } from 'next/navigation'
-import Image from 'next/image'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
+import Image from 'next/image'
 
 type Vendor = {
   id: string
@@ -93,8 +93,8 @@ export default function VendorPublicPage() {
     loadData()
   }, [vendorId, router])
 
-  // 🛒 Add to cart
-  const addToCart = async (productId: string) => {
+  // 🛒 ADD TO CART
+  const addToCart = async () => {
     const { data } = await supabase.auth.getUser()
 
     if (!data.user) {
@@ -102,16 +102,11 @@ export default function VendorPublicPage() {
       return
     }
 
-    const { error } = await supabase.from('cart_items').insert({
+    await supabase.from('cart_items').insert({
       user_id: data.user.id,
-      product_id: productId,
+      product_id: products[0]?.id,
       quantity: 1,
     })
-
-    if (error) {
-      toast.error('Failed to add to cart')
-      return
-    }
 
     toast.success('Added to cart 🛒')
   }
@@ -132,10 +127,10 @@ export default function VendorPublicPage() {
       {/* 🧾 HEADER */}
       <div className='flex items-center gap-6 px-6 overflow-auto mt-12'>
         <Image
-          src={logoUrl}
-          alt='logo'
           width={100}
           height={100}
+          src={logoUrl}
+          alt='logo'
           className='rounded-full border-4 border-white object-cover'
         />
 
@@ -169,21 +164,26 @@ export default function VendorPublicPage() {
                   className='border rounded-xl overflow-hidden bg-white hover:shadow-md transition'
                 >
                   <div className='h-40 bg-gray-100'>
-                    <img
+                    <Image
+                      alt={product.name}
+                      width={300}
+                      height={300}
                       src={product.image_url ?? '/placeholder.png'}
-                      className='w-full h-full object-cover'
+                      className='w-full h-full object-cover hover:scale-105 transition hover:shadow-lg ease-in-out duration-300'
                     />
                   </div>
 
                   <div className='p-3'>
-                    <h3 className='text-sm font-medium'>{product.name}</h3>
+                    <Link href={`/products/${product.id}`}>
+                      <h3 className='text-sm font-medium'>{product.name}</h3>
 
-                    <p className='text-[#10b5cb] font-semibold mt-1'>
-                      ${product.price}
-                    </p>
+                      <p className='text-[#10b5cb] font-semibold mt-1'>
+                        ${product.price}
+                      </p>
+                    </Link>
 
                     <button
-                      onClick={() => addToCart(product.id)}
+                      onClick={addToCart}
                       className='mt-3 w-full bg-[#10b5cb] text-white py-2 rounded'
                     >
                       Add to Cart

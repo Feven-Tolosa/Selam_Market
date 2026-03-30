@@ -133,7 +133,7 @@ export default function ProductPage() {
   if (loading) {
     return (
       <div className='p-10 grid md:grid-cols-2 gap-8 animate-pulse'>
-        <div className='h-[400px] bg-gray-200 rounded-xl' />
+        <div className='h-400 bg-gray-200 rounded-xl' />
         <div className='space-y-4'>
           <div className='h-8 w-2/3 bg-gray-200 rounded' />
           <div className='h-6 w-1/3 bg-gray-200 rounded' />
@@ -156,7 +156,7 @@ export default function ProductPage() {
               alt={product.name}
               width={700}
               height={700}
-              className='w-full h-[450px] object-cover hover:scale-105 transition hover:shadow-lg ease-in-out duration-300'
+              className='w-full h-450px object-cover hover:scale-105 transition hover:shadow-lg ease-in-out duration-300'
             />
           </div>
 
