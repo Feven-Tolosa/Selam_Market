@@ -2,20 +2,22 @@
 
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
+import { useParams, useRouter } from 'next/navigation'
 import Image from 'next/image'
-import dynamic from 'next/dynamic'
+import Link from 'next/link'
+import toast from 'react-hot-toast'
 
 type Vendor = {
   id: string
   store_name: string
-  description: string | null
+  description: string
   email: string | null
   phone: string | null
   location: string | null
-  latitude: number | null
-  longitude: number | null
   logo_url: string | null
   banner_url: string | null
+  latitude: number | null
+  longitude: number | null
 }
 
 type Product = {
@@ -25,146 +27,194 @@ type Product = {
   image_url: string | null
 }
 
-export default function VendorPublicPage({
-  params,
-}: {
-  params: { id: string }
-}) {
+export default function VendorPublicPage() {
+  const params = useParams()
+  const router = useRouter()
+
+  const rawId = params?.id
+  const vendorId = Array.isArray(rawId) ? rawId[0] : rawId
+
   const [vendor, setVendor] = useState<Vendor | null>(null)
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
 
-  const MapView = dynamic(() => import('@/components/vendor/MapView'), {
-    ssr: false,
-  })
+  const [logoUrl, setLogoUrl] = useState('/avatar-placeholder.png')
+  const [bannerUrl, setBannerUrl] = useState('/banner-placeholder.jpg')
 
   useEffect(() => {
-    async function fetchVendor() {
+    if (!vendorId) return
+
+    const loadData = async () => {
       setLoading(true)
 
-      // Fetch vendor
       const { data: vendorData, error } = await supabase
         .from('vendors')
         .select('*')
-        .eq('id', params.id)
-        .maybeSingle()
+        .eq('id', vendorId)
+        .single()
 
       if (error || !vendorData) {
-        console.error(error)
-        setLoading(false)
+        toast.error('Vendor not found')
+        router.push('/')
         return
       }
 
       setVendor(vendorData)
 
-      // Fetch products
+      // ✅ Load logo
+      if (vendorData.logo_url) {
+        const { data } = supabase.storage
+          .from('vendor-logos')
+          .getPublicUrl(vendorData.logo_url)
+
+        setLogoUrl(data.publicUrl)
+      }
+
+      // ✅ Load banner
+      if (vendorData.banner_url) {
+        const { data } = supabase.storage
+          .from('vendor-banners')
+          .getPublicUrl(vendorData.banner_url)
+
+        setBannerUrl(data.publicUrl)
+      }
+
+      // ✅ Load products
       const { data: productData } = await supabase
         .from('products')
         .select('id,name,price,image_url')
-        .eq('vendor_id', params.id)
+        .eq('vendor_id', vendorData.id)
 
-      setProducts(productData ?? [])
+      setProducts(productData || [])
+
       setLoading(false)
     }
 
-    fetchVendor()
-  }, [params.id])
+    loadData()
+  }, [vendorId, router])
 
-  if (loading) return <p className='p-6'>Loading...</p>
+  // 🛒 Add to cart
+  const addToCart = async (productId: string) => {
+    const { data } = await supabase.auth.getUser()
 
-  if (!vendor) return <p className='p-6'>Vendor not found</p>
+    if (!data.user) {
+      toast.error('Login required')
+      return
+    }
 
-  // Get images
-  const logoUrl = vendor.logo_url
-    ? supabase.storage.from('vendor-logos').getPublicUrl(vendor.logo_url).data
-        .publicUrl
-    : '/avatar-placeholder.png'
+    const { error } = await supabase.from('cart_items').insert({
+      user_id: data.user.id,
+      product_id: productId,
+      quantity: 1,
+    })
 
-  const bannerUrl = vendor.banner_url
-    ? supabase.storage.from('vendor-banners').getPublicUrl(vendor.banner_url)
-        .data.publicUrl
-    : '/banner-placeholder.jpg'
+    if (error) {
+      toast.error('Failed to add to cart')
+      return
+    }
+
+    toast.success('Added to cart 🛒')
+  }
+
+  if (loading) {
+    return <p className='p-10'>Loading...</p>
+  }
+
+  if (!vendor) return <p className='p-10'>Vendor not found</p>
 
   return (
-    <div className='space-y-8'>
-      {/* Banner */}
-      <div className='relative h-56 w-full'>
+    <div className='max-w-7xl mx-auto pb-10'>
+      {/* 🖼️ BANNER */}
+      <div className='relative h-56 w-full bg-gray-200'>
         <Image src={bannerUrl} alt='banner' fill className='object-cover' />
       </div>
 
-      {/* Vendor Info */}
-      <div className='max-w-6xl mx-auto px-4 -mt-16'>
-        <div className='bg-white rounded-xl shadow p-6'>
-          <div className='flex items-center gap-6'>
-            <Image
-              src={logoUrl}
-              alt='logo'
-              width={100}
-              height={100}
-              className='rounded-full border-4 border-white'
-            />
+      {/* 🧾 HEADER */}
+      <div className='flex items-center gap-6 px-6 overflow-auto mt-12'>
+        <Image
+          src={logoUrl}
+          alt='logo'
+          width={100}
+          height={100}
+          className='rounded-full border-4 border-white object-cover'
+        />
 
-            <div>
-              <h1 className='text-2xl font-bold'>{vendor.store_name}</h1>
-              <p className='text-gray-500'>{vendor.location}</p>
-            </div>
-          </div>
-
-          {/* Description */}
-          {vendor.description && (
-            <p className='mt-4 text-gray-700'>{vendor.description}</p>
-          )}
-
-          {/* Contact */}
-          <div className='mt-4 text-sm text-gray-600 space-y-1'>
-            {vendor.email && <p>Email: {vendor.email}</p>}
-            {vendor.phone && <p>Phone: {vendor.phone}</p>}
-          </div>
+        <div>
+          <h1 className='text-3xl font-bold'>{vendor.store_name}</h1>
+          <p className='text-gray-500'>{vendor.location}</p>
         </div>
       </div>
 
-      {/* Map */}
-      {vendor.latitude && vendor.longitude && (
-        <div className='max-w-6xl mx-auto px-4'>
-          <h2 className='font-semibold mb-2'>Location</h2>
+      {/* 📄 INFO */}
+      <div className='grid md:grid-cols-3 gap-8 px-6 mt-8'>
+        {/* LEFT */}
+        <div className='md:col-span-2 space-y-6'>
+          <div className='bg-white border p-6 rounded-xl'>
+            <h2 className='font-semibold text-lg mb-2'>About Store</h2>
+            <p className='text-gray-700'>{vendor.description}</p>
+          </div>
 
-          <div className='h-72 rounded-xl overflow-hidden'>
-            <MapView lat={vendor.latitude} lng={vendor.longitude} />
+          {/* 🛍️ PRODUCTS */}
+          <div>
+            <h2 className='text-xl font-semibold mb-4'>Products</h2>
+
+            {products.length === 0 && (
+              <p className='text-gray-500'>No products yet</p>
+            )}
+
+            <div className='grid grid-cols-2 md:grid-cols-3 gap-6'>
+              {products.map((product) => (
+                <div
+                  key={product.id}
+                  className='border rounded-xl overflow-hidden bg-white hover:shadow-md transition'
+                >
+                  <div className='h-40 bg-gray-100'>
+                    <img
+                      src={product.image_url ?? '/placeholder.png'}
+                      className='w-full h-full object-cover'
+                    />
+                  </div>
+
+                  <div className='p-3'>
+                    <h3 className='text-sm font-medium'>{product.name}</h3>
+
+                    <p className='text-[#10b5cb] font-semibold mt-1'>
+                      ${product.price}
+                    </p>
+
+                    <button
+                      onClick={() => addToCart(product.id)}
+                      className='mt-3 w-full bg-[#10b5cb] text-white py-2 rounded'
+                    >
+                      Add to Cart
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
-      )}
 
-      {/* Products */}
-      <div className='max-w-6xl mx-auto px-4'>
-        <h2 className='text-xl font-semibold mb-4'>Products</h2>
+        {/* RIGHT */}
+        <div className='space-y-6'>
+          {/* CONTACT */}
+          <div className='bg-white border p-6 rounded-xl'>
+            <h2 className='font-semibold mb-3'>Contact</h2>
 
-        <div className='grid grid-cols-2 md:grid-cols-4 gap-6'>
-          {products.map((product) => (
-            <div
-              key={product.id}
-              className='border rounded-xl overflow-hidden bg-white hover:shadow-md transition'
+            <p className='text-sm'>📧 {vendor.email}</p>
+            <p className='text-sm'>📞 {vendor.phone}</p>
+            <p className='text-sm'>📍 {vendor.location}</p>
+          </div>
+
+          {/* ACTIONS */}
+          <div className='bg-white border p-6 rounded-xl space-y-3'>
+            <Link
+              href={`/chat/${vendor.id}`}
+              className='block text-center bg-[#10b5cb] text-white py-2 rounded'
             >
-              <div className='h-40 bg-gray-100'>
-                <Image
-                  alt={product.name}
-                  width={400}
-                  height={400}
-                  src={product.image_url ?? '/placeholder.png'}
-                  className='w-full h-full object-cover'
-                />
-              </div>
-
-              <div className='p-3'>
-                <h3 className='text-sm font-medium line-clamp-2'>
-                  {product.name}
-                </h3>
-
-                <p className='text-[#10b5cb] font-semibold mt-1'>
-                  ${product.price}
-                </p>
-              </div>
-            </div>
-          ))}
+              💬 Chat Vendor
+            </Link>
+          </div>
         </div>
       </div>
     </div>
