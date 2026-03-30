@@ -128,6 +128,7 @@ export default function ChatOverlay() {
 
     loadMessages()
 
+    // 🔴 REAL-TIME SUBSCRIPTION
     const channel = supabase
       .channel(`chat-${activeConversation.id}`)
       .on(
@@ -152,24 +153,46 @@ export default function ChatOverlay() {
   }, [activeConversation])
 
   // -------------------------
-  // SEND MESSAGE
+  // SEND MESSAGE (Optimistic UI)
   // -------------------------
   const sendMessage = async () => {
     if (!newMessage.trim() || !activeConversation || !userId) return
 
     const text = newMessage.trim()
-    setNewMessage('') // optimistic UI
 
-    const { error } = await supabase.from('messages').insert({
+    // add message immediately
+    const tempMessage: Message = {
+      id: crypto.randomUUID(), // temporary ID
       conversation_id: activeConversation.id,
       sender_id: userId,
       message: text,
-    })
+      created_at: new Date().toISOString(),
+    }
+
+    setMessages((prev) => [...prev, tempMessage])
+    setNewMessage('')
+
+    // 🔹 Insert into DB
+    const { data, error } = await supabase
+      .from('messages')
+      .insert({
+        conversation_id: activeConversation.id,
+        sender_id: userId,
+        message: text,
+      })
+      .select()
+      .single()
 
     if (error) {
       console.error('Send error:', error)
-      setNewMessage(text) // rollback
+      // rollback if failed
+      setMessages((prev) => prev.filter((m) => m.id !== tempMessage.id))
+      setNewMessage(text)
+      return
     }
+
+    // replace temp message ID with DB ID
+    setMessages((prev) => prev.map((m) => (m.id === tempMessage.id ? data : m)))
   }
 
   // -------------------------
