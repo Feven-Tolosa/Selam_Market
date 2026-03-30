@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils'
 import Navbar from '@/components/layout/Navbar'
 import { Toaster } from 'react-hot-toast'
 import { VendorProvider } from '@/lib/VendorContext'
+import ChatOverlay from '@/components/chat/ChatOverlay'
 
 const jetbrainsMono = JetBrains_Mono({
   subsets: ['latin'],
@@ -41,6 +42,7 @@ export default function RootLayout({
           <Navbar />
           {children}
           <Toaster />
+          <ChatOverlay />
         </VendorProvider>
       </body>
     </html>

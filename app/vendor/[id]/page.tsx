@@ -6,6 +6,7 @@ import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
 import Image from 'next/image'
+import { useChatStore } from '@/store/chatStore'
 
 type Vendor = {
   id: string
@@ -40,6 +41,7 @@ export default function VendorPublicPage() {
 
   const [logoUrl, setLogoUrl] = useState('/avatar-placeholder.png')
   const [bannerUrl, setBannerUrl] = useState('/banner-placeholder.jpg')
+  const { openChat } = useChatStore()
 
   useEffect(() => {
     if (!vendorId) return
@@ -208,12 +210,12 @@ export default function VendorPublicPage() {
 
           {/* ACTIONS */}
           <div className='bg-white border p-6 rounded-xl space-y-3'>
-            <Link
-              href={`/chat/${vendor.id}`}
-              className='block text-center bg-[#10b5cb] text-white py-2 rounded'
+            <button
+              onClick={() => openChat(vendor.id)}
+              className='w-full bg-[#10b5cb] text-white py-2 rounded flex items-center justify-center gap-2 ease-in-out duration-300 hover:scale-105 transition'
             >
               💬 Chat Vendor
-            </Link>
+            </button>
           </div>
         </div>
       </div>
