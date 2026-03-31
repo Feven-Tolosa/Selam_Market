@@ -223,64 +223,68 @@ export default function ProductPage() {
           <p>{product.description}</p>
 
           <div className='flex gap-4'>
-            <button onClick={addToCart} className='btn-primary'>
+            <button
+              onClick={addToCart}
+              className='bg-[#10b5cb] text-white px-6 py-2 rounded'
+            >
               Add to Cart
             </button>
 
-            <button onClick={addToWishlist} className='btn-secondary'>
+            <button
+              onClick={addToWishlist}
+              className='border border-[#10b5cb] text-[#10b5cb] px-6 py-2 rounded'
+            >
               Save
             </button>
           </div>
-        </div>
-      </div>
+          {/* ⭐ REVIEW FORM */}
+          <div className='bg-gray-50 p-6 rounded-xl space-y-4'>
+            <h2 className='text-xl font-semibold'>Write a Review</h2>
 
-      {/* ⭐ REVIEW FORM */}
-      <div className='bg-gray-50 p-6 rounded-xl space-y-4'>
-        <h2 className='text-xl font-semibold'>Write a Review</h2>
-
-        {/* ⭐ STAR SELECTOR */}
-        <div className='flex gap-2 text-2xl'>
-          {[1, 2, 3, 4, 5].map((star) => (
-            <button key={star} onClick={() => setRating(star)}>
-              {star <= rating ? '⭐' : '☆'}
-            </button>
-          ))}
-        </div>
-
-        <textarea
-          value={comment}
-          onChange={(e) => setComment(e.target.value)}
-          placeholder='Write your review...'
-          className='w-full border rounded-lg p-3'
-        />
-
-        <button
-          onClick={addReview}
-          disabled={submitting}
-          className='bg-[#10b5cb] text-white px-6 py-2 rounded'
-        >
-          {submitting ? 'Submitting...' : 'Submit Review'}
-        </button>
-      </div>
-
-      {/* ⭐ REVIEWS LIST */}
-      <div>
-        <h2 className='text-xl font-semibold mb-4'>Reviews</h2>
-
-        {reviews.length === 0 && (
-          <p className='text-gray-500'>No reviews yet</p>
-        )}
-
-        <div className='space-y-4'>
-          {reviews.map((r) => (
-            <div key={r.id} className='border-b pb-3'>
-              <p className='text-yellow-500'>⭐ {r.rating}/5</p>
-              <p>{r.comment}</p>
-              <p className='text-xs text-gray-400'>
-                {new Date(r.created_at).toLocaleDateString()}
-              </p>
+            {/* ⭐ STAR SELECTOR */}
+            <div className='flex gap-2 text-2xl'>
+              {[1, 2, 3, 4, 5].map((star) => (
+                <button key={star} onClick={() => setRating(star)}>
+                  {star <= rating ? '⭐' : '☆'}
+                </button>
+              ))}
             </div>
-          ))}
+
+            <textarea
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              placeholder='Write your review...'
+              className='w-full border rounded-lg p-3'
+            />
+
+            <button
+              onClick={addReview}
+              disabled={submitting}
+              className='bg-[#10b5cb] text-white px-6 py-2 rounded'
+            >
+              {submitting ? 'Submitting...' : 'Submit Review'}
+            </button>
+          </div>
+          {/* ⭐ REVIEWS LIST */}
+          <div>
+            <h2 className='text-xl font-semibold mb-4'>Reviews</h2>
+
+            {reviews.length === 0 && (
+              <p className='text-gray-500'>No reviews yet</p>
+            )}
+
+            <div className='space-y-4'>
+              {reviews.map((r) => (
+                <div key={r.id} className='border-b pb-3'>
+                  <p className='text-yellow-500'>⭐ {r.rating}/5</p>
+                  <p>{r.comment}</p>
+                  <p className='text-xs text-gray-400'>
+                    {new Date(r.created_at).toLocaleDateString()}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     </div>
