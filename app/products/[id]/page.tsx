@@ -40,6 +40,11 @@ export default function ProductPage() {
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
+  // ⭐ NEW STATE
+  const [rating, setRating] = useState(0)
+  const [comment, setComment] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+
   useEffect(() => {
     async function loadData() {
       if (!id) return
@@ -66,18 +71,32 @@ export default function ProductPage() {
 
       setVendor(vendorData || null)
 
-      const { data: reviewData } = await supabase
-        .from('reviews')
-        .select('*')
-        .eq('product_id', productData.id)
-        .order('created_at', { ascending: false })
+      await fetchReviews(productData.id)
 
-      setReviews(reviewData || [])
       setLoading(false)
     }
 
     loadData()
   }, [id, router])
+
+  // 🔄 FETCH REVIEWS (REUSABLE)
+  const fetchReviews = async (productId: string) => {
+    const { data } = await supabase
+      .from('reviews')
+      .select('*')
+      .eq('product_id', productId)
+      .order('created_at', { ascending: false })
+
+    setReviews(data || [])
+  }
+
+  // 📊 AVERAGE RATING
+  const averageRating =
+    reviews.length > 0
+      ? (
+          reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length
+        ).toFixed(1)
+      : null
 
   // 🛒 ADD TO CART
   const addToCart = async () => {
@@ -111,7 +130,7 @@ export default function ProductPage() {
     toast.success('Saved ❤️')
   }
 
-  // ⭐ ADD REVIEW
+  // ⭐ ADD REVIEW (REAL)
   const addReview = async () => {
     const { data } = await supabase.auth.getUser()
 
@@ -120,48 +139,56 @@ export default function ProductPage() {
       return
     }
 
-    await supabase.from('reviews').insert({
+    if (rating === 0) {
+      toast.error('Please select a rating')
+      return
+    }
+
+    setSubmitting(true)
+
+    const { error } = await supabase.from('reviews').insert({
       user_id: data.user.id,
       product_id: product?.id,
-      rating: 5,
-      comment: 'Great product!',
+      rating,
+      comment,
     })
 
+    setSubmitting(false)
+
+    if (error) {
+      toast.error('Failed to add review')
+      return
+    }
+
     toast.success('Review added ⭐')
+
+    setRating(0)
+    setComment('')
+
+    if (product) {
+      await fetchReviews(product.id)
+    }
   }
 
-  if (loading) {
-    return (
-      <div className='p-10 grid md:grid-cols-2 gap-8 animate-pulse'>
-        <div className='h-400 bg-gray-200 rounded-xl' />
-        <div className='space-y-4'>
-          <div className='h-8 w-2/3 bg-gray-200 rounded' />
-          <div className='h-6 w-1/3 bg-gray-200 rounded' />
-        </div>
-      </div>
-    )
-  }
-
+  if (loading) return <p className='p-10'>Loading...</p>
   if (!product) return <p className='p-10'>Product not found</p>
 
   return (
     <div className='max-w-7xl mx-auto px-6 py-10 space-y-10'>
-      {/* TOP SECTION */}
+      {/* PRODUCT */}
       <div className='grid md:grid-cols-2 gap-12'>
-        {/* 🖼️ IMAGE GALLERY */}
+        {/* IMAGES */}
         <div className='space-y-4'>
-          <div className='rounded-xl overflow-hidden shadow'>
-            <Image
-              src={selectedImage || product.image_url || '/placeholder.png'}
-              alt={product.name}
-              width={700}
-              height={700}
-              className='w-full h-450px object-cover hover:scale-105 transition hover:shadow-lg ease-in-out duration-300'
-            />
-          </div>
+          <Image
+            src={selectedImage || product.image_url || '/placeholder.png'}
+            alt={product.name}
+            width={700}
+            height={700}
+            className='rounded-xl object-cover'
+          />
 
           <div className='flex gap-3'>
-            {(product.images && product.images.length > 0
+            {(product.images?.length
               ? product.images
               : [product.image_url]
             ).map((img) => (
@@ -172,83 +199,73 @@ export default function ProductPage() {
                 width={80}
                 height={80}
                 onClick={() => setSelectedImage(img)}
-                className='cursor-pointer rounded-lg border hover:scale-105 transition'
+                className='cursor-pointer rounded-lg border'
               />
             ))}
           </div>
         </div>
 
-        {/* 📦 PRODUCT INFO */}
+        {/* INFO */}
         <div className='space-y-6'>
           <h1 className='text-4xl font-bold'>{product.name}</h1>
+
+          {/* ⭐ AVG RATING */}
+          {averageRating && (
+            <p className='text-yellow-500 text-lg'>
+              ⭐ {averageRating} ({reviews.length} reviews)
+            </p>
+          )}
 
           <p className='text-3xl text-[#10b5cb] font-semibold'>
             ${product.price.toFixed(2)}
           </p>
 
-          <span className='bg-gray-100 px-3 py-1 rounded-full text-sm'>
-            {product.category}
-          </span>
+          <p>{product.description}</p>
 
-          {vendor && (
-            <Link
-              href={`/store/${vendor.id}`}
-              className='block text-blue-600 hover:underline'
-            >
-              {vendor.store_name}
-            </Link>
-          )}
-
-          <p className='text-green-600 font-medium'>✔ In stock</p>
-
-          {/* DELIVERY */}
-          <div className='bg-gray-50 p-4 rounded-xl text-sm'>
-            <p>🚚 Ships in 2–3 days</p>
-            <p>💳 Cash on delivery available</p>
-          </div>
-
-          <p className='text-gray-700'>{product.description}</p>
-
-          {/* ACTIONS */}
-          <div className='flex gap-4 flex-wrap'>
-            <button
-              onClick={addToCart}
-              className='px-8 py-3 bg-[#10b5cb] text-white rounded-xl hover:opacity-90'
-            >
+          <div className='flex gap-4'>
+            <button onClick={addToCart} className='btn-primary'>
               Add to Cart
             </button>
 
-            <button
-              onClick={addToWishlist}
-              className='px-6 py-3 border rounded-xl hover:bg-gray-100'
-            >
-              ⩎ Save
+            <button onClick={addToWishlist} className='btn-secondary'>
+              Save
             </button>
-
-            {vendor && (
-              <Link
-                href={`/chat/${vendor.id}?product=${product.id}`}
-                className='px-6 py-3 bg-[#10b5cb] text-white rounded-xl'
-              >
-                💬 Chat
-              </Link>
-            )}
           </div>
         </div>
       </div>
 
-      {/* ⭐ REVIEWS */}
-      <div>
-        <div className='flex justify-between items-center mb-4'>
-          <h2 className='text-xl font-semibold'>Reviews</h2>
+      {/* ⭐ REVIEW FORM */}
+      <div className='bg-gray-50 p-6 rounded-xl space-y-4'>
+        <h2 className='text-xl font-semibold'>Write a Review</h2>
 
-          <button
-            onClick={addReview}
-            className='text-sm bg-gray-200 px-3 py-1 rounded'
-          >
-            Add Review
-          </button>
+        {/* ⭐ STAR SELECTOR */}
+        <div className='flex gap-2 text-2xl'>
+          {[1, 2, 3, 4, 5].map((star) => (
+            <button key={star} onClick={() => setRating(star)}>
+              {star <= rating ? '⭐' : '☆'}
+            </button>
+          ))}
         </div>
+
+        <textarea
+          value={comment}
+          onChange={(e) => setComment(e.target.value)}
+          placeholder='Write your review...'
+          className='w-full border rounded-lg p-3'
+        />
+
+        <button
+          onClick={addReview}
+          disabled={submitting}
+          className='bg-[#10b5cb] text-white px-6 py-2 rounded'
+        >
+          {submitting ? 'Submitting...' : 'Submit Review'}
+        </button>
+      </div>
+
+      {/* ⭐ REVIEWS LIST */}
+      <div>
+        <h2 className='text-xl font-semibold mb-4'>Reviews</h2>
 
         {reviews.length === 0 && (
           <p className='text-gray-500'>No reviews yet</p>
@@ -258,7 +275,10 @@ export default function ProductPage() {
           {reviews.map((r) => (
             <div key={r.id} className='border-b pb-3'>
               <p className='text-yellow-500'>⭐ {r.rating}/5</p>
-              <p className='text-gray-700'>{r.comment}</p>
+              <p>{r.comment}</p>
+              <p className='text-xs text-gray-400'>
+                {new Date(r.created_at).toLocaleDateString()}
+              </p>
             </div>
           ))}
         </div>
