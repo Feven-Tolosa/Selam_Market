@@ -58,12 +58,12 @@ export default function CategoriesSection() {
 
         <div className='grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-6'>
           {categories.map((cat) => {
-            const Icon = iconMap[cat.slug] || Home // fallback icon
+            const Icon = iconMap[cat.id] || Home // fallback icon
 
             return (
               <Link
                 key={cat.id}
-                href={`/category/${cat.slug}`}
+                href={`/categories/${cat.id}`}
                 className='border rounded-xl p-6 flex flex-col items-center justify-center hover:border-[#10b5cb] hover:shadow-md transition'
               >
                 <div className='bg-[#10b5cb]/10 p-3 rounded-full mb-3'>
@@ -73,6 +73,7 @@ export default function CategoriesSection() {
                 <span className='text-gray-700 text-sm font-medium'>
                   {cat.name}
                 </span>
+                
               </Link>
             )
           })}
