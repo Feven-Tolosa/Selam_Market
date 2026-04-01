@@ -152,7 +152,7 @@ export default function Navbar() {
           <input
             type='text'
             placeholder='Search products...'
-            className='w-full rounded-md py-2 px-4 border focus:ring-2 focus:ring-[#10b5cb] outline-none'
+            className='w-full rounded-md py-2 px-4 border ring-1 ring-[#55b8c5] focus:ring-2 focus:ring-[#10b5cb] outline-none'
           />
         </div>
 
