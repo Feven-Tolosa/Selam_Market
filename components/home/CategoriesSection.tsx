@@ -73,7 +73,6 @@ export default function CategoriesSection() {
                 <span className='text-gray-700 text-sm font-medium'>
                   {cat.name}
                 </span>
-                
               </Link>
             )
           })}

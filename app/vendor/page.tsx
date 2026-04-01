@@ -99,7 +99,7 @@ export default function VendorsPage() {
     setLoading(true)
 
     try {
-      // ✅ If user location exists → 
+      // ✅ If user location exists →
       if (coords) {
         const { data, error } = await supabase.rpc('nearby_vendors', {
           user_lat: coords.lat,

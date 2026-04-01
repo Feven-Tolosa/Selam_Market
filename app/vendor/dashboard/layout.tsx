@@ -18,13 +18,7 @@ export default function VendorLayout({
             href='/vendor/dashboard'
             className='block px-4 py-2 rounded hover:bg-[#10b5cb]/10'
           >
-            Store Profile
-          </Link>
-          <Link
-            href='/vendor/dashboard'
-            className='block px-4 py-2 rounded hover:bg-[#10b5cb]/10'
-          >
-            Overview
+            Profile
           </Link>
 
           <Link
@@ -45,7 +39,7 @@ export default function VendorLayout({
             href='/vendor/dashboard/settings'
             className='block px-4 py-2 rounded hover:bg-[#10b5cb]/10'
           >
-            Store Settings
+            Settings
           </Link>
         </nav>
       </aside>
