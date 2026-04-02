@@ -35,10 +35,15 @@ export default function TopVendors() {
 
   const fetchTopVendors = async () => {
     const { data, error } = await supabase
-      .from('vendors')
+      .from('vendor_ratings')
       .select('*')
-      .order('rating', { ascending: false })
       .limit(6)
+
+    // const { data, error } = await supabase
+    //   .from('vendors')
+    //   .select('*')
+    //   .order('rating', { ascending: false })
+    //   .limit(6)
 
     if (error) {
       console.error('Error fetching vendors:', error.message)

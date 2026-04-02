@@ -28,6 +28,22 @@ type Product = {
   image_url: string | null
 }
 
+type Review = {
+  id: string
+  rating: number
+  comment: string | null
+  created_at: string
+  user_id: string
+  vendor_id: string
+  edited?: boolean // ✅ new
+}
+
+type RatingStats = {
+  vendor_id: string
+  average_rating: number
+  total_reviews: number
+}
+
 export default function VendorPublicPage() {
   const params = useParams()
   const router = useRouter()
@@ -46,6 +62,11 @@ export default function VendorPublicPage() {
   const [averageRating, setAverageRating] = useState<number>(0)
   const [userRating, setUserRating] = useState<number>(0)
   const [ratingLoading, setRatingLoading] = useState(false)
+
+  const [reviews, setReviews] = useState<Review[]>([])
+  const [comment, setComment] = useState('')
+  const [stats, setStats] = useState<RatingStats | null>(null)
+  const [showAllReviews, setShowAllReviews] = useState(false)
 
   useEffect(() => {
     if (!vendorId) return
@@ -91,12 +112,13 @@ export default function VendorPublicPage() {
         .select('id,name,price,image_url')
         .eq('vendor_id', vendorData.id)
 
-      setProducts(productData || [])
+      setProducts(productData ?? [])
 
       // ⭐ Load ratings
       const { data: ratings } = await supabase
         .from('vendor_ratings')
         .select('rating')
+        .eq('vendor_id', vendorData.id)
 
       if (ratings && ratings.length > 0) {
         const avg =
@@ -118,6 +140,26 @@ export default function VendorPublicPage() {
         if (myRating) {
           setUserRating(myRating.rating)
         }
+      }
+
+      // ⭐ Fetch reviews
+      const { data: reviewData } = await supabase
+        .from('vendor_ratings')
+        .select('*')
+        .eq('vendor_id', vendorData.id)
+        .order('created_at', { ascending: false })
+
+      setReviews((reviewData ?? []) as Review[])
+
+      // 📊 Fetch stats
+      const { data: statsData } = await supabase
+        .from('vendor_rating_stats')
+        .select('*')
+        .eq('vendor_id', vendorData.id)
+        .single()
+
+      if (statsData) {
+        setStats(statsData as RatingStats)
       }
 
       setLoading(false)
@@ -152,8 +194,77 @@ export default function VendorPublicPage() {
     setRatingLoading(false)
   }
 
+  // ✅ FIXED: now properly outside
+  const submitReview = async (value: number) => {
+    const { data } = await supabase.auth.getUser()
+
+    if (!data.user) {
+      toast.error('Login required')
+      return
+    }
+
+    if (!vendor) {
+      toast.error('Vendor not loaded')
+      return
+    }
+
+    if (!comment.trim()) {
+      toast.error('Comment cannot be empty')
+      return
+    }
+
+    // 🔍 check if user already reviewed
+    const existing = reviews.find((r) => r.user_id === data.user.id)
+
+    const { error } = await supabase.from('vendor_ratings').upsert(
+      {
+        vendor_id: vendor.id,
+        user_id: data.user.id,
+        rating: value,
+        comment,
+      },
+      {
+        onConflict: 'vendor_id,user_id',
+      },
+    )
+
+    if (error) {
+      console.error(error)
+      toast.error(error.message)
+      return
+    }
+
+    const newReview = {
+      id: existing?.id || crypto.randomUUID(),
+      rating: value,
+      comment,
+      created_at: new Date().toISOString(),
+      user_id: data.user.id,
+      vendor_id: vendor.id,
+      edited: !!existing, // ✅ mark edited
+    }
+
+    // ✅ prevent duplicate + replace old review
+    const updatedReviews = existing
+      ? reviews.map((r) => (r.user_id === data.user!.id ? newReview : r))
+      : [newReview, ...reviews]
+
+    setReviews(updatedReviews)
+
+    // ⚡ auto update average rating
+    const avg =
+      updatedReviews.reduce((sum, r) => sum + r.rating, 0) /
+      updatedReviews.length
+
+    setAverageRating(Number(avg.toFixed(1)))
+
+    toast.success(existing ? 'Review updated ✏️' : 'Review submitted ⭐')
+
+    setComment('')
+  }
+
   // 🛒 ADD TO CART
-  const addToCart = async () => {
+  const addToCart = async (productId: string) => {
     const { data } = await supabase.auth.getUser()
 
     if (!data.user) {
@@ -163,7 +274,7 @@ export default function VendorPublicPage() {
 
     await supabase.from('cart_items').insert({
       user_id: data.user.id,
-      product_id: products[0]?.id,
+      product_id: productId,
       quantity: 1,
     })
 
@@ -242,7 +353,7 @@ export default function VendorPublicPage() {
                     </Link>
 
                     <button
-                      onClick={addToCart}
+                      onClick={() => addToCart(product.id)}
                       className='mt-3 w-full bg-[#10b5cb] text-white py-2 rounded'
                     >
                       Add to Cart
@@ -291,6 +402,58 @@ export default function VendorPublicPage() {
             <p className='text-xs text-gray-400 mt-2'>
               Tap a star to rate this vendor
             </p>
+          </div>
+
+          <textarea
+            value={comment}
+            onChange={(e) => setComment(e.target.value)}
+            placeholder='Write your review...'
+            className='w-full border rounded p-2 mt-3 text-sm'
+          />
+
+          <button
+            onClick={() => submitReview(userRating || 5)}
+            className='mt-3 w-full bg-[#10b5cb] text-white py-2 rounded'
+          >
+            Submit Review
+          </button>
+
+          <div className='bg-white border p-6 rounded-xl mt-6'>
+            <h2 className='font-semibold mb-4'>Customer Reviews</h2>
+
+            {reviews.length === 0 && (
+              <p className='text-gray-500'>No reviews yet</p>
+            )}
+
+            <div className='space-y-4'>
+              {(showAllReviews ? reviews : reviews.slice(0, 3)).map((r) => (
+                <div key={r.id} className='border-b pb-3'>
+                  <p className='text-yellow-400'>
+                    {'★'.repeat(r.rating)}
+                    {'☆'.repeat(5 - r.rating)}
+                  </p>
+
+                  {r.comment && (
+                    <p className='text-sm text-gray-700 mt-1'>{r.comment}</p>
+                  )}
+
+                  <p className='text-xs text-gray-400 mt-1'>
+                    {new Date(r.created_at).toLocaleDateString()}
+                  </p>
+                  {r.edited && (
+                    <p className='text-xs text-gray-400 italic'>Edited</p>
+                  )}
+                </div>
+              ))}
+              {reviews.length > 3 && (
+                <button
+                  onClick={() => setShowAllReviews(!showAllReviews)}
+                  className='text-sm text-[#10b5cb] mt-2 flex items-center gap-1'
+                >
+                  {showAllReviews ? 'Show less ▲' : 'Show all ▼'}
+                </button>
+              )}
+            </div>
           </div>
 
           {/* ACTIONS */}
