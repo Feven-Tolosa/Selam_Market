@@ -14,7 +14,7 @@ export default function ProductsPage() {
   const [categories, setCategories] = useState<Category[]>([])
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [search, setSearch] = useState('')
-  const [sort, setSort] = useState('latest')
+  const [sort, setSort] = useState('latest')``
 
   useEffect(() => {
     async function fetchData() {

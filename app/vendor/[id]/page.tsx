@@ -43,6 +43,10 @@ export default function VendorPublicPage() {
   const [bannerUrl, setBannerUrl] = useState('/banner-placeholder.jpg')
   const { openChat } = useChatStore()
 
+  const [averageRating, setAverageRating] = useState<number>(0)
+  const [userRating, setUserRating] = useState<number>(0)
+  const [ratingLoading, setRatingLoading] = useState(false)
+
   useEffect(() => {
     if (!vendorId) return
 
@@ -89,11 +93,64 @@ export default function VendorPublicPage() {
 
       setProducts(productData || [])
 
+      // ⭐ Load ratings
+      const { data: ratings } = await supabase
+        .from('vendor_ratings')
+        .select('rating')
+
+      if (ratings && ratings.length > 0) {
+        const avg =
+          ratings.reduce((sum, r) => sum + r.rating, 0) / ratings.length
+        setAverageRating(Number(avg.toFixed(1)))
+      }
+
+      // ✅ Get current user's rating
+      const { data: userData } = await supabase.auth.getUser()
+
+      if (userData.user) {
+        const { data: myRating } = await supabase
+          .from('vendor_ratings')
+          .select('rating')
+          .eq('vendor_id', vendorData.id)
+          .eq('user_id', userData.user.id)
+          .single()
+
+        if (myRating) {
+          setUserRating(myRating.rating)
+        }
+      }
+
       setLoading(false)
     }
 
     loadData()
   }, [vendorId, router])
+
+  const handleRating = async (value: number) => {
+    const { data } = await supabase.auth.getUser()
+
+    if (!data.user) {
+      toast.error('Login required')
+      return
+    }
+
+    setRatingLoading(true)
+
+    const { error } = await supabase.from('vendor_ratings').upsert({
+      vendor_id: vendor?.id,
+      user_id: data.user.id,
+      rating: value,
+    })
+
+    if (error) {
+      toast.error('Failed to rate')
+    } else {
+      setUserRating(value)
+      toast.success('Rating submitted ⭐')
+    }
+
+    setRatingLoading(false)
+  }
 
   // 🛒 ADD TO CART
   const addToCart = async () => {
@@ -206,6 +263,34 @@ export default function VendorPublicPage() {
             <p className='text-sm'>📧 {vendor.email}</p>
             <p className='text-sm'>📞 {vendor.phone}</p>
             <p className='text-sm'>📍 {vendor.location}</p>
+          </div>
+
+          {/* ⭐ RATING */}
+          <div className='bg-white border p-6 rounded-xl'>
+            <h2 className='font-semibold mb-3'>Rating</h2>
+
+            <p className='text-sm text-gray-500 mb-2'>
+              Average Rating: ⭐ {averageRating || 'No ratings yet'}
+            </p>
+
+            <div className='flex gap-2'>
+              {[1, 2, 3, 4, 5].map((star) => (
+                <button
+                  key={star}
+                  disabled={ratingLoading}
+                  onClick={() => handleRating(star)}
+                  className={`text-2xl transition ${
+                    star <= userRating ? 'text-yellow-400' : 'text-gray-300'
+                  } hover:scale-110`}
+                >
+                  ★
+                </button>
+              ))}
+            </div>
+
+            <p className='text-xs text-gray-400 mt-2'>
+              Tap a star to rate this vendor
+            </p>
           </div>
 
           {/* ACTIONS */}
