@@ -2,33 +2,96 @@
 
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
-import type { Product, Category } from '@/types'
+import type { Category } from '@/types'
 import ProductCard from '@/components/product/ProductCard'
 
-type product = {
+type ProductWithExtras = {
+  id: string
+  name: string
+  price: number
+  image_url: string | null
+  category_id: string
   category_name?: string
+
   rating?: number
   ratingCount?: number
+  distance?: number
+
+  vendors?: {
+    latitude: number
+    longitude: number
+  }
 }
+
 export default function ProductsPage() {
-  const [products, setProducts] = useState<Product[]>([])
+  const [products, setProducts] = useState<ProductWithExtras[]>([])
   const [categories, setCategories] = useState<Category[]>([])
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [search, setSearch] = useState('')
   const [sort, setSort] = useState('latest')
+  const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(
+    null,
+  )
 
+  // 📍 Get user location
+  const getUserLocation = () => {
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setCoords({
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude,
+        })
+      },
+      () => console.log('Location denied'),
+    )
+  }
+
+  // 📏 Distance
+  const getDistance = (
+    lat1: number,
+    lon1: number,
+    lat2: number,
+    lon2: number,
+  ) => {
+    const R = 6371
+    const dLat = ((lat2 - lat1) * Math.PI) / 180
+    const dLon = ((lon2 - lon1) * Math.PI) / 180
+
+    const a =
+      Math.sin(dLat / 2) ** 2 +
+      Math.cos((lat1 * Math.PI) / 180) *
+        Math.cos((lat2 * Math.PI) / 180) *
+        Math.sin(dLon / 2) ** 2
+
+    return 2 * R * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+  }
+
+  // 📍 Trigger location when "Nearby" selected
+  useEffect(() => {
+    if (sort === 'nearby' && !coords) {
+      getUserLocation()
+    }
+  }, [sort])
+
+  // 📦 Fetch data
   useEffect(() => {
     async function fetchData() {
-      // products + categories
-      const { data: p } = await supabase.from('products').select('*')
+      // products + vendor location
+      const { data: p } = await supabase.from('products').select(`
+        *,
+        vendors (
+          latitude,
+          longitude
+        )
+      `)
+
       const { data: c } = await supabase.from('categories').select('*')
 
-      // ratings
       const { data: r } = await supabase
         .from('reviews')
         .select('product_id, rating')
 
-      // build rating map
+      // ⭐ rating map
       const map: Record<string, { total: number; count: number }> = {}
 
       r?.forEach((rev) => {
@@ -39,8 +102,7 @@ export default function ProductsPage() {
         map[rev.product_id].count++
       })
 
-      // attach ratings to products
-      const productsWithRatings =
+      const enriched =
         p?.map((prod) => {
           const stats = map[prod.id]
 
@@ -51,15 +113,15 @@ export default function ProductsPage() {
           }
         }) || []
 
-      setProducts(productsWithRatings)
+      setProducts(enriched)
       setCategories(c || [])
     }
 
     fetchData()
   }, [])
 
-  // ✅ FILTER + SEARCH + SORT
-  let filtered = products
+  // 🔍 FILTER + SORT
+  let filtered = [...products]
 
   if (selectedCategory !== 'all') {
     filtered = filtered.filter((p) => p.category_id === selectedCategory)
@@ -71,36 +133,57 @@ export default function ProductsPage() {
     )
   }
 
+  // sorting
   if (sort === 'low') {
-    filtered = [...filtered].sort((a, b) => a.price - b.price)
+    filtered.sort((a, b) => a.price - b.price)
   }
 
   if (sort === 'high') {
-    filtered = [...filtered].sort((a, b) => b.price - a.price)
+    filtered.sort((a, b) => b.price - a.price)
   }
 
   if (sort === 'rating') {
-    filtered = [...filtered].sort((a, b) => (b.rating || 0) - (a.rating || 0))
+    filtered.sort((a, b) => (b.rating || 0) - (a.rating || 0))
+  }
+
+  // 📍 nearby sorting
+  if (sort === 'nearby' && coords) {
+    filtered = filtered
+      .map((p) => {
+        if (!p.vendors) return p
+
+        const distance = getDistance(
+          coords.lat,
+          coords.lng,
+          p.vendors.latitude,
+          p.vendors.longitude,
+        )
+
+        return { ...p, distance }
+      })
+      .sort((a, b) => (a.distance || 0) - (b.distance || 0))
   }
 
   return (
     <div className='max-w-7xl mx-auto px-6 py-10'>
-      {/* TOP BAR */}
+      <h1 className='text-2xl font-bold mb-6 text-[#10b5cb]'>
+        Explore Products
+      </h1>
+
+      {/* FILTERS */}
       <div className='flex flex-col md:flex-row gap-4 mb-8'>
-        {/* SEARCH */}
         <input
           type='text'
           placeholder='Search products...'
-          className='border rounded-lg px-4 py-2 w-full md:w-2/3 focus:ring-2 focus:ring-[#10b5cb]'
           value={search}
           onChange={(e) => setSearch(e.target.value)}
+          className='border rounded-lg px-4 py-2 w-full md:w-2/3'
         />
 
-        {/* CATEGORY FILTER */}
         <select
           value={selectedCategory}
           onChange={(e) => setSelectedCategory(e.target.value)}
-          className='border rounded-lg px-3 py-2 focus:ring-2 focus:ring-[#10b5cb]'
+          className='border rounded-lg px-3 py-2'
         >
           <option value='all'>All Categories</option>
           {categories.map((cat) => (
@@ -110,16 +193,16 @@ export default function ProductsPage() {
           ))}
         </select>
 
-        {/* SORT */}
         <select
           value={sort}
           onChange={(e) => setSort(e.target.value)}
-          className='border rounded-lg px-3 py-2 focus:ring-2 focus:ring-[#10b5cb]'
+          className='border rounded-lg px-3 py-2'
         >
           <option value='latest'>Latest</option>
           <option value='low'>Price: Low → High</option>
           <option value='high'>Price: High → Low</option>
-          <option value='rating'>Top Rated</option>
+          <option value='rating'>Top Rated ⭐</option>
+          <option value='nearby'>Nearby 📍</option>
         </select>
       </div>
 

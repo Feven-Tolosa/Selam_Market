@@ -184,7 +184,7 @@ export default function ProductPage() {
             alt={product.name}
             width={700}
             height={700}
-            className='rounded-xl object-cover'
+            className='rounded-xl object-cover transform ease-in-out duration-300 hover:scale-105'
           />
 
           <div className='flex gap-3'>

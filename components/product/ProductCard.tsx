@@ -11,6 +11,7 @@ export interface Product {
   category_name?: string
   rating?: number
   ratingCount?: number
+  distance?: number
 }
 
 export default function ProductCard({ product }: { product: Product }) {
@@ -54,6 +55,11 @@ export default function ProductCard({ product }: { product: Product }) {
         {/* Category */}
         {product.category_name && (
           <p className='text-gray-400 text-xs'>{product.category_name}</p>
+        )}
+        {product.distance && (
+          <p className='text-xs text-gray-400'>
+            📍 {product.distance.toFixed(1)} km away
+          </p>
         )}
       </div>
     </Link>
