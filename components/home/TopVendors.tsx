@@ -18,7 +18,7 @@ interface Vendor {
   latitude: number
   longitude: number
   created_at: string
-  rating: number
+  rating?: number
 }
 
 export default function TopVendors() {
@@ -34,24 +34,54 @@ export default function TopVendors() {
   }
 
   const fetchTopVendors = async () => {
-    const { data, error } = await supabase
-      .from('vendor_ratings')
+    // Step 1: get vendors
+    const { data: vendorsData, error: vendorsError } = await supabase
+      .from('vendors')
       .select('*')
       .limit(6)
 
-    // const { data, error } = await supabase
-    //   .from('vendors')
-    //   .select('*')
-    //   .order('rating', { ascending: false })
-    //   .limit(6)
-
-    if (error) {
-      console.error('Error fetching vendors:', error.message)
+    if (vendorsError) {
+      console.error('Error fetching vendors:', vendorsError.message)
       setLoading(false)
       return
     }
 
-    setVendors(data || [])
+    // Step 2: get ratings grouped by vendor_id
+    const { data: ratingsData, error: ratingsError } = await supabase
+      .from('vendor_ratings')
+      .select('vendor_id, rating')
+
+    if (ratingsError) {
+      console.error('Error fetching ratings:', ratingsError.message)
+      setLoading(false)
+      return
+    }
+
+    // Step 3: calculate averages
+    const ratingMap: Record<string, { total: number; count: number }> = {}
+
+    ratingsData.forEach((r) => {
+      if (!ratingMap[r.vendor_id]) {
+        ratingMap[r.vendor_id] = { total: 0, count: 0 }
+      }
+      ratingMap[r.vendor_id].total += r.rating
+      ratingMap[r.vendor_id].count += 1
+    })
+
+    // Step 4: merge with vendors
+    const vendorsWithRatings = vendorsData.map((vendor) => {
+      const stats = ratingMap[vendor.id]
+
+      return {
+        ...vendor,
+        rating: stats ? stats.total / stats.count : 0,
+      }
+    })
+
+    // Optional: sort by rating
+    vendorsWithRatings.sort((a, b) => b.rating - a.rating)
+
+    setVendors(vendorsWithRatings)
     setLoading(false)
   }
   useEffect(() => {
@@ -113,7 +143,7 @@ export default function TopVendors() {
 
               <div className='mt-2 flex justify-between text-sm'>
                 <span>{vendor.location}</span>
-                <span>⭐ {vendor.rating || 0}</span>
+                <span>⭐ {(vendor.rating ?? 0).toFixed(1)}</span>
               </div>
             </div>
           </Link>
