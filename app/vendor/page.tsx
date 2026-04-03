@@ -2,22 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
-import Image from 'next/image'
-import Link from 'next/link'
 import dynamic from 'next/dynamic'
-
-import { useMapEvents } from 'react-leaflet'
-
-function MapEvents({ onMove }: { onMove: (lat: number, lng: number) => void }) {
-  useMapEvents({
-    moveend: (e) => {
-      const center = e.target.getCenter()
-      onMove(center.lat, center.lng)
-    },
-  })
-
-  return null
-}
+import VendorCard from '@/components/vendor/VendorCard'
 
 interface Product {
   name: string
@@ -31,10 +17,12 @@ interface Vendor {
   banner_url: string
   logo_url: string
   location: string
-  rating: number
   latitude: number
   longitude: number
   products: Product[]
+  rating?: number
+  ratingCount?: number
+  distance?: number
 }
 
 export default function VendorsPage() {
@@ -47,13 +35,6 @@ export default function VendorsPage() {
     null,
   )
   const [loading, setLoading] = useState(true)
-
-  // ✅ Image helper
-  const getImageUrl = (bucket: string, path: string | null) => {
-    if (!path) return '/placeholder.jpg'
-    const { data } = supabase.storage.from(bucket).getPublicUrl(path)
-    return data.publicUrl
-  }
 
   const VendorsMap = dynamic(() => import('@/components/vendor/VendorsMap'), {
     ssr: false,
@@ -72,7 +53,7 @@ export default function VendorsPage() {
     )
   }
 
-  // ✅ Haversine formula (distance in KM)
+  // ✅ Distance formula
   const getDistance = (
     lat1: number,
     lon1: number,
@@ -84,22 +65,48 @@ export default function VendorsPage() {
     const dLon = ((lon2 - lon1) * Math.PI) / 180
 
     const a =
-      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.sin(dLat / 2) ** 2 +
       Math.cos((lat1 * Math.PI) / 180) *
         Math.cos((lat2 * Math.PI) / 180) *
-        Math.sin(dLon / 2) *
-        Math.sin(dLon / 2)
+        Math.sin(dLon / 2) ** 2
 
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
-    return R * c
+    return 2 * R * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
   }
 
-  // ✅ Fetch vendors
+  // ✅ Fetch ratings separately
+  const attachRatings = async (vendorsData: Vendor[]) => {
+    const { data: ratings } = await supabase
+      .from('vendor_ratings')
+      .select('vendor_id, rating')
+
+    const map: Record<string, { total: number; count: number }> = {}
+
+    ratings?.forEach((r) => {
+      if (!map[r.vendor_id]) {
+        map[r.vendor_id] = { total: 0, count: 0 }
+      }
+      map[r.vendor_id].total += r.rating
+      map[r.vendor_id].count++
+    })
+
+    return vendorsData.map((v) => {
+      const stats = map[v.id]
+      return {
+        ...v,
+        rating: stats ? stats.total / stats.count : 0,
+        ratingCount: stats ? stats.count : 0,
+      }
+    })
+  }
+
+  // ✅ Main fetch
   const fetchVendors = async () => {
     setLoading(true)
 
     try {
-      // ✅ If user location exists →
+      let vendorsData: Vendor[] = []
+
+      // 🔥 CASE 1: Nearby vendors (RPC)
       if (coords) {
         const { data, error } = await supabase.rpc('nearby_vendors', {
           user_lat: coords.lat,
@@ -108,111 +115,57 @@ export default function VendorsPage() {
         })
 
         if (error) throw error
+        vendorsData = data || []
+      } else {
+        // 🔥 CASE 2: Normal query
+        let query = supabase.from('vendors').select(`
+          *,
+          products (
+            name,
+            category
+          )
+        `)
 
-        setVendors(data || [])
-        setLoading(false)
-        return
+        if (search) query = query.ilike('store_name', `%${search}%`)
+        if (location) query = query.ilike('location', `%${location}%`)
+        if (product) query = query.ilike('products.name', `%${product}%`)
+        if (category) query = query.eq('products.category', category)
+
+        const { data, error } = await query
+        if (error) throw error
+
+        vendorsData = data || []
       }
 
-      // ✅ Otherwise it fallback to normal search
-      let query = supabase.from('vendors').select(`
-        *,
-        products (
-          name,
-          category
-        )
-      `)
+      // ✅ Attach ratings
+      let result = await attachRatings(vendorsData)
 
-      if (search) {
-        query = query.ilike('store_name', `%${search}%`)
+      // ✅ Add distance if coords exist
+      if (coords) {
+        result = result
+          .map((v) => ({
+            ...v,
+            distance: getDistance(
+              coords.lat,
+              coords.lng,
+              v.latitude,
+              v.longitude,
+            ),
+          }))
+          .sort((a, b) => (a.distance || 0) - (b.distance || 0))
       }
 
-      if (location) {
-        query = query.ilike('location', `%${location}%`)
-      }
-
-      if (product) {
-        query = query.ilike('products.name', `%${product}%`)
-      }
-
-      if (category) {
-        query = query.eq('products.category', category)
-      }
-
-      const { data, error } = await query
-
-      if (error) throw error
-
-      setVendors(data || [])
+      setVendors(result)
     } catch (err) {
-      console.error(err)
+      console.error('Error:', err)
     } finally {
       setLoading(false)
     }
-
-    let query = supabase.from('vendors').select(`
-        *,
-        products (
-          name,
-          category
-        )
-      `)
-
-    if (search) {
-      query = query.ilike('store_name', `%${search}%`)
-    }
-
-    if (location) {
-      query = query.ilike('location', `%${location}%`)
-    }
-
-    if (product) {
-      query = query.ilike('products.name', `%${product}%`)
-    }
-
-    if (category) {
-      query = query.eq('products.category', category)
-    }
-
-    const { data, error } = await query
-
-    if (error) {
-      console.error(error.message)
-      setLoading(false)
-      return
-    }
-
-    let result: Vendor[] = data || []
-
-    // ✅ Distance + Sorting
-    if (coords) {
-      result = result
-        .map((vendor) => {
-          const distance = getDistance(
-            coords.lat,
-            coords.lng,
-            vendor.latitude,
-            vendor.longitude,
-          )
-
-          return {
-            ...vendor,
-            distance,
-          }
-        })
-        .sort((a, b) => a.distance - b.distance)
-    }
-
-    setVendors(result)
-    setLoading(false)
   }
 
-  // ✅ Debounced auto search
+  // ✅ Debounce
   useEffect(() => {
-    const delay = setTimeout(() => {
-      fetchVendors()
-    }, 400)
-
+    const delay = setTimeout(fetchVendors, 400)
     return () => clearTimeout(delay)
   }, [search, location, category, product, coords])
 
@@ -220,8 +173,8 @@ export default function VendorsPage() {
     <div className='p-6 bg-white min-h-screen'>
       <h1 className='text-2xl font-bold mb-6 text-[#10b5cb]'>Find Vendors</h1>
 
-      {/* 🔍 Filters */}
-      <div className='grid md:grid-cols-5 gap-4 mb-6'>
+      {/* Filters */}
+      <div className='grid md:grid-cols-4 gap-4 mb-6'>
         <input
           placeholder='Store name...'
           value={search}
@@ -236,12 +189,12 @@ export default function VendorsPage() {
           className='border p-2 rounded'
         />
 
-        <input
+        {/* <input
           placeholder='Product...'
           value={product}
           onChange={(e) => setProduct(e.target.value)}
           className='border p-2 rounded'
-        />
+        /> */}
 
         <select
           value={category}
@@ -271,61 +224,8 @@ export default function VendorsPage() {
       ) : (
         <div className='grid sm:grid-cols-2 md:grid-cols-3 gap-6'>
           {vendors.map((vendor) => (
-            <Link
-              key={vendor.id}
-              href={`/vendor/${vendor.id}`}
-              className='border rounded-lg overflow-hidden hover:shadow-lg transition'
-            >
-              <div className='relative h-40'>
-                <Image
-                  src={getImageUrl('vendor-banners', vendor.banner_url)}
-                  alt='banner'
-                  fill
-                  className='object-cover'
-                />
-              </div>
-
-              <div className='p-4'>
-                <div className='flex items-center gap-2 mb-2'>
-                  <Image
-                    src={getImageUrl('vendor-logos', vendor.logo_url)}
-                    alt='logo'
-                    width={35}
-                    height={35}
-                    className='rounded-full'
-                  />
-                  <h3 className='font-semibold'>{vendor.store_name}</h3>
-                </div>
-
-                <p className='text-sm text-gray-500 line-clamp-2'>
-                  {vendor.description}
-                </p>
-
-                <div className='flex justify-between mt-2 text-sm'>
-                  <span>{vendor.location}</span>
-                  <span>⭐ {vendor.rating || 0}</span>
-                </div>
-
-                {/* 📍 Distance */}
-                {coords && (
-                  <p className='text-xs mt-1 text-[#10b5cb]'>
-                    {(vendor as Vendor & { distance: number }).distance.toFixed(
-                      2,
-                    )}{' '}
-                    km away
-                  </p>
-                )}
-              </div>
-            </Link>
+            <VendorCard key={vendor.id} vendor={vendor} />
           ))}
-          {/* <VendorsMap vendors={vendors} />
-          <MapEvents onMove={(lat, lng) => setCoords({ lat, lng })} />
-          <button
-            onClick={fetchVendors}
-            className='bg-[#10b5cb] text-white px-4 py-2 rounded mt-2'
-          >
-            Search this area
-          </button> */}
         </div>
       )}
     </div>

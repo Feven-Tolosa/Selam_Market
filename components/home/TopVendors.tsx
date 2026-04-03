@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import Image from 'next/image'
 import Link from 'next/link'
+import VendorCard from '../vendor/VendorCard'
 
 interface Vendor {
   id: string
@@ -111,42 +112,7 @@ export default function TopVendors() {
       </div>
       <div className='grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6'>
         {vendors.map((vendor) => (
-          <Link
-            key={vendor.id}
-            href={`/vendor/${vendor.id}`}
-            className='border rounded-xl overflow-hidden shadow hover:shadow-lg transition'
-          >
-            <div className='relative h-40'>
-              <Image
-                src={getImageUrl('vendor-banners', vendor.banner_url)}
-                alt={vendor.store_name}
-                fill
-                className='object-cover'
-              />
-            </div>
-
-            <div className='p-4'>
-              <div className='flex items-center gap-3 mb-2'>
-                <Image
-                  src={getImageUrl('vendor-logos', vendor.logo_url)}
-                  alt='logo'
-                  width={40}
-                  height={40}
-                  className='rounded-full object-cover'
-                />
-                <h3 className='font-semibold'>{vendor.store_name}</h3>
-              </div>
-
-              <p className='text-sm text-gray-500 line-clamp-2'>
-                {vendor.description}
-              </p>
-
-              <div className='mt-2 flex justify-between text-sm'>
-                <span>{vendor.location}</span>
-                <span>⭐ {(vendor.rating ?? 0).toFixed(1)}</span>
-              </div>
-            </div>
-          </Link>
+          <VendorCard key={vendor.id} vendor={vendor} />
         ))}
       </div>
     </section>
