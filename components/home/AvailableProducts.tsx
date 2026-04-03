@@ -16,7 +16,7 @@ type ProductWithExtras = {
   ratingCount?: number
 }
 
-export default async function FeaturedProducts() {
+export default async function AvailableProducts() {
   // 📦 Fetch products
   const { data: products } = await supabase
     .from('products')
@@ -33,7 +33,7 @@ export default async function FeaturedProducts() {
       )
     `,
     )
-    .limit(8)
+    .limit(12)
 
   // ⭐ Fetch ratings
   const { data: reviews } = await supabase
@@ -70,7 +70,7 @@ export default async function FeaturedProducts() {
         <div className='flex items-center justify-between mb-10'>
           <div>
             <h2 className='text-3xl font-bold text-gray-900'>
-              Featured Products
+              Available products
             </h2>
             <p className='text-gray-500 mt-1 text-sm'>
               Discover top products from trusted vendors
