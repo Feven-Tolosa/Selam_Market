@@ -5,7 +5,6 @@ import { supabase } from '@/lib/supabaseClient'
 import { useParams, useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
 import Image from 'next/image'
-import Link from 'next/link'
 
 type Product = {
   id: string
@@ -100,20 +99,68 @@ export default function ProductPage() {
 
   // 🛒 ADD TO CART
   const addToCart = async () => {
-    const { data } = await supabase.auth.getUser()
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser()
+    if (authError || !user) return toast.error('Login required')
+    if (!product || !product.id) return toast.error('Invalid product')
 
-    if (!data.user) {
-      toast.error('Login required')
-      return
+    try {
+      // 1️⃣ Get or create pending cart
+      let { data: cart, error: cartError } = await supabase
+        .from('carts')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('status', 'pending')
+        .single()
+
+      if (cartError && cartError.code === 'PGRST116') {
+        // No cart exists → create one
+        const { data: newCart, error: newCartError } = await supabase
+          .from('carts')
+          .insert({ user_id: user.id, status: 'pending' })
+          .select()
+          .single()
+
+        if (newCartError || !newCart) {
+          console.error('Failed to create cart', newCartError)
+          return toast.error('Failed to create cart')
+        }
+        cart = newCart
+      } else if (cartError) {
+        console.error('Error fetching cart', cartError)
+        return toast.error('Failed to fetch cart')
+      }
+
+      // 2️⃣ Insert product into cart_items
+      const { data: existingItem } = await supabase
+        .from('cart_items')
+        .select('*')
+        .eq('cart_id', cart.id)
+        .eq('product_id', product.id)
+        .single()
+
+      if (existingItem) {
+        // Increment quantity
+        await supabase
+          .from('cart_items')
+          .update({ quantity: existingItem.quantity + 1 })
+          .eq('id', existingItem.id)
+      } else {
+        // Insert new cart item
+        await supabase.from('cart_items').insert({
+          cart_id: cart.id, // must exist
+          product_id: product.id, // must exist
+          quantity: 1,
+        })
+      }
+
+      toast.success('Added to cart 🛒')
+    } catch (error) {
+      console.error('Unexpected error', error)
+      toast.error('Failed to add to cart')
     }
-
-    await supabase.from('cart_items').insert({
-      user_id: data.user.id,
-      product_id: product?.id,
-      quantity: 1,
-    })
-
-    toast.success('Added to cart 🛒')
   }
 
   // ❤️ WISHLIST
@@ -225,7 +272,7 @@ export default function ProductPage() {
           <div className='flex gap-4'>
             <button
               onClick={addToCart}
-              className='bg-[#10b5cb] text-white px-6 py-2 rounded'
+              className='bg-[#10b5cb] text-white px-6 py-2 rounded hover:bg-[#0e9aa7] transition'
             >
               Add to Cart
             </button>

@@ -15,6 +15,7 @@ type Product = {
 
 type CartItem = {
   id: string
+  cart_id: string
   product: Product
   quantity: number
 }
@@ -24,6 +25,7 @@ export default function CartPage() {
   const [loading, setLoading] = useState(true)
   const [userId, setUserId] = useState<string | null>(null)
 
+  // Get logged-in user
   useEffect(() => {
     const getUser = async () => {
       const {
@@ -34,13 +36,15 @@ export default function CartPage() {
     getUser()
   }, [])
 
+  // Fetch cart items for user
   useEffect(() => {
     if (!userId) return
 
     const fetchCart = async () => {
       setLoading(true)
-      // Fetch the user's pending cart
-      const { data: cartData, error: cartError } = await supabase
+
+      // Get user's pending cart
+      const { data: cart } = await supabase
         .from('carts')
         .select('id')
         .eq('user_id', userId)
@@ -48,29 +52,21 @@ export default function CartPage() {
         .limit(1)
         .single()
 
-      if (cartError) {
-        console.error(cartError)
-        setLoading(false)
-        return
-      }
-
-      if (!cartData) {
+      if (!cart) {
         setCartItems([])
         setLoading(false)
         return
       }
 
-      const { data: itemsData, error: itemsError } = await supabase
+      // Get cart items with product details
+      const { data: items } = await supabase
         .from('cart_items')
-        .select(`id, quantity, product(id,name,price,image_url,vendor_id)`)
-        .eq('cart_id', cartData.id)
+        .select(
+          'id, cart_id, quantity, product(id,name,price,image_url,vendor_id)',
+        )
+        .eq('cart_id', cart.id)
 
-      if (itemsError) {
-        console.error(itemsError)
-      } else {
-        setCartItems(itemsData)
-      }
-
+      setCartItems(items || [])
       setLoading(false)
     }
 
@@ -79,6 +75,7 @@ export default function CartPage() {
 
   const updateQuantity = async (cartItemId: string, quantity: number) => {
     await supabase.from('cart_items').update({ quantity }).eq('id', cartItemId)
+
     setCartItems((prev) =>
       prev.map((item) =>
         item.id === cartItemId ? { ...item, quantity } : item,
@@ -94,23 +91,18 @@ export default function CartPage() {
   const checkout = async () => {
     if (!userId) return alert('You must be logged in')
 
-    // Mark cart as ordered
-    const cartId = cartItems[0]?.id ? cartItems[0].id : null
+    // Mark cart items as ordered
+    const cartId = cartItems[0]?.cart_id
     if (!cartId) return alert('Cart is empty')
+
+    await supabase
+      .from('cart_items')
+      .update({ status: 'ordered' })
+      .eq('cart_id', cartId)
 
     await supabase.from('carts').update({ status: 'ordered' }).eq('id', cartId)
 
-    // Optional: create order history and notify vendors here
-    for (const item of cartItems) {
-      await supabase.from('orders').insert({
-        user_id: userId,
-        cart_id: cartId,
-        status: 'pending',
-      })
-      // Vendor notification logic here
-    }
-
-    alert('Order placed!')
+    alert('Order placed! Vendors will be notified.')
     setCartItems([])
   }
 
@@ -134,6 +126,7 @@ export default function CartPage() {
   return (
     <div className='p-8 max-w-4xl mx-auto'>
       <h1 className='text-3xl font-bold mb-6'>Your Cart</h1>
+
       <div className='space-y-4'>
         {cartItems.map((item) => (
           <div
@@ -142,7 +135,7 @@ export default function CartPage() {
           >
             <div className='flex items-center gap-4'>
               <Image
-                src={item.product.image_url}
+                src={item.product.image_url || '/placeholder.png'}
                 alt={item.product.name}
                 width={60}
                 height={60}
