@@ -3,25 +3,55 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import type { Product, Category } from '@/types'
-import Link from 'next/link'
-import Image from 'next/image'
+import ProductCard from '@/components/product/ProductCard'
 
 type product = {
   category_name?: string
+  rating?: number
+  ratingCount?: number
 }
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([])
   const [categories, setCategories] = useState<Category[]>([])
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [search, setSearch] = useState('')
-  const [sort, setSort] = useState('latest')``
+  const [sort, setSort] = useState('latest')
 
   useEffect(() => {
     async function fetchData() {
+      // products + categories
       const { data: p } = await supabase.from('products').select('*')
       const { data: c } = await supabase.from('categories').select('*')
 
-      setProducts(p || [])
+      // ratings
+      const { data: r } = await supabase
+        .from('reviews')
+        .select('product_id, rating')
+
+      // build rating map
+      const map: Record<string, { total: number; count: number }> = {}
+
+      r?.forEach((rev) => {
+        if (!map[rev.product_id]) {
+          map[rev.product_id] = { total: 0, count: 0 }
+        }
+        map[rev.product_id].total += rev.rating
+        map[rev.product_id].count++
+      })
+
+      // attach ratings to products
+      const productsWithRatings =
+        p?.map((prod) => {
+          const stats = map[prod.id]
+
+          return {
+            ...prod,
+            rating: stats ? stats.total / stats.count : 0,
+            ratingCount: stats ? stats.count : 0,
+          }
+        }) || []
+
+      setProducts(productsWithRatings)
       setCategories(c || [])
     }
 
@@ -49,6 +79,10 @@ export default function ProductsPage() {
     filtered = [...filtered].sort((a, b) => b.price - a.price)
   }
 
+  if (sort === 'rating') {
+    filtered = [...filtered].sort((a, b) => (b.rating || 0) - (a.rating || 0))
+  }
+
   return (
     <div className='max-w-7xl mx-auto px-6 py-10'>
       {/* TOP BAR */}
@@ -57,7 +91,7 @@ export default function ProductsPage() {
         <input
           type='text'
           placeholder='Search products...'
-          className='border rounded-lg px-4 py-2 w-full md:w-1/3 focus:ring-2 focus:ring-[#10b5cb]'
+          className='border rounded-lg px-4 py-2 w-full md:w-2/3 focus:ring-2 focus:ring-[#10b5cb]'
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
@@ -85,37 +119,14 @@ export default function ProductsPage() {
           <option value='latest'>Latest</option>
           <option value='low'>Price: Low → High</option>
           <option value='high'>Price: High → Low</option>
+          <option value='rating'>Top Rated</option>
         </select>
       </div>
 
       {/* GRID */}
       <div className='grid grid-cols-2 md:grid-cols-4 gap-6'>
         {filtered.map((product) => (
-          <Link
-            key={product.id}
-            href={`/products/${product.id}`}
-            className='group border rounded-xl overflow-hidden hover:shadow-lg transition bg-white cursor-pointer'
-          >
-            <Image
-              alt={product.name}
-              width={300}
-              height={300}
-              src={product.image_url || '/placeholder.png'}
-              className='w-full h-48 object-cover group-hover:scale-105 transition'
-            />
-
-            <div className='p-4'>
-              <h2 className='font-medium line-clamp-2'>{product.name}</h2>
-              <p className='text-[#10b5cb] font-semibold mt-1'>
-                ${product.price.toFixed(2)}
-              </p>
-              {product.category_name && (
-                <p className='text-gray-500 text-sm mt-1'>
-                  {product.category_name}
-                </p>
-              )}
-            </div>
-          </Link>
+          <ProductCard key={product.id} product={product} />
         ))}
 
         {filtered.length === 0 && (
