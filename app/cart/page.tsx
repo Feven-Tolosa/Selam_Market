@@ -9,7 +9,7 @@ type Product = {
   id: string
   name: string
   price: number
-  image_url: string
+  image_url: string | null
   vendor_id: string
 }
 
@@ -36,20 +36,18 @@ export default function CartPage() {
     getUser()
   }, [])
 
-  // Fetch cart items for user
+  // Fetch cart items
   useEffect(() => {
     if (!userId) return
 
-    const fetchCart = async () => {
+    const fetchCartItems = async () => {
       setLoading(true)
 
-      // Get user's pending cart
       const { data: cart } = await supabase
         .from('carts')
         .select('id')
         .eq('user_id', userId)
         .eq('status', 'pending')
-        .limit(1)
         .single()
 
       if (!cart) {
@@ -58,7 +56,6 @@ export default function CartPage() {
         return
       }
 
-      // Get cart items with product details
       const { data: items } = await supabase
         .from('cart_items')
         .select(
@@ -70,12 +67,12 @@ export default function CartPage() {
       setLoading(false)
     }
 
-    fetchCart()
+    fetchCartItems()
   }, [userId])
 
   const updateQuantity = async (cartItemId: string, quantity: number) => {
+    if (quantity < 1) return
     await supabase.from('cart_items').update({ quantity }).eq('id', cartItemId)
-
     setCartItems((prev) =>
       prev.map((item) =>
         item.id === cartItemId ? { ...item, quantity } : item,
@@ -89,9 +86,7 @@ export default function CartPage() {
   }
 
   const checkout = async () => {
-    if (!userId) return alert('You must be logged in')
-
-    // Mark cart items as ordered
+    if (!userId) return alert('Login required')
     const cartId = cartItems[0]?.cart_id
     if (!cartId) return alert('Cart is empty')
 
@@ -99,9 +94,7 @@ export default function CartPage() {
       .from('cart_items')
       .update({ status: 'ordered' })
       .eq('cart_id', cartId)
-
     await supabase.from('carts').update({ status: 'ordered' }).eq('id', cartId)
-
     alert('Order placed! Vendors will be notified.')
     setCartItems([])
   }
@@ -118,35 +111,46 @@ export default function CartPage() {
       </div>
     )
 
-  const total = cartItems.reduce(
+  const subtotal = cartItems.reduce(
     (sum, item) => sum + item.product.price * item.quantity,
     0,
   )
 
   return (
-    <div className='p-8 max-w-4xl mx-auto'>
-      <h1 className='text-3xl font-bold mb-6'>Your Cart</h1>
-
-      <div className='space-y-4'>
+    <div className='max-w-7xl mx-auto p-8 grid md:grid-cols-3 gap-8'>
+      <h1 className='text-3xl font-bold '>
+        Shopping Cart{' '}
+        <span className='text-gray-500 text-lg font-normal'>
+          ( {cartItems.length} items )
+        </span>
+      </h1>
+      <p className='text-gray-500  md:col-span-3'>
+        Review your items and proceed to checkout.
+      </p>
+      {/* LEFT: Cart Items */}
+      <div className='md:col-span-2 space-y-4'>
         {cartItems.map((item) => (
           <div
             key={item.id}
-            className='flex items-center justify-between p-4 border rounded-lg'
+            className='flex items-center gap-4 p-4 border rounded-lg hover:shadow-lg transition'
           >
-            <div className='flex items-center gap-4'>
-              <Image
-                src={item.product.image_url || '/placeholder.png'}
-                alt={item.product.name}
-                width={60}
-                height={60}
-                className='rounded-lg'
-              />
-              <div>
-                <h2 className='font-semibold'>{item.product.name}</h2>
-                <p>${item.product.price.toFixed(2)}</p>
-              </div>
+            <Image
+              src={item.product.image_url || '/placeholder.png'}
+              alt={item.product.name}
+              width={100}
+              height={100}
+              className='rounded-lg object-cover'
+            />
+            <div className='flex-1 space-y-1'>
+              <h2 className='font-semibold text-lg'>{item.product.name}</h2>
+              <p className='text-gray-500 text-sm'>
+                Vendor: {item.product.vendor_id}
+              </p>
+              <p className='text-[#10b5cb] font-semibold text-lg'>
+                ${item.product.price.toFixed(2)}
+              </p>
             </div>
-            <div className='flex items-center gap-2'>
+            <div className='flex flex-col items-center gap-2'>
               <input
                 type='number'
                 min={1}
@@ -154,11 +158,11 @@ export default function CartPage() {
                 onChange={(e) =>
                   updateQuantity(item.id, Number(e.target.value))
                 }
-                className='w-16 p-1 border rounded text-center'
+                className='w-20 p-1 border rounded text-center'
               />
               <button
                 onClick={() => removeItem(item.id)}
-                className='text-red-500 hover:underline'
+                className='text-red-500 hover:underline text-sm'
               >
                 Remove
               </button>
@@ -167,13 +171,23 @@ export default function CartPage() {
         ))}
       </div>
 
-      <div className='mt-6 flex justify-between items-center text-xl font-semibold'>
-        <span>Total: ${total.toFixed(2)}</span>
+      {/* RIGHT: Order Summary */}
+      <div className='border p-6 rounded-lg h-fit shadow-md space-y-4'>
+        <h2 className='text-2xl font-semibold'>Order Summary</h2>
+        <div className='flex justify-between text-lg'>
+          <span>Subtotal</span>
+          <span>${subtotal.toFixed(2)}</span>
+        </div>
+        <hr />
+        <div className='flex justify-between font-bold text-xl'>
+          <span>Total</span>
+          <span>${subtotal.toFixed(2)}</span>
+        </div>
         <button
           onClick={checkout}
-          className='bg-[#10b5cb] text-white px-6 py-2 rounded hover:bg-[#0da0b5] transition'
+          className='w-full bg-[#10b5cb] text-white py-3 rounded hover:bg-[#0da0b5] transition font-semibold'
         >
-          Checkout
+          Proceed to Checkout
         </button>
       </div>
     </div>
