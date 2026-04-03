@@ -73,7 +73,7 @@ export default async function AvailableProducts() {
               Available products
             </h2>
             <p className='text-gray-500 mt-1 text-sm'>
-              Discover top products from trusted vendors
+              Browse our latest offerings from top vendors.
             </p>
           </div>
 

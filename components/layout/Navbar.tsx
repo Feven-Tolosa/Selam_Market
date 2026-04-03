@@ -160,9 +160,9 @@ export default function Navbar() {
         <div className='flex items-center gap-6'>
           <LanguageSwitcher />
 
-          <button className='hover:text-[#10b5cb]'>
+          <Link href='/cart' className='hover:text-[#10b5cb]'>
             <ShoppingCart size={22} />
-          </button>
+          </Link>
 
           {!user ? (
             <>

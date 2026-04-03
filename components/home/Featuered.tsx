@@ -110,7 +110,7 @@ export default function Featured() {
     return <p className='p-10 text-center'>No featured products found.</p>
 
   return (
-    <section className='py-20 bg-gradient-to-b from-white to-gray-50'>
+    <section className='py-15 bg-linear-to-b from-white to-gray-50'>
       <div className='max-w-7xl mx-auto px-6'>
         {/* Header */}
         <div className='flex items-center justify-between mb-10'>
@@ -119,7 +119,8 @@ export default function Featured() {
               Featured Products
             </h2>
             <p className='text-gray-500 mt-1 text-sm'>
-              Discover top products from trusted vendors
+              Discover our top-rated products from trusted vendors. Handpicked
+              for you!
             </p>
           </div>
         </div>
