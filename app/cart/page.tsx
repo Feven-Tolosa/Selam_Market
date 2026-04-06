@@ -16,7 +16,7 @@ type Product = {
 type CartItem = {
   id: string
   cart_id: string
-  product: Product
+  product: Product | null
   quantity: number
 }
 
@@ -24,78 +24,140 @@ export default function CartPage() {
   const [cartItems, setCartItems] = useState<CartItem[]>([])
   const [loading, setLoading] = useState(true)
   const [userId, setUserId] = useState<string | null>(null)
+  const [updatingId, setUpdatingId] = useState<string | null>(null)
 
-  // Get logged-in user
+  // ✅ Get logged-in user
   useEffect(() => {
     const getUser = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-      if (user) setUserId(user.id)
+      const { data, error } = await supabase.auth.getUser()
+      if (error) {
+        console.error('Auth error:', error.message)
+        return
+      }
+      setUserId(data.user?.id ?? null)
     }
     getUser()
   }, [])
 
-  // Fetch cart items
+  // ✅ Fetch cart items
   useEffect(() => {
     if (!userId) return
 
     const fetchCartItems = async () => {
       setLoading(true)
 
-      const { data: cart } = await supabase
-        .from('carts')
-        .select('id')
-        .eq('user_id', userId)
-        .eq('status', 'pending')
-        .single()
+      try {
+        const { data: cart, error: cartError } = await supabase
+          .from('carts')
+          .select('id')
+          .eq('user_id', userId)
+          .eq('status', 'pending')
+          .single()
 
-      if (!cart) {
-        setCartItems([])
+        if (cartError || !cart) {
+          setCartItems([])
+          return
+        }
+
+        const { data: items, error: itemsError } = await supabase
+          .from('cart_items')
+          .select(
+            'id, cart_id, quantity, product:product_id(id,name,price,image_url,vendor_id)',
+          )
+          .eq('cart_id', cart.id)
+
+        if (itemsError) {
+          console.error(itemsError.message)
+          return
+        }
+
+        setCartItems(items ?? [])
+      } catch (err) {
+        console.error('Unexpected error:', err)
+      } finally {
         setLoading(false)
-        return
       }
-
-      const { data: items } = await supabase
-        .from('cart_items')
-        .select(
-          'id, cart_id, quantity, product(id,name,price,image_url,vendor_id)',
-        )
-        .eq('cart_id', cart.id)
-
-      setCartItems(items || [])
-      setLoading(false)
     }
 
     fetchCartItems()
   }, [userId])
 
+  // ✅ Update quantity (safe + UX improved)
   const updateQuantity = async (cartItemId: string, quantity: number) => {
     if (quantity < 1) return
-    await supabase.from('cart_items').update({ quantity }).eq('id', cartItemId)
-    setCartItems((prev) =>
-      prev.map((item) =>
+
+    setUpdatingId(cartItemId)
+
+    const prev = [...cartItems]
+
+    // optimistic update
+    setCartItems((items) =>
+      items.map((item) =>
         item.id === cartItemId ? { ...item, quantity } : item,
       ),
     )
+
+    const { error } = await supabase
+      .from('cart_items')
+      .update({ quantity })
+      .eq('id', cartItemId)
+
+    if (error) {
+      console.error(error.message)
+      setCartItems(prev) // rollback
+    }
+
+    setUpdatingId(null)
   }
 
+  // ✅ Remove item
   const removeItem = async (cartItemId: string) => {
-    await supabase.from('cart_items').delete().eq('id', cartItemId)
-    setCartItems((prev) => prev.filter((item) => item.id !== cartItemId))
+    const prev = [...cartItems]
+
+    setCartItems((items) => items.filter((item) => item.id !== cartItemId))
+
+    const { error } = await supabase
+      .from('cart_items')
+      .delete()
+      .eq('id', cartItemId)
+
+    if (error) {
+      console.error(error.message)
+      setCartItems(prev) // rollback
+    }
   }
 
+  // ✅ Checkout (safe)
   const checkout = async () => {
-    if (!userId) return alert('Login required')
-    const cartId = cartItems[0]?.cart_id
-    if (!cartId) return alert('Cart is empty')
+    if (!userId) {
+      alert('Login required')
+      return
+    }
 
-    await supabase
+    if (cartItems.length === 0) {
+      alert('Cart is empty')
+      return
+    }
+
+    const cartId = cartItems[0].cart_id
+
+    const { error: itemsError } = await supabase
       .from('cart_items')
       .update({ status: 'ordered' })
       .eq('cart_id', cartId)
-    await supabase.from('carts').update({ status: 'ordered' }).eq('id', cartId)
-    alert('Order placed! Vendors will be notified.')
+
+    const { error: cartError } = await supabase
+      .from('carts')
+      .update({ status: 'ordered' })
+      .eq('id', cartId)
+
+    if (itemsError || cartError) {
+      console.error(itemsError || cartError)
+      alert('Checkout failed')
+      return
+    }
+
+    alert('Order placed successfully!')
     setCartItems([])
   }
 
@@ -111,78 +173,88 @@ export default function CartPage() {
       </div>
     )
 
-  const subtotal = cartItems.reduce(
-    (sum, item) => sum + item.product.price * item.quantity,
-    0,
-  )
+  // ✅ Prevent crash if product is null
+  const subtotal = cartItems.reduce((sum, item) => {
+    const price = item.product?.price ?? 0
+    return sum + price * item.quantity
+  }, 0)
 
   return (
     <div className='max-w-7xl mx-auto p-8 grid md:grid-cols-3 gap-8'>
-      <h1 className='text-3xl font-bold '>
+      <h1 className='text-3xl font-bold md:col-span-3'>
         Shopping Cart{' '}
         <span className='text-gray-500 text-lg font-normal'>
-          ( {cartItems.length} items )
+          ({cartItems.length} items)
         </span>
       </h1>
-      <p className='text-gray-500  md:col-span-3'>
-        Review your items and proceed to checkout.
-      </p>
-      {/* LEFT: Cart Items */}
+
+      {/* LEFT */}
       <div className='md:col-span-2 space-y-4'>
-        {cartItems.map((item) => (
-          <div
-            key={item.id}
-            className='flex items-center gap-4 p-4 border rounded-lg hover:shadow-lg transition'
-          >
-            <Image
-              src={item.product.image_url || '/placeholder.png'}
-              alt={item.product.name}
-              width={100}
-              height={100}
-              className='rounded-lg object-cover'
-            />
-            <div className='flex-1 space-y-1'>
-              <h2 className='font-semibold text-lg'>{item.product.name}</h2>
-              <p className='text-gray-500 text-sm'>
-                Vendor: {item.product.vendor_id}
-              </p>
-              <p className='text-[#10b5cb] font-semibold text-lg'>
-                ${item.product.price.toFixed(2)}
-              </p>
-            </div>
-            <div className='flex flex-col items-center gap-2'>
-              <input
-                type='number'
-                min={1}
-                value={item.quantity}
-                onChange={(e) =>
-                  updateQuantity(item.id, Number(e.target.value))
-                }
-                className='w-20 p-1 border rounded text-center'
+        {cartItems.map((item) => {
+          const product = item.product
+
+          if (!product) return null // safety
+
+          return (
+            <div
+              key={item.id}
+              className='flex items-center gap-4 p-4 border rounded-lg hover:shadow-lg transition'
+            >
+              <Image
+                src={product.image_url || '/placeholder.png'}
+                alt={product.name}
+                width={100}
+                height={100}
+                className='rounded-lg object-cover'
               />
-              <button
-                onClick={() => removeItem(item.id)}
-                className='text-red-500 hover:underline text-sm'
-              >
-                Remove
-              </button>
+
+              <div className='flex-1 space-y-1'>
+                <h2 className='font-semibold text-lg'>{product.name}</h2>
+                <p className='text-[#10b5cb] font-semibold text-lg'>
+                  ${product.price.toFixed(2)}
+                </p>
+              </div>
+
+              <div className='flex flex-col items-center gap-2'>
+                <input
+                  type='number'
+                  min={1}
+                  value={item.quantity}
+                  disabled={updatingId === item.id}
+                  onChange={(e) =>
+                    updateQuantity(item.id, Number(e.target.value))
+                  }
+                  className='w-20 p-1 border rounded text-center'
+                />
+
+                <button
+                  onClick={() => removeItem(item.id)}
+                  className='text-red-500 hover:underline text-sm'
+                >
+                  Remove
+                </button>
+              </div>
             </div>
-          </div>
-        ))}
+          )
+        })}
       </div>
 
-      {/* RIGHT: Order Summary */}
+      {/* RIGHT */}
       <div className='border p-6 rounded-lg h-fit shadow-md space-y-4'>
         <h2 className='text-2xl font-semibold'>Order Summary</h2>
+
         <div className='flex justify-between text-lg'>
           <span>Subtotal</span>
           <span>${subtotal.toFixed(2)}</span>
         </div>
+
         <hr />
+
         <div className='flex justify-between font-bold text-xl'>
           <span>Total</span>
           <span>${subtotal.toFixed(2)}</span>
         </div>
+
         <button
           onClick={checkout}
           className='w-full bg-[#10b5cb] text-white py-3 rounded hover:bg-[#0da0b5] transition font-semibold'
