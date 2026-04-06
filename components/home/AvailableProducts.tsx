@@ -64,7 +64,7 @@ export default async function AvailableProducts() {
     }) || []
 
   return (
-    <section className='py-20 bg-gradient-to-b from-white to-gray-50'>
+    <section className='py-20 bg-linear-to-b from-white to-gray-50'>
       <div className='max-w-7xl mx-auto px-6'>
         {/* Header */}
         <div className='flex items-center justify-between mb-10'>
