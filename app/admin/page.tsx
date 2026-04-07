@@ -78,7 +78,7 @@ export default function AdminDashboard() {
       </Link>
 
       {/* Hover info card */}
-      <div className='absolute top-4 left-4 right-4 mt-2 p-3 bg-white border rounded-lg shadow-lg opacity-0 group-hover:opacity-100 scale-95 group-hover:scale-100 transition-all duration-300 pointer-events-none'>
+      <div className='absolute top-6 left-4 right-4 mt-4 p-3 bg-white border rounded-lg shadow-lg opacity-0 group-hover:opacity-100 scale-95 group-hover:scale-100 transition-all duration-300 pointer-events-none'>
         <div className='flex justify-between items-center mb-1'>
           <h3 className='font-semibold text-sm'>{vendor.store_name}</h3>
           <span

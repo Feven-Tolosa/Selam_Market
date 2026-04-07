@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { useParams, useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
+import { Dialog } from '@headlessui/react'
 
 type VendorRequest = {
   id: string
@@ -23,6 +24,7 @@ export default function VendorDetails() {
   const [vendor, setVendor] = useState<VendorRequest | null>(null)
   const [recentVendors, setRecentVendors] = useState<VendorRequest[]>([])
   const [loading, setLoading] = useState(true)
+  const [licenseOpen, setLicenseOpen] = useState(false)
 
   const fetchVendor = async () => {
     if (!id) return
@@ -68,6 +70,20 @@ export default function VendorDetails() {
     fetchRecent()
   }
 
+  // Status badge helper
+  const statusColor = (status: string) => {
+    switch (status) {
+      case 'pending':
+        return 'bg-yellow-400 text-yellow-900'
+      case 'approved':
+        return 'bg-green-400 text-green-900'
+      case 'rejected':
+        return 'bg-red-400 text-red-900'
+      default:
+        return 'bg-gray-300 text-gray-800'
+    }
+  }
+
   return (
     <div className='p-6 bg-gray-50 min-h-screen'>
       <button
@@ -77,14 +93,19 @@ export default function VendorDetails() {
         &larr; Back
       </button>
 
+      {/* Vendor Info Card */}
       <div className='bg-white rounded-lg shadow p-6 mb-6'>
-        <h1 className='text-2xl font-bold text-[#10b5cb] mb-2'>
-          {vendor.store_name}
-        </h1>
-        <p className='text-gray-600 mb-2'>
-          <strong>Status:</strong> {vendor.status}
-        </p>
-        <p className='mb-1'>
+        <div className='flex justify-between items-center mb-3'>
+          <h1 className='text-2xl font-bold text-[#10b5cb]'>
+            {vendor.store_name}
+          </h1>
+          <span
+            className={`px-2 py-1 rounded text-sm font-semibold ${statusColor(vendor.status)}`}
+          >
+            {vendor.status.toUpperCase()}
+          </span>
+        </div>
+        <p className='mb-2'>
           <strong>Description:</strong> {vendor.store_description}
         </p>
         <p className='mb-1'>
@@ -100,17 +121,14 @@ export default function VendorDetails() {
           <strong>Submitted:</strong>{' '}
           {new Date(vendor.created_at).toLocaleString()}
         </p>
+
         {vendor.license_url && (
-          <p className='mt-3'>
-            <strong>Business License:</strong>{' '}
-            <a
-              href={vendor.license_url}
-              target='_blank'
-              className='text-blue-500 underline'
-            >
-              View License
-            </a>
-          </p>
+          <button
+            onClick={() => setLicenseOpen(true)}
+            className='mt-3 text-blue-500 underline'
+          >
+            View License
+          </button>
         )}
 
         {vendor.status === 'pending' && (
@@ -146,7 +164,13 @@ export default function VendorDetails() {
             {recentVendors.map((v) => (
               <tr key={v.id} className='hover:bg-gray-50'>
                 <td className='px-4 py-2 border'>{v.store_name}</td>
-                <td className='px-4 py-2 border'>{v.status}</td>
+                <td className='px-4 py-2 border'>
+                  <span
+                    className={`px-2 py-0.5 rounded text-xs font-semibold ${statusColor(v.status)}`}
+                  >
+                    {v.status.toUpperCase()}
+                  </span>
+                </td>
                 <td className='px-4 py-2 border'>
                   {new Date(v.created_at).toLocaleString()}
                 </td>
@@ -155,6 +179,42 @@ export default function VendorDetails() {
           </tbody>
         </table>
       </div>
+
+      {/* License Modal */}
+      <Dialog
+        open={licenseOpen}
+        onClose={() => setLicenseOpen(false)}
+        className='fixed z-50 inset-0 overflow-y-auto flex items-center justify-center p-4'
+      >
+        <div
+          className='fixed inset-0 bg-black bg-opacity-50'
+          aria-hidden='true'
+        />
+        <Dialog.Panel className='bg-white rounded-lg p-6 z-10 w-full max-w-2xl'>
+          <Dialog.Title className='text-xl font-bold mb-4'>
+            Business License
+          </Dialog.Title>
+          {vendor.license_url?.endsWith('.pdf') ? (
+            <iframe
+              src={vendor.license_url}
+              className='w-full h-96'
+              title='License PDF'
+            />
+          ) : (
+            <img
+              src={vendor.license_url!}
+              alt='License'
+              className='w-full max-h-96 object-contain'
+            />
+          )}
+          <button
+            onClick={() => setLicenseOpen(false)}
+            className='mt-4 w-full bg-[#10b5cb] text-white py-2 rounded'
+          >
+            Close
+          </button>
+        </Dialog.Panel>
+      </Dialog>
     </div>
   )
 }
