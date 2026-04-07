@@ -20,11 +20,20 @@ type CartItem = {
   quantity: number
 }
 
+type CheckoutItem = {
+  id: string
+  name: string
+  price: number
+  quantity: number
+}
+
 export default function CartPage() {
   const [cartItems, setCartItems] = useState<CartItem[]>([])
   const [loading, setLoading] = useState(true)
   const [userId, setUserId] = useState<string | null>(null)
+  const [userEmail, setUserEmail] = useState<string | null>(null)
   const [updatingId, setUpdatingId] = useState<string | null>(null)
+  const [checkingOut, setCheckingOut] = useState(false)
 
   // ✅ Get logged-in user
   useEffect(() => {
@@ -34,8 +43,11 @@ export default function CartPage() {
         console.error('Auth error:', error.message)
         return
       }
+
       setUserId(data.user?.id ?? null)
+      setUserEmail(data.user?.email ?? null)
     }
+
     getUser()
   }, [])
 
@@ -82,7 +94,7 @@ export default function CartPage() {
     fetchCartItems()
   }, [userId])
 
-  // ✅ Update quantity (safe + UX improved)
+  // ✅ Update quantity
   const updateQuantity = async (cartItemId: string, quantity: number) => {
     if (quantity < 1) return
 
@@ -90,7 +102,6 @@ export default function CartPage() {
 
     const prev = [...cartItems]
 
-    // optimistic update
     setCartItems((items) =>
       items.map((item) =>
         item.id === cartItemId ? { ...item, quantity } : item,
@@ -104,7 +115,7 @@ export default function CartPage() {
 
     if (error) {
       console.error(error.message)
-      setCartItems(prev) // rollback
+      setCartItems(prev)
     }
 
     setUpdatingId(null)
@@ -123,14 +134,14 @@ export default function CartPage() {
 
     if (error) {
       console.error(error.message)
-      setCartItems(prev) // rollback
+      setCartItems(prev)
     }
   }
 
-  // ✅ Checkout (safe)
-  const checkout = async () => {
-    if (!userId) {
-      alert('Login required')
+  // ✅ Checkout (FIXED + SAFE)
+  const handleCheckout = async () => {
+    if (!userEmail) {
+      alert('Please login to continue')
       return
     }
 
@@ -139,60 +150,41 @@ export default function CartPage() {
       return
     }
 
+    setCheckingOut(true)
+
     try {
-      // 1. Calculate total safely
-      const total = cartItems.reduce((sum, item) => {
-        const price = item.product?.price ?? 0
-        return sum + price * item.quantity
-      }, 0)
+      // 🔥 send only required data
+      const cleanItems: CheckoutItem[] = cartItems
+        .filter((item) => item.product !== null)
+        .map((item) => ({
+          id: item.product!.id,
+          name: item.product!.name,
+          price: item.product!.price,
+          quantity: item.quantity,
+        }))
 
-      // 2. Create order
-      const { data: order, error: orderError } = await supabase
-        .from('orders')
-        .insert({
-          user_id: userId,
-          total_amount: total,
-          status: 'pending',
-        })
-        .select()
-        .single()
-
-      if (orderError || !order) throw orderError
-
-      // 3. Insert order items
-      const orderItemsPayload = cartItems.map((item) => ({
-        order_id: order.id,
-        product_id: item.product?.id,
-        vendor_id: item.product?.vendor_id,
-        quantity: item.quantity,
-        price: item.product?.price ?? 0,
-      }))
-
-      const { error: itemsError } = await supabase
-        .from('order_items')
-        .insert(orderItemsPayload)
-
-      if (itemsError) throw itemsError
-
-      // 4. Call backend (Chapa)
-      const res = await fetch('/api/pay', {
+      const res = await fetch('/api/checkout', {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          orderId: order.id,
-          amount: total,
-          email: 'customer@email.com', // replace later
+          items: cleanItems,
+          userEmail,
         }),
       })
 
-      const data = await res.json()
+      const data: { checkout_url?: string; error?: string } = await res.json()
 
-      if (!data.checkout_url) throw new Error('Payment init failed')
-
-      // 5. Redirect to payment
-      window.location.href = data.checkout_url
-    } catch (err) {
-      console.error(err)
-      alert('Checkout failed')
+      if (data.checkout_url) {
+        window.location.href = data.checkout_url
+      } else {
+        console.error(data.error)
+        alert('Failed to start payment')
+      }
+    } catch (error) {
+      console.error(error)
+      alert('Something went wrong')
+    } finally {
+      setCheckingOut(false)
     }
   }
 
@@ -208,7 +200,6 @@ export default function CartPage() {
       </div>
     )
 
-  // ✅ Prevent crash if product is null
   const subtotal = cartItems.reduce((sum, item) => {
     const price = item.product?.price ?? 0
     return sum + price * item.quantity
@@ -227,8 +218,7 @@ export default function CartPage() {
       <div className='md:col-span-2 space-y-4'>
         {cartItems.map((item) => {
           const product = item.product
-
-          if (!product) return null // safety
+          if (!product) return null
 
           return (
             <div
@@ -291,10 +281,11 @@ export default function CartPage() {
         </div>
 
         <button
-          onClick={checkout}
-          className='w-full bg-[#10b5cb] text-white py-3 rounded hover:bg-[#0da0b5] transition font-semibold'
+          onClick={handleCheckout}
+          disabled={checkingOut}
+          className='w-full bg-[#10b5cb] text-white py-3 rounded hover:bg-[#0da0b5] transition font-semibold disabled:opacity-50'
         >
-          Proceed to Checkout
+          {checkingOut ? 'Processing...' : 'Proceed to Checkout'}
         </button>
       </div>
     </div>

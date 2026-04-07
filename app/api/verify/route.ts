@@ -7,7 +7,7 @@ export async function GET(req: Request) {
   const tx_ref = searchParams.get('tx_ref')
 
   if (!tx_ref) {
-    return NextResponse.json({ error: 'Missing tx_ref' })
+    return NextResponse.json({ error: 'Missing tx_ref' }, { status: 400 })
   }
 
   try {
@@ -20,16 +20,26 @@ export async function GET(req: Request) {
       },
     )
 
-    const status = response.data.data.status
+    const data = response.data.data
 
-    if (status === 'success') {
-      // ✅ update order
-      await supabase.from('orders').update({ status: 'paid' }).eq('id', tx_ref)
+    if (data.status === 'success') {
+      // Save order in DB
+      await supabase.from('orders').insert({
+        tx_ref,
+        amount: data.amount,
+        status: 'paid',
+      })
+
+      return NextResponse.redirect(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/paymentsuccess`,
+      )
+    } else {
+      return NextResponse.redirect(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/paymentfailed`,
+      )
     }
-
-    return NextResponse.json({ success: true })
-  } catch (err) {
-    console.error(err)
-    return NextResponse.json({ error: 'Verification failed' })
+  } catch (error) {
+    console.error(error)
+    return NextResponse.json({ error: 'Verification failed' }, { status: 500 })
   }
 }
