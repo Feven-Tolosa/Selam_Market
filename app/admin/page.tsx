@@ -49,13 +49,27 @@ export default function AdminDashboard() {
   const approvedVendors = vendorRequests.filter((v) => v.status === 'approved')
   const rejectedVendors = vendorRequests.filter((v) => v.status === 'rejected')
 
+  // Helper for status badge color
+  const statusColor = (status: string) => {
+    switch (status) {
+      case 'pending':
+        return 'bg-yellow-400 text-yellow-900'
+      case 'approved':
+        return 'bg-green-400 text-green-900'
+      case 'rejected':
+        return 'bg-red-400 text-red-900'
+      default:
+        return 'bg-gray-300 text-gray-800'
+    }
+  }
+
   const renderVendorCard = (vendor: VendorRequest) => (
     <div
       key={vendor.id}
       className='relative bg-white rounded-lg shadow-md p-4 group hover:shadow-xl transition-transform transform hover:-translate-y-1 duration-300 cursor-pointer'
     >
-      <h2 className='text-lg font-bold mb-2'>{vendor.store_name}</h2>
-      {/* View Details button (always visible) */}
+      <h4 className='font-bold text-lg mb-2'>{vendor.store_name}</h4>
+      {/* View Details button */}
       <Link
         href={`/admin/vendors/${vendor.id}`}
         className='block bg-[#10b5cb] text-white text-center py-2 rounded font-semibold'
@@ -64,9 +78,16 @@ export default function AdminDashboard() {
       </Link>
 
       {/* Hover info card */}
-      <div className='absolute top-6 left-4 right-4 mt-4 p-3 bg-white border rounded-lg shadow-lg opacity-0 group-hover:opacity-100 scale-95 group-hover:scale-100 transition-all duration-300 pointer-events-none overflow-auto'>
-        <h3 className='font-semibold mb-1'>{vendor.store_name}</h3>
-        <p className='text-sm text-gray-600 mb-1 line-clamp-2'>
+      <div className='absolute top-4 left-4 right-4 mt-2 p-3 bg-white border rounded-lg shadow-lg opacity-0 group-hover:opacity-100 scale-95 group-hover:scale-100 transition-all duration-300 pointer-events-none'>
+        <div className='flex justify-between items-center mb-1'>
+          <h3 className='font-semibold text-sm'>{vendor.store_name}</h3>
+          <span
+            className={`px-2 py-0.5 rounded text-xs font-semibold ${statusColor(vendor.status)}`}
+          >
+            {vendor.status.toUpperCase()}
+          </span>
+        </div>
+        <p className='text-xs text-gray-600 mb-1 line-clamp-2'>
           {vendor.store_description}
         </p>
         <p className='text-xs text-gray-500'>
@@ -74,9 +95,6 @@ export default function AdminDashboard() {
         </p>
         <p className='text-xs text-gray-500'>
           <strong>Location:</strong> {vendor.location}
-        </p>
-        <p className='text-xs text-gray-500'>
-          <strong>Status:</strong> {vendor.status}
         </p>
       </div>
     </div>
