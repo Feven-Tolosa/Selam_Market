@@ -2,6 +2,19 @@ import { NextResponse } from 'next/server'
 import axios from 'axios'
 import { supabase } from '@/lib/supabaseClient'
 
+type ChapaVerifyResponse = {
+  status: string
+  data: {
+    tx_ref: string
+    amount: number
+    currency: string
+    status: string
+    customer: {
+      email: string
+    }
+  }
+}
+
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url)
   const tx_ref = searchParams.get('tx_ref')
@@ -11,7 +24,7 @@ export async function GET(req: Request) {
   }
 
   try {
-    const response = await axios.get(
+    const response = await axios.get<ChapaVerifyResponse>(
       `https://api.chapa.co/v1/transaction/verify/${tx_ref}`,
       {
         headers: {
@@ -20,26 +33,50 @@ export async function GET(req: Request) {
       },
     )
 
-    const data = response.data.data
+    const payment = response.data.data
 
-    if (data.status === 'success') {
-      // Save order in DB
-      await supabase.from('orders').insert({
-        tx_ref,
-        amount: data.amount,
-        status: 'paid',
-      })
-
+    if (payment.status !== 'success') {
       return NextResponse.redirect(
-        `${process.env.NEXT_PUBLIC_BASE_URL}/paymentsuccess`,
-      )
-    } else {
-      return NextResponse.redirect(
-        `${process.env.NEXT_PUBLIC_BASE_URL}/paymentfailed`,
+        `${process.env.NEXT_PUBLIC_BASE_URL}/payment-failed`,
       )
     }
+
+    // ✅ Prevent duplicate orders
+    const { data: existing } = await supabase
+      .from('orders')
+      .select('id')
+      .eq('tx_ref', tx_ref)
+      .maybeSingle()
+
+    if (existing) {
+      return NextResponse.redirect(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/payment-success`,
+      )
+    }
+
+    // ✅ Insert order
+    const { error } = await supabase.from('orders').insert({
+      tx_ref: payment.tx_ref,
+      amount: payment.amount,
+      currency: payment.currency,
+      status: 'paid',
+      customer_email: payment.customer.email,
+    })
+
+    if (error) {
+      console.error('DB insert error:', error.message)
+      return NextResponse.redirect(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/payment-failed`,
+      )
+    }
+
+    return NextResponse.redirect(
+      `${process.env.NEXT_PUBLIC_BASE_URL}/payment-success`,
+    )
   } catch (error) {
-    console.error(error)
-    return NextResponse.json({ error: 'Verification failed' }, { status: 500 })
+    console.error('Verification error:', error)
+    return NextResponse.redirect(
+      `${process.env.NEXT_PUBLIC_BASE_URL}/payment-failed`,
+    )
   }
 }

@@ -17,6 +17,10 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Cart is empty' }, { status: 400 })
     }
 
+    if (!userEmail) {
+      return NextResponse.json({ error: 'Missing user email' }, { status: 400 })
+    }
+
     const totalAmount = items.reduce(
       (sum, item) => sum + item.price * item.quantity,
       0,
@@ -33,6 +37,10 @@ export async function POST(req: Request) {
         tx_ref,
         callback_url: `${process.env.NEXT_PUBLIC_BASE_URL}/api/verify`,
         return_url: `${process.env.NEXT_PUBLIC_BASE_URL}/payment-success`,
+        customization: {
+          title: 'Selam Market',
+          description: 'Payment for your order',
+        },
       },
       {
         headers: {
@@ -46,7 +54,7 @@ export async function POST(req: Request) {
       tx_ref,
     })
   } catch (error) {
-    console.error(error)
+    console.error('Checkout error:', error)
     return NextResponse.json({ error: 'Payment init failed' }, { status: 500 })
   }
 }
