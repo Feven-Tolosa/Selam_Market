@@ -1,6 +1,5 @@
 'use client'
 
-import AdminNavbar from '@/components/admin/AdminNavbar'
 import AdminSidebar from '@/components/admin/AdminSidebar'
 import { ReactNode, useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'

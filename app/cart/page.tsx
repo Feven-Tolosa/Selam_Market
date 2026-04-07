@@ -139,26 +139,61 @@ export default function CartPage() {
       return
     }
 
-    const cartId = cartItems[0].cart_id
+    try {
+      // 1. Calculate total safely
+      const total = cartItems.reduce((sum, item) => {
+        const price = item.product?.price ?? 0
+        return sum + price * item.quantity
+      }, 0)
 
-    const { error: itemsError } = await supabase
-      .from('cart_items')
-      .update({ status: 'ordered' })
-      .eq('cart_id', cartId)
+      // 2. Create order
+      const { data: order, error: orderError } = await supabase
+        .from('orders')
+        .insert({
+          user_id: userId,
+          total_amount: total,
+          status: 'pending',
+        })
+        .select()
+        .single()
 
-    const { error: cartError } = await supabase
-      .from('carts')
-      .update({ status: 'ordered' })
-      .eq('id', cartId)
+      if (orderError || !order) throw orderError
 
-    if (itemsError || cartError) {
-      console.error(itemsError || cartError)
+      // 3. Insert order items
+      const orderItemsPayload = cartItems.map((item) => ({
+        order_id: order.id,
+        product_id: item.product?.id,
+        vendor_id: item.product?.vendor_id,
+        quantity: item.quantity,
+        price: item.product?.price ?? 0,
+      }))
+
+      const { error: itemsError } = await supabase
+        .from('order_items')
+        .insert(orderItemsPayload)
+
+      if (itemsError) throw itemsError
+
+      // 4. Call backend (Chapa)
+      const res = await fetch('/api/pay', {
+        method: 'POST',
+        body: JSON.stringify({
+          orderId: order.id,
+          amount: total,
+          email: 'customer@email.com', // replace later
+        }),
+      })
+
+      const data = await res.json()
+
+      if (!data.checkout_url) throw new Error('Payment init failed')
+
+      // 5. Redirect to payment
+      window.location.href = data.checkout_url
+    } catch (err) {
+      console.error(err)
       alert('Checkout failed')
-      return
     }
-
-    alert('Order placed successfully!')
-    setCartItems([])
   }
 
   if (loading) return <p className='p-8 text-center'>Loading cart...</p>

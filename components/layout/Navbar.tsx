@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { ShoppingCart, Store, ChevronDown } from 'lucide-react'
+import { ShoppingCart, Store, ChevronDown, Search } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabaseClient'
@@ -22,6 +22,44 @@ export default function Navbar() {
   const [user, setUser] = useState<UserType | null>(null)
   const [open, setOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
+  const [search, setSearch] = useState('')
+  const [results, setResults] = useState<{
+    products: { id: string; name: string }[]
+    vendors: { id: string; store_name: string }[]
+  }>({
+    products: [],
+    vendors: [],
+  })
+
+  useEffect(() => {
+    const delayDebounce = setTimeout(async () => {
+      if (!search.trim()) {
+        setResults({ products: [], vendors: [] })
+        return
+      }
+
+      // 🔍 Products
+      const { data: products } = await supabase
+        .from('products')
+        .select('id, name')
+        .ilike('name', `%${search}%`)
+        .limit(5)
+
+      // 🏪 Vendors
+      const { data: vendors } = await supabase
+        .from('vendors')
+        .select('id, store_name')
+        .ilike('store_name', `%${search}%`)
+        .limit(5)
+
+      setResults({
+        products: products ?? [],
+        vendors: vendors ?? [],
+      })
+    }, 300) // debounce
+
+    return () => clearTimeout(delayDebounce)
+  }, [search])
 
   // ✅ Fetch everything properly
   const fetchUser = async () => {
@@ -149,20 +187,64 @@ export default function Navbar() {
 
         {/* Search */}
         <div className='flex-1 px-6 hidden md:block'>
-          <input
-            type='text'
-            placeholder='Search products...'
-            className='w-full rounded-md py-2 px-4 border ring-1 ring-[#55b8c5] focus:ring-2 focus:ring-[#10b5cb] outline-none'
-          />
+          <div className='relative'>
+            <Search
+              size={18}
+              className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400'
+            />
+
+            <input
+              type='text'
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder='Search products or vendors...'
+              className='w-full rounded-md py-2 pl-10 pr-4 border ring-1 ring-[#55b8c5] focus:ring-2 focus:ring-[#10b5cb] outline-none'
+            />
+            {(results.products.length > 0 || results.vendors.length > 0) && (
+              <div className='absolute top-full left-0 w-full bg-white border rounded-md shadow-lg mt-2 z-50'>
+                {/* Products */}
+                {results.products.length > 0 && (
+                  <div>
+                    <div className='px-3 py-1 text-xs text-gray-400'>
+                      Products
+                    </div>
+                    {results.products.map((p) => (
+                      <Link
+                        key={p.id}
+                        href={`/products/${p.id}`}
+                        className='block px-4 py-2 hover:bg-gray-50'
+                      >
+                        {p.name}
+                      </Link>
+                    ))}
+                  </div>
+                )}
+
+                {/* Vendors */}
+                {results.vendors.length > 0 && (
+                  <div>
+                    <div className='px-3 py-1 text-xs text-gray-400'>
+                      Vendors
+                    </div>
+                    {results.vendors.map((v) => (
+                      <Link
+                        key={v.id}
+                        href={`/vendor/${v.id}`}
+                        className='block px-4 py-2 hover:bg-gray-50'
+                      >
+                        {v.store_name}
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Right Side */}
         <div className='flex items-center gap-6'>
           <LanguageSwitcher />
-
-          <Link href='/cart' className='hover:text-[#10b5cb]'>
-            <ShoppingCart size={22} />
-          </Link>
 
           {!user ? (
             <>
@@ -175,80 +257,87 @@ export default function Navbar() {
               </Link>
             </>
           ) : (
-            <div className='relative' ref={dropdownRef}>
-              {/* 👤 Avatar */}
-              <button
-                onClick={() => setOpen((prev) => !prev)}
-                className='flex items-center gap-2'
-              >
-                {user.avatar_url ? (
-                  <Image
-                    src={user.avatar_url}
-                    alt='avatar'
-                    width={32}
-                    height={32}
-                    className='rounded-full object-cover'
-                  />
-                ) : (
-                  <div className='w-8 h-8 rounded-full bg-[#10b5cb] text-white flex items-center justify-center'>
-                    {getInitial(user.email)}
+            <>
+              <Link href='/cart' className='hover:text-[#10b5cb]'>
+                <ShoppingCart size={22} />
+              </Link>
+              <div className='relative' ref={dropdownRef}>
+                {/* 👤 Avatar */}
+                <button
+                  onClick={() => setOpen((prev) => !prev)}
+                  className='flex items-center gap-2'
+                >
+                  {user.avatar_url ? (
+                    <Image
+                      src={user.avatar_url}
+                      alt='avatar'
+                      width={32}
+                      height={32}
+                      className='rounded-full object-cover'
+                    />
+                  ) : (
+                    <div className='w-8 h-8 rounded-full bg-[#10b5cb] text-white flex items-center justify-center'>
+                      {getInitial(user.email)}
+                    </div>
+                  )}
+
+                  <ChevronDown size={16} />
+                </button>
+
+                {/* Dropdown */}
+                <div
+                  className={`absolute right-0 mt-2 w-52 bg-white border rounded-lg shadow-md transition-all duration-200 ${
+                    open
+                      ? 'opacity-100 translate-y-0'
+                      : 'opacity-0 -translate-y-2 pointer-events-none'
+                  }`}
+                >
+                  {/* 🏪 Vendor Status Badge */}
+                  <div className='px-4 py-2 text-sm'>
+                    {user.vendor_status === 'approved' && (
+                      <span className='text-green-600'>✔ Approved Vendor</span>
+                    )}
+                    {user.vendor_status === 'pending' && (
+                      <span className='text-yellow-500'>
+                        ⏳ Pending Approval
+                      </span>
+                    )}
+                    {user.vendor_status === 'rejected' && (
+                      <span className='text-red-500'>✖ Rejected</span>
+                    )}
                   </div>
-                )}
-
-                <ChevronDown size={16} />
-              </button>
-
-              {/* Dropdown */}
-              <div
-                className={`absolute right-0 mt-2 w-52 bg-white border rounded-lg shadow-md transition-all duration-200 ${
-                  open
-                    ? 'opacity-100 translate-y-0'
-                    : 'opacity-0 -translate-y-2 pointer-events-none'
-                }`}
-              >
-                {/* 🏪 Vendor Status Badge */}
-                <div className='px-4 py-2 text-sm'>
-                  {user.vendor_status === 'approved' && (
-                    <span className='text-green-600'>✔ Approved Vendor</span>
-                  )}
-                  {user.vendor_status === 'pending' && (
-                    <span className='text-yellow-500'>⏳ Pending Approval</span>
-                  )}
-                  {user.vendor_status === 'rejected' && (
-                    <span className='text-red-500'>✖ Rejected</span>
-                  )}
-                </div>
-                <div className='px-4 py-1 text-xs text-gray-400'>
-                  role: {user?.role}
-                </div>
-                {/* Vendor Button */}
-                <button
-                  onClick={handleVendorClick}
-                  className='flex w-full items-center gap-2 px-4 py-2 hover:bg-gray-50'
-                >
-                  <Store size={16} />
-                  Vendor
-                </button>
-
-                {/* Admin */}
-                {user.role === 'admin' && (
-                  <Link
-                    href='/admin'
-                    className='block px-4 py-2 hover:bg-gray-50'
+                  <div className='px-4 py-1 text-xs text-gray-400'>
+                    role: {user?.role}
+                  </div>
+                  {/* Vendor Button */}
+                  <button
+                    onClick={handleVendorClick}
+                    className='flex w-full items-center gap-2 px-4 py-2 hover:bg-gray-50'
                   >
-                    Admin
-                  </Link>
-                )}
+                    <Store size={16} />
+                    Vendor
+                  </button>
 
-                {/* Logout */}
-                <button
-                  onClick={handleLogout}
-                  className='w-full text-left px-4 py-2 text-red-500 hover:bg-gray-50'
-                >
-                  Logout
-                </button>
+                  {/* Admin */}
+                  {user.role === 'admin' && (
+                    <Link
+                      href='/admin'
+                      className='block px-4 py-2 hover:bg-gray-50'
+                    >
+                      Admin
+                    </Link>
+                  )}
+
+                  {/* Logout */}
+                  <button
+                    onClick={handleLogout}
+                    className='w-full text-left px-4 py-2 text-red-500 hover:bg-gray-50'
+                  >
+                    Logout
+                  </button>
+                </div>
               </div>
-            </div>
+            </>
           )}
         </div>
       </div>
