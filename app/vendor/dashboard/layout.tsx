@@ -34,7 +34,12 @@ export default function VendorLayout({
           >
             Orders
           </Link>
-
+          <Link
+            href='/vendor/dashboard/chat'
+            className='block px-4 py-2 rounded hover:bg-[#10b5cb]/10'
+          >
+            Messages
+          </Link>
           <Link
             href='/vendor/dashboard/settings'
             className='block px-4 py-2 rounded hover:bg-[#10b5cb]/10'
