@@ -18,34 +18,83 @@ type UserType = {
   vendor_status: VendorStatus
 }
 
+type ProductSearch = {
+  id: string
+  name: string
+}
+
+type VendorSearch = {
+  id: string
+  store_name: string
+}
+
+type SearchResults = {
+  products: ProductSearch[]
+  vendors: VendorSearch[]
+}
+
+type ActiveItem =
+  | { type: 'product'; index: number }
+  | { type: 'vendor'; index: number }
+  | null
+
 export default function Navbar() {
   const [user, setUser] = useState<UserType | null>(null)
   const [open, setOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
-  const [search, setSearch] = useState('')
-  const [results, setResults] = useState<{
-    products: { id: string; name: string }[]
-    vendors: { id: string; store_name: string }[]
-  }>({
+  const [search, setSearch] = useState<string>('')
+  const [results, setResults] = useState<SearchResults>({
     products: [],
     vendors: [],
   })
+  const [activeItem, setActiveItem] = useState<ActiveItem>(null)
+  const [showResults, setShowResults] = useState<boolean>(false)
+
+  const searchRef = useRef<HTMLDivElement>(null)
+  // useEffect(() => {
+  //   const delayDebounce = setTimeout(async () => {
+  //     if (!search.trim()) {
+  //       setResults({ products: [], vendors: [] })
+  //       return
+  //     }
+
+  //     // 🔍 Products
+  //     const { data: products } = await supabase
+  //       .from('products')
+  //       .select('id, name')
+  //       .ilike('name', `%${search}%`)
+  //       .limit(5)
+
+  //     // 🏪 Vendors
+  //     const { data: vendors } = await supabase
+  //       .from('vendors')
+  //       .select('id, store_name')
+  //       .ilike('store_name', `%${search}%`)
+  //       .limit(5)
+
+  //     setResults({
+  //       products: products ?? [],
+  //       vendors: vendors ?? [],
+  //     })
+  //   }, 300) // debounce
+
+  //   return () => clearTimeout(delayDebounce)
+  // }, [search])
 
   useEffect(() => {
-    const delayDebounce = setTimeout(async () => {
+    const delay = setTimeout(async () => {
       if (!search.trim()) {
         setResults({ products: [], vendors: [] })
+        setShowResults(false)
         return
       }
 
-      // 🔍 Products
       const { data: products } = await supabase
         .from('products')
         .select('id, name')
         .ilike('name', `%${search}%`)
         .limit(5)
 
-      // 🏪 Vendors
       const { data: vendors } = await supabase
         .from('vendors')
         .select('id, store_name')
@@ -56,10 +105,118 @@ export default function Navbar() {
         products: products ?? [],
         vendors: vendors ?? [],
       })
-    }, 300) // debounce
 
-    return () => clearTimeout(delayDebounce)
+      setShowResults(true)
+    }, 300)
+
+    return () => clearTimeout(delay)
   }, [search])
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
+        setShowResults(false)
+        setActiveItem(null)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    const totalItems = results.products.length + results.vendors.length
+
+    if (!totalItems) return
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault()
+
+      if (!activeItem) {
+        setActiveItem({ type: 'product', index: 0 })
+        return
+      }
+
+      if (activeItem.type === 'product') {
+        if (activeItem.index < results.products.length - 1) {
+          setActiveItem({
+            type: 'product',
+            index: activeItem.index + 1,
+          })
+        } else if (results.vendors.length > 0) {
+          setActiveItem({ type: 'vendor', index: 0 })
+        }
+      } else {
+        if (activeItem.index < results.vendors.length - 1) {
+          setActiveItem({
+            type: 'vendor',
+            index: activeItem.index + 1,
+          })
+        }
+      }
+    }
+
+    if (e.key === 'ArrowUp') {
+      e.preventDefault()
+
+      if (!activeItem) return
+
+      if (activeItem.type === 'vendor') {
+        if (activeItem.index > 0) {
+          setActiveItem({
+            type: 'vendor',
+            index: activeItem.index - 1,
+          })
+        } else if (results.products.length > 0) {
+          setActiveItem({
+            type: 'product',
+            index: results.products.length - 1,
+          })
+        }
+      } else {
+        if (activeItem.index > 0) {
+          setActiveItem({
+            type: 'product',
+            index: activeItem.index - 1,
+          })
+        }
+      }
+    }
+
+    if (e.key === 'Enter') {
+      if (!activeItem) return
+
+      if (activeItem.type === 'product') {
+        const item = results.products[activeItem.index]
+        window.location.href = `/product/${item.id}`
+      }
+
+      if (activeItem.type === 'vendor') {
+        const item = results.vendors[activeItem.index]
+        window.location.href = `/vendor/${item.id}`
+      }
+    }
+
+    if (e.key === 'Escape') {
+      setShowResults(false)
+      setActiveItem(null)
+    }
+  }
+
+  const highlightMatch = (text: string, query: string) => {
+    const regex = new RegExp(`(${query})`, 'gi')
+    const parts = text.split(regex)
+
+    return parts.map((part, i) =>
+      part.toLowerCase() === query.toLowerCase() ? (
+        <span key={i} className='text-[#10b5cb] font-semibold'>
+          {part}
+        </span>
+      ) : (
+        part
+      ),
+    )
+  }
 
   // ✅ Fetch everything properly
   const fetchUser = async () => {
@@ -186,7 +343,7 @@ export default function Navbar() {
         </Link>
 
         {/* Search */}
-        <div className='flex-1 px-6 hidden md:block'>
+        <div className='flex-1 px-6 hidden md:block' ref={searchRef}>
           <div className='relative'>
             <Search
               size={18}
@@ -197,48 +354,68 @@ export default function Navbar() {
               type='text'
               value={search}
               onChange={(e) => setSearch(e.target.value)}
+              onKeyDown={handleKeyDown}
               placeholder='Search products or vendors...'
               className='w-full rounded-md py-2 pl-10 pr-4 border ring-1 ring-[#55b8c5] focus:ring-2 focus:ring-[#10b5cb] outline-none'
             />
-            {(results.products.length > 0 || results.vendors.length > 0) && (
-              <div className='absolute top-full left-0 w-full bg-white border rounded-md shadow-lg mt-2 z-50'>
-                {/* Products */}
-                {results.products.length > 0 && (
-                  <div>
-                    <div className='px-3 py-1 text-xs text-gray-400'>
-                      Products
-                    </div>
-                    {results.products.map((p) => (
-                      <Link
-                        key={p.id}
-                        href={`/products/${p.id}`}
-                        className='block px-4 py-2 hover:bg-gray-50'
-                      >
-                        {p.name}
-                      </Link>
-                    ))}
-                  </div>
-                )}
 
-                {/* Vendors */}
-                {results.vendors.length > 0 && (
-                  <div>
-                    <div className='px-3 py-1 text-xs text-gray-400'>
-                      Vendors
-                    </div>
-                    {results.vendors.map((v) => (
-                      <Link
-                        key={v.id}
-                        href={`/vendor/${v.id}`}
-                        className='block px-4 py-2 hover:bg-gray-50'
-                      >
-                        {v.store_name}
-                      </Link>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
+            {/* Results */}
+            {showResults &&
+              (results.products.length > 0 || results.vendors.length > 0) && (
+                <div className='absolute top-full left-0 w-full bg-white border rounded-md shadow-lg mt-2 z-50 max-h-80 overflow-y-auto'>
+                  {/* Products */}
+                  {results.products.length > 0 && (
+                    <>
+                      <div className='px-3 py-1 text-xs text-gray-400'>
+                        Products
+                      </div>
+                      {results.products.map((p, i) => {
+                        const isActive =
+                          activeItem?.type === 'product' &&
+                          activeItem.index === i
+
+                        return (
+                          <Link
+                            key={p.id}
+                            href={`/products/${p.id}`}
+                            className={`block px-4 py-2 ${
+                              isActive ? 'bg-[#10b5cb]/10' : 'hover:bg-gray-50'
+                            }`}
+                          >
+                            {highlightMatch(p.name, search)}
+                          </Link>
+                        )
+                      })}
+                    </>
+                  )}
+
+                  {/* Vendors */}
+                  {results.vendors.length > 0 && (
+                    <>
+                      <div className='px-3 py-1 text-xs text-gray-400'>
+                        Vendors
+                      </div>
+                      {results.vendors.map((v, i) => {
+                        const isActive =
+                          activeItem?.type === 'vendor' &&
+                          activeItem.index === i
+
+                        return (
+                          <Link
+                            key={v.id}
+                            href={`/vendor/${v.id}`}
+                            className={`block px-4 py-2 ${
+                              isActive ? 'bg-[#10b5cb]/10' : 'hover:bg-gray-50'
+                            }`}
+                          >
+                            {highlightMatch(v.store_name, search)}
+                          </Link>
+                        )
+                      })}
+                    </>
+                  )}
+                </div>
+              )}
           </div>
         </div>
 
