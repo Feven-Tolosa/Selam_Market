@@ -193,13 +193,11 @@ export default function VendorProfile() {
       .eq('id', vendorId)
 
     setLoading(false)
-
     if (error) {
       toast.error('Update failed')
       console.error(error)
       return
     }
-
     toast.success('Profile updated successfully!')
   }
 
@@ -270,17 +268,21 @@ export default function VendorProfile() {
           <h2 className='font-semibold text-lg'>Contact Information</h2>
 
           <input
+            type='email'
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder='Email'
+            placeholder='Email example@domain.com'
             className='w-full border p-3 rounded'
+            pattern='[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$'
           />
 
           <input
+            type='tel'
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
-            placeholder='Phone'
+            placeholder='Phone (+25134567890)'
             className='w-full border p-3 rounded'
+            pattern='^\+?[0-9]{9,15}$'
           />
 
           <input
