@@ -53,58 +53,74 @@ export default function CartPage() {
   }, [])
 
   // ✅ Fetch cart items
- useEffect(() => {
-  if (!userId) return;
+  useEffect(() => {
+    if (!userId) return
 
-  const fetchCartItems = async () => {
-    setLoading(true);
-    try {
-      // 🔹 Get all carts for user
-      const { data: carts, error: cartsError } = await supabase
-        .from('carts')
-        .select('id, status')
-        .eq('user_id', userId);
+    const fetchCartItems = async () => {
+      setLoading(true)
 
-      if (cartsError || !carts) {
-        setCartItems([]);
-        return;
-      }
+      try {
+        // 1️⃣ Get all carts for the user
+        const { data: carts, error: cartsError } = await supabase
+          .from('carts')
+          .select('id, status')
+          .eq('user_id', userId)
 
-      // 🔹 Get all items from all carts
-      let allItems: CartItem[] = [];
-
-      for (const cart of carts) {
-        const { data: items, error: itemsError } = await supabase
-          .from('cart_items')
-          .select(
-            'id, cart_id, quantity, product:product_id(id,name,price,image_url,vendor_id)'
-          )
-          .eq('cart_id', cart.id);
-
-        if (itemsError) {
-          console.error(itemsError.message);
-          continue;
+        if (cartsError || !carts) {
+          setCartItems([])
+          return
         }
 
-        // 🔹 Add status based on cart.status
-        const taggedItems = (items ?? []).map((item) => ({
-          ...item,
-          status: cart.status === 'pending' ? 'cart' : 'ordered',
-        }));
+        let allItems: CartItem[] = []
 
-        allItems = [...allItems, ...taggedItems];
+        // 2️⃣ Loop through each cart
+        for (const cart of carts) {
+          const { data: items, error: itemsError } = await supabase
+            .from('cart_items')
+            .select(
+              `
+            id,
+            cart_id,
+            quantity,
+            product:product_id (
+              id,
+              name,
+              price,
+              image_url,
+              vendor_id,
+              category_name
+            )
+          `,
+            )
+            .eq('cart_id', cart.id)
+
+          if (itemsError) {
+            console.error(itemsError.message)
+            continue
+          }
+
+          // 3️⃣ Flatten product array to single object
+          const taggedItems: CartItem[] = (items ?? []).map((item: any) => ({
+            id: item.id,
+            cart_id: item.cart_id,
+            quantity: item.quantity,
+            status: cart.status === 'pending' ? 'cart' : 'ordered',
+            product: item.product?.[0] ?? null, // ✅ flatten here
+          }))
+
+          allItems = [...allItems, ...taggedItems]
+        }
+
+        setCartItems(allItems)
+      } catch (err) {
+        console.error('Unexpected error:', err)
+      } finally {
+        setLoading(false)
       }
-
-      setCartItems(allItems);
-    } catch (err) {
-      console.error('Unexpected error:', err);
-    } finally {
-      setLoading(false);
     }
-  };
 
-  fetchCartItems();
-}, [userId]);
+    fetchCartItems()
+  }, [userId])
 
   // ✅ Fetch recommended products (simple example)
   useEffect(() => {
@@ -124,7 +140,9 @@ export default function CartPage() {
     setUpdatingId(cartItemId)
     const prev = [...cartItems]
     setCartItems((items) =>
-      items.map((item) => (item.id === cartItemId ? { ...item, quantity } : item))
+      items.map((item) =>
+        item.id === cartItemId ? { ...item, quantity } : item,
+      ),
     )
     const { error } = await supabase
       .from('cart_items')
@@ -141,7 +159,10 @@ export default function CartPage() {
   const removeItem = async (cartItemId: string) => {
     const prev = [...cartItems]
     setCartItems((items) => items.filter((item) => item.id !== cartItemId))
-    const { error } = await supabase.from('cart_items').delete().eq('id', cartItemId)
+    const { error } = await supabase
+      .from('cart_items')
+      .delete()
+      .eq('id', cartItemId)
     if (error) {
       console.error(error.message)
       setCartItems(prev)
@@ -161,13 +182,13 @@ export default function CartPage() {
           id: item.product!.id,
           name: item.product!.name,
           price: item.product!.price,
-          quantity: item.quantity
+          quantity: item.quantity,
         }))
 
       const res = await fetch('/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ items: cleanItems, userEmail })
+        body: JSON.stringify({ items: cleanItems, userEmail }),
       })
 
       const data: { checkout_url?: string; error?: string } = await res.json()
@@ -205,7 +226,10 @@ export default function CartPage() {
   return (
     <div className='max-w-7xl mx-auto p-8 space-y-8'>
       <h1 className='text-3xl font-bold'>
-        Shopping Cart <span className='text-gray-500 text-lg font-normal'>({cartItems.length} items)</span>
+        Shopping Cart{' '}
+        <span className='text-gray-500 text-lg font-normal'>
+          ({cartItems.length} items)
+        </span>
       </h1>
 
       {/* CART ITEMS */}
@@ -228,8 +252,12 @@ export default function CartPage() {
                 />
                 <div className='flex-1 space-y-1'>
                   <h2 className='font-semibold text-lg'>{product.name}</h2>
-                  <p className='text-[#10b5cb] font-semibold text-lg'>{product.price.toFixed(2)}</p>
-                  <span className='text-sm text-green-600 font-medium'>In Cart</span>
+                  <p className='text-[#10b5cb] font-semibold text-lg'>
+                    {product.price.toFixed(2)}
+                  </p>
+                  <span className='text-sm text-green-600 font-medium'>
+                    In Cart
+                  </span>
                 </div>
                 <div className='flex flex-col items-center gap-2'>
                   <input
@@ -237,7 +265,9 @@ export default function CartPage() {
                     min={1}
                     value={item.quantity}
                     disabled={updatingId === item.id}
-                    onChange={(e) => updateQuantity(item.id, Number(e.target.value))}
+                    onChange={(e) =>
+                      updateQuantity(item.id, Number(e.target.value))
+                    }
                     className='w-20 p-1 border rounded text-center'
                   />
                   <button
@@ -272,7 +302,9 @@ export default function CartPage() {
                     />
                     <div className='flex-1 space-y-1'>
                       <h2 className='font-semibold text-lg'>{product.name}</h2>
-                      <p className='text-gray-500 font-semibold text-lg'>{product.price.toFixed(2)}</p>
+                      <p className='text-gray-500 font-semibold text-lg'>
+                        {product.price.toFixed(2)}
+                      </p>
                       <span className='text-blue-600 font-medium'>Ordered</span>
                     </div>
                   </div>
@@ -322,8 +354,12 @@ export default function CartPage() {
                   height={150}
                   className='object-cover rounded-lg'
                 />
-                <h3 className='mt-2 font-semibold text-center'>{product.name}</h3>
-                <p className='text-[#10b5cb] font-semibold mt-1'>{product.price.toFixed(2)}</p>
+                <h3 className='mt-2 font-semibold text-center'>
+                  {product.name}
+                </h3>
+                <p className='text-[#10b5cb] font-semibold mt-1'>
+                  {product.price.toFixed(2)}
+                </p>
               </Link>
             ))}
           </div>
