@@ -148,9 +148,9 @@ export default function Navbar() {
             </>
           ) : (
             <>
-              <button className='hover:text-[#10b5cb] transition'>
+              <Link href='/cart' className='hover:text-[#10b5cb] transition'>
                 <ShoppingCart size={22} />
-              </button>
+              </Link>
               <div className='relative' ref={dropdownRef}>
                 {/* 👤 Avatar */}
                 <button
