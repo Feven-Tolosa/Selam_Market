@@ -358,7 +358,7 @@ export default function VendorProfile() {
 
                 <div className='flex justify-between mt-3 text-sm'>
                   <a
-                    href={`/vendor/products/edit/${product.id}`}
+                    href={`/vendor/dashboard/products/edit/${product.id}`}
                     className='text-blue-500 hover:underline'
                   >
                     Edit

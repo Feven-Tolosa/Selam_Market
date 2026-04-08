@@ -10,6 +10,7 @@ type Product = {
   price: number
   image_url: string
   created_at: string
+  vendor_id: string
 }
 
 export default function VendorProducts() {
@@ -17,17 +18,38 @@ export default function VendorProducts() {
   const [loading, setLoading] = useState(true)
 
   const fetchProducts = async () => {
+    setLoading(true)
+
+    // ✅ 1. Get current user
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser()
+
+    if (userError || !user) {
+      console.error('User not found')
+      setLoading(false)
+      return
+    }
+
+    // ✅ 2. Fetch only this vendor's products
     const { data, error } = await supabase
       .from('products')
       .select('*')
+      .eq('vendor_id', user.id) // 🔥 KEY LINE
       .order('created_at', { ascending: false })
 
-    if (!error && data) {
+    if (error) {
+      console.error(error.message)
+    }
+
+    if (data) {
       setProducts(data)
     }
 
     setLoading(false)
   }
+
   useEffect(() => {
     fetchProducts()
   }, [])
