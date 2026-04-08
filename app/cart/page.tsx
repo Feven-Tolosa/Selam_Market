@@ -58,9 +58,8 @@ export default function CartPage() {
 
     const fetchCartItems = async () => {
       setLoading(true)
-
       try {
-        // 1️⃣ Get all carts for the user
+        // 🔹 Get all carts for user
         const { data: carts, error: cartsError } = await supabase
           .from('carts')
           .select('id, status')
@@ -71,26 +70,14 @@ export default function CartPage() {
           return
         }
 
+        // 🔹 Get all items from all carts
         let allItems: CartItem[] = []
 
-        // 2️⃣ Loop through each cart
         for (const cart of carts) {
           const { data: items, error: itemsError } = await supabase
             .from('cart_items')
             .select(
-              `
-            id,
-            cart_id,
-            quantity,
-            product:product_id (
-              id,
-              name,
-              price,
-              image_url,
-              vendor_id,
-              category_name
-            )
-          `,
+              'id, cart_id, quantity, product:product_id(id,name,price,image_url,vendor_id)',
             )
             .eq('cart_id', cart.id)
 
@@ -99,13 +86,10 @@ export default function CartPage() {
             continue
           }
 
-          // 3️⃣ Flatten product array to single object
-          const taggedItems: CartItem[] = (items ?? []).map((item: any) => ({
-            id: item.id,
-            cart_id: item.cart_id,
-            quantity: item.quantity,
+          // 🔹 Add status based on cart.status
+          const taggedItems = (items ?? []).map((item) => ({
+            ...item,
             status: cart.status === 'pending' ? 'cart' : 'ordered',
-            product: item.product?.[0] ?? null, // ✅ flatten here
           }))
 
           allItems = [...allItems, ...taggedItems]
