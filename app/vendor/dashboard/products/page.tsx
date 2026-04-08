@@ -10,40 +10,49 @@ type Product = {
   price: number
   image_url: string
   created_at: string
-  vendor_id: string
 }
 
 export default function VendorProducts() {
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
 
+  // -------------------------
+  // FETCH ONLY VENDOR PRODUCTS
+  // -------------------------
+
   const fetchProducts = async () => {
     setLoading(true)
 
-    // ✅ 1. Get current user
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser()
+    // 1. Get logged-in user
+    const { data: userData } = await supabase.auth.getUser()
+    const user = userData.user
 
-    if (userError || !user) {
-      console.error('User not found')
+    if (!user) {
       setLoading(false)
       return
     }
 
-    // ✅ 2. Fetch only this vendor's products
+    // 2. Get vendor record
+    const { data: vendor, error: vendorError } = await supabase
+      .from('vendors')
+      .select('id')
+      .eq('user_id', user.id)
+      .maybeSingle()
+
+    if (vendorError || !vendor) {
+      console.error('Vendor not found')
+      setLoading(false)
+      return
+    }
+
+    // 3. Fetch ONLY this vendor's products
     const { data, error } = await supabase
       .from('products')
       .select('*')
-      .eq('vendor_id', user.id) // 🔥 KEY LINE
+      .eq('vendor_id', vendor.id) // ✅ KEY FIX
       .order('created_at', { ascending: false })
 
-    if (error) {
-      console.error(error.message)
-    }
-
-    if (data) {
+    if (!error && data) {
       setProducts(data)
     }
 
@@ -53,6 +62,24 @@ export default function VendorProducts() {
   useEffect(() => {
     fetchProducts()
   }, [])
+
+  // -------------------------
+  // DELETE PRODUCT
+  // -------------------------
+
+  const deleteProduct = async (id: string) => {
+    const confirmDelete = confirm('Delete this product?')
+    if (!confirmDelete) return
+
+    const { error } = await supabase.from('products').delete().eq('id', id)
+
+    if (error) {
+      alert('Delete failed')
+      return
+    }
+
+    setProducts((prev) => prev.filter((p) => p.id !== id))
+  }
 
   return (
     <div className='p-6'>
@@ -82,7 +109,7 @@ export default function VendorProducts() {
       )}
 
       {/* TABLE */}
-      {products.length > 0 && (
+      {!loading && products.length > 0 && (
         <div className='bg-white border rounded-xl overflow-hidden shadow-sm'>
           <table className='w-full'>
             <thead className='bg-gray-50 border-b'>
@@ -119,13 +146,18 @@ export default function VendorProducts() {
 
                   <td className='p-4 text-right space-x-4'>
                     <Link
-                      href={`/vendor/products/edit/${product.id}`}
-                      className='text-blue-500'
+                      href={`/vendor/dashboard/products/edit/${product.id}`}
+                      className='text-blue-500 hover:underline'
                     >
                       Edit
                     </Link>
 
-                    <button className='text-red-500'>Delete</button>
+                    <button
+                      onClick={() => deleteProduct(product.id)}
+                      className='text-red-500 hover:underline'
+                    >
+                      Delete
+                    </button>
                   </td>
                 </tr>
               ))}

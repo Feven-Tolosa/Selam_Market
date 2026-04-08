@@ -173,7 +173,7 @@ export default function EditProductPage() {
     toast.success('Product updated!')
     setLoading(false)
 
-    router.refresh()
+    router.push('/vendor/dashboard/products') // Redirect back to products list
   }
 
   return (
