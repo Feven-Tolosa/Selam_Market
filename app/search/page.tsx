@@ -16,6 +16,7 @@ type Product = {
 type Vendor = {
   id: string
   business_name: string
+  store_name: string
 }
 
 export default function SearchPage() {
