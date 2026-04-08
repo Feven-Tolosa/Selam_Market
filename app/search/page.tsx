@@ -1,0 +1,114 @@
+'use client'
+
+import { useEffect, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
+import { supabase } from '@/lib/supabaseClient'
+import Image from 'next/image'
+import Link from 'next/link'
+
+type Product = {
+  id: string
+  name: string
+  price: number
+  image_url: string | null
+}
+
+type Vendor = {
+  id: string
+  business_name: string
+}
+
+export default function SearchPage() {
+  const searchParams = useSearchParams()
+  const query = searchParams.get('q') || ''
+
+  const [products, setProducts] = useState<Product[]>([])
+  const [vendors, setVendors] = useState<Vendor[]>([])
+  const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    const search = async () => {
+      if (!query) return
+
+      setLoading(true)
+
+      // 🔍 Search Products
+      const { data: productData } = await supabase
+        .from('products')
+        .select('*')
+        .ilike('name', `%${query}%`)
+
+      // 🔍 Search Vendors (from users table or vendor table)
+      const { data: vendorData } = await supabase
+        .from('users')
+        .select('id, business_name')
+        .ilike('business_name', `%${query}%`)
+
+      setProducts(productData || [])
+      setVendors(vendorData || [])
+      setLoading(false)
+    }
+
+    search()
+  }, [query])
+
+  return (
+    <div className='max-w-7xl mx-auto px-4 py-6'>
+      <h1 className='text-2xl font-semibold mb-6'>
+        Search results for: {query}
+      </h1>
+
+      {loading && <p>Searching...</p>}
+
+      {/* PRODUCTS */}
+      <div className='mb-10'>
+        <h2 className='text-xl font-semibold mb-4'>Products</h2>
+
+        {products.length === 0 ? (
+          <p className='text-gray-500'>No products found</p>
+        ) : (
+          <div className='grid grid-cols-2 md:grid-cols-4 gap-4'>
+            {products.map((product) => (
+              <Link
+                key={product.id}
+                href={`/products/${product.id}`}
+                className='border rounded-lg p-3 hover:shadow'
+              >
+                <Image
+                  src={product.image_url || '/placeholder.png'}
+                  alt={product.name}
+                  width={200}
+                  height={200}
+                  className='w-full h-40 object-cover rounded'
+                />
+                <h3 className='mt-2 font-medium'>{product.name}</h3>
+                <p className='text-[#10b5cb] font-semibold'>${product.price}</p>
+              </Link>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* VENDORS */}
+      <div>
+        <h2 className='text-xl font-semibold mb-4'>Vendors</h2>
+
+        {vendors.length === 0 ? (
+          <p className='text-gray-500'>No vendors found</p>
+        ) : (
+          <div className='grid grid-cols-2 md:grid-cols-4 gap-4'>
+            {vendors.map((vendor) => (
+              <Link
+                key={vendor.id}
+                href={`/vendor/${vendor.id}`}
+                className='border rounded-lg p-4 hover:shadow flex items-center justify-center'
+              >
+                <p className='font-medium text-center'>{vendor.store_name}</p>
+              </Link>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}

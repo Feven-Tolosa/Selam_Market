@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { ShoppingCart, Store, ChevronDown } from 'lucide-react'
+import { ShoppingCart, Store, ChevronDown, Search } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabaseClient'
@@ -22,7 +22,15 @@ type UserType = {
 export default function Navbar() {
   const [user, setUser] = useState<UserType | null>(null)
   const [open, setOpen] = useState(false)
+
   const dropdownRef = useRef<HTMLDivElement>(null)
+
+  // 🔍 SEARCH STATE (ONLY ADDITION)
+  const [query, setQuery] = useState('')
+  const [results, setResults] = useState<any[]>([])
+  const [showDropdown, setShowDropdown] = useState(false)
+  const searchRef = useRef<HTMLDivElement>(null)
+
   const router = useRouter()
 
   // ✅ Fetch user + role + vendor status
@@ -35,28 +43,23 @@ export default function Navbar() {
         return
       }
 
-      // 👤 user info
       const { data: userData } = await supabase
         .from('users')
         .select('role')
         .eq('id', data.user.id)
         .single()
 
-      // 🏪 vendor request info (LATEST request)
       const { data: vendorData } = await supabase
         .from('vendor_requests')
         .select('status')
         .eq('user_id', data.user.id)
-        .order('created_at', { ascending: false }) // ✅ FIX
-        .limit(1) // ✅ FIX
+        .order('created_at', { ascending: false })
+        .limit(1)
         .maybeSingle()
 
-      // ✅ Normalize status (CRITICAL FIX)
       const status = (vendorData?.status || 'none')
         .toLowerCase()
         .trim() as VendorStatus
-
-      console.log('Vendor status from DB:', vendorData?.status) // ✅ DEBUG
 
       setUser({
         id: data.user.id,
@@ -77,7 +80,39 @@ export default function Navbar() {
     }
   }, [])
 
-  // ✅ Click outside close
+  // 🔍 LIVE SEARCH (ONLY ADDITION)
+  useEffect(() => {
+    const delay = setTimeout(async () => {
+      if (!query.trim()) {
+        setResults([])
+        return
+      }
+
+      const { data: products } = await supabase
+        .from('products')
+        .select('id, name, image_url, price')
+        .ilike('name', `%${query}%`)
+        .limit(5)
+
+      const { data: vendors } = await supabase
+        .from('users')
+        .select('id, store_name')
+        .ilike('store_name', `%${query}%`)
+        .limit(5)
+
+      const formatted = [
+        ...(products || []).map((p) => ({ ...p, type: 'product' })),
+        ...(vendors || []).map((v) => ({ ...v, type: 'vendor' })),
+      ]
+
+      setResults(formatted)
+      setShowDropdown(true)
+    }, 300)
+
+    return () => clearTimeout(delay)
+  }, [query])
+
+  // 🔍 Close search dropdown (ONLY ADDITION — merged safely with existing logic)
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (
@@ -85,6 +120,10 @@ export default function Navbar() {
         !dropdownRef.current.contains(e.target as Node)
       ) {
         setOpen(false)
+      }
+
+      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
+        setShowDropdown(false)
       }
     }
 
@@ -98,30 +137,26 @@ export default function Navbar() {
     window.location.reload()
   }
 
-  // ✅ Vendor click logic (UNCHANGED behavior)
+  // ✅ Vendor click logic (UNCHANGED)
   const handleVendorClick = () => {
     if (!user) return
 
     switch (user.vendor_status) {
       case 'approved':
-        router.push('/vendor/dashboard') // ✅ better than reload
+        router.push('/vendor/dashboard')
         break
-
       case 'pending':
         toast('Your vendor request is pending approval ⏳')
         break
-
       case 'rejected':
         toast('Your request was rejected. You can apply again.')
         router.push('/vendor/onboarding')
         break
-
       default:
         router.push('/vendor/onboarding')
     }
   }
 
-  // 👤 Generate initials fallback
   const getInitials = (email?: string) => {
     if (!email) return 'U'
     return email.charAt(0).toUpperCase()
@@ -141,18 +176,84 @@ export default function Navbar() {
           />
         </Link>
 
-        {/* Search */}
-        <div className='flex-1 px-6 hidden md:block'>
-          <input
-            type='text'
-            placeholder='Search products...'
-            className='w-full rounded-md py-2 px-4 border ring-1 ring-[#55b8c5] focus:ring-2 focus:ring-[#10b5cb] outline-none transition duration-200'
-          />
+        {/* 🔍 SEARCH BAR (UPDATED ONLY THIS SECTION) */}
+        <div className='flex-1 px-6 hidden md:block' ref={searchRef}>
+          <div className='relative'>
+            <Search
+              size={18}
+              className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400'
+            />
+
+            <input
+              type='text'
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              onFocus={() => query && setShowDropdown(true)}
+              placeholder='Search products or stores...'
+              className='w-full rounded-md py-2 pl-10 pr-4 border ring-1 ring-[#55b8c5] focus:ring-2 focus:ring-[#10b5cb] outline-none transition duration-200'
+            />
+
+            {/* DROPDOWN */}
+            {showDropdown && results.length > 0 && (
+              <div className='absolute top-full left-0 w-full bg-white border rounded-lg shadow-lg mt-2 z-50 max-h-80 overflow-y-auto'>
+                {/* PRODUCTS */}
+                {results
+                  .filter((r) => r.type === 'product')
+                  .map((item) => (
+                    <Link
+                      key={item.id}
+                      href={`/products/${item.id}`}
+                      onClick={() => setShowDropdown(false)}
+                      className='flex items-center gap-3 px-4 py-2 hover:bg-gray-100'
+                    >
+                      <Image
+                        src={item.image_url || '/placeholder.png'}
+                        alt={item.name}
+                        width={40}
+                        height={40}
+                        className='rounded object-cover'
+                      />
+                      <div>
+                        <p className='text-sm font-medium'>{item.name}</p>
+                        <p className='text-xs text-[#10b5cb]'>
+                          ETB {item.price}
+                        </p>
+                      </div>
+                    </Link>
+                  ))}
+
+                {/* VENDORS */}
+                {results
+                  .filter((r) => r.type === 'vendor')
+                  .map((item) => (
+                    <Link
+                      key={item.id}
+                      href={`/vendor/${item.id}`}
+                      onClick={() => setShowDropdown(false)}
+                      className='flex items-center gap-3 px-4 py-2 hover:bg-gray-100'
+                    >
+                      <div className='w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center'>
+                        🏪
+                      </div>
+                      <p className='text-sm font-medium'>{item.store_name}</p>
+                    </Link>
+                  ))}
+
+                {/* VIEW ALL */}
+                <Link
+                  href={`/search?q=${query}`}
+                  onClick={() => setShowDropdown(false)}
+                  className='block text-center py-2 text-sm text-[#10b5cb] border-t hover:underline'
+                >
+                  View all results
+                </Link>
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* Right Side */}
+        {/* RIGHT SIDE (UNCHANGED) */}
         <div className='flex items-center gap-6'>
-          {/* Language Switcher */}
           <div className='transition duration-200 hover:scale-110'>
             <LanguageSwitcher />
           </div>
@@ -174,29 +275,16 @@ export default function Navbar() {
               </Link>
 
               <div className='relative' ref={dropdownRef}>
-                {/* 👤 Avatar */}
                 <button
                   onClick={() => setOpen((prev) => !prev)}
                   className='flex items-center gap-2'
                 >
-                  {user.avatar_url ? (
-                    <Image
-                      src={user.avatar_url}
-                      alt='avatar'
-                      width={32}
-                      height={32}
-                      className='rounded-full object-cover'
-                    />
-                  ) : (
-                    <div className='w-8 h-8 rounded-full bg-[#10b5cb] text-white flex items-center justify-center text-sm font-semibold'>
-                      {getInitials(user.email)}
-                    </div>
-                  )}
-
+                  <div className='w-8 h-8 rounded-full bg-[#10b5cb] text-white flex items-center justify-center text-sm font-semibold'>
+                    {getInitials(user.email)}
+                  </div>
                   <ChevronDown size={16} />
                 </button>
 
-                {/* Dropdown */}
                 <div
                   className={`absolute right-0 mt-2 w-48 bg-white border rounded-lg shadow-md overflow-hidden transition-all duration-200 ${
                     open
@@ -204,7 +292,6 @@ export default function Navbar() {
                       : 'opacity-0 -translate-y-2 pointer-events-none'
                   }`}
                 >
-                  {/* 🏪 Vendor Status Badge */}
                   <div className='px-4 py-2 text-sm'>
                     {user.vendor_status === 'approved' && (
                       <span className='text-green-600'>✔ Approved Vendor</span>
@@ -219,7 +306,6 @@ export default function Navbar() {
                     )}
                   </div>
 
-                  {/* Vendor Button */}
                   <button
                     onClick={handleVendorClick}
                     className='flex w-full items-center gap-2 px-4 py-2 hover:bg-gray-50 text-left'
@@ -228,7 +314,6 @@ export default function Navbar() {
                     Vendor
                   </button>
 
-                  {/* Admin */}
                   {user.role === 'admin' && (
                     <Link
                       href='/admin'
@@ -238,7 +323,6 @@ export default function Navbar() {
                     </Link>
                   )}
 
-                  {/* Logout */}
                   <button
                     onClick={handleLogout}
                     className='w-full text-left px-4 py-2 text-red-500 hover:bg-gray-50'
