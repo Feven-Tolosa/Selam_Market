@@ -15,6 +15,20 @@ export interface Product {
 }
 
 export default function ProductCard({ product }: { product: Product }) {
+  const getImageUrl = (path: string | null) => {
+    if (!path || path.trim() === '') {
+      return '/placeholder.png'
+    }
+
+    // Already a full URL
+    if (path.startsWith('http')) {
+      return path
+    }
+
+    // Supabase storage path fix
+    return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/${path}`
+  }
+
   return (
     <Link
       href={`/products/${product.id}`}
@@ -23,7 +37,7 @@ export default function ProductCard({ product }: { product: Product }) {
       {/* Image */}
       <div className='relative overflow-hidden'>
         <Image
-          src={product.image_url || '/placeholder.png'}
+          src={getImageUrl(product.image_url)}
           alt={product.name}
           width={300}
           height={300}

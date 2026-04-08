@@ -1,6 +1,4 @@
 'use client'
-
-import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,10 +16,10 @@ export default function LanguageSwitcher() {
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant='ghost' size='icon'>
+      <DropdownMenuTrigger>
+        <span>
           <Globe className='w-5 h-5' />
-        </Button>
+        </span>
       </DropdownMenuTrigger>
 
       <DropdownMenuContent align='end'>
