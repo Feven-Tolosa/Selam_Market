@@ -17,10 +17,12 @@ type ProductWithExtras = {
   ratingCount?: number
   distance?: number
 
-  vendors?: {
-    latitude: number
-    longitude: number
-  }
+  vendors?:
+    | {
+        latitude: number | null
+        longitude: number | null
+      }[]
+    | null
 }
 
 export default function ProductsPage() {
@@ -33,8 +35,8 @@ export default function ProductsPage() {
     null,
   )
 
-  //Get user location
-  const getUserLocation = () => {
+  //  AUTO location (Amazon-style)
+  useEffect(() => {
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         setCoords({
@@ -44,9 +46,9 @@ export default function ProductsPage() {
       },
       () => console.log('Location denied'),
     )
-  }
+  }, [])
 
-  // Distance
+  //  Distance calculator
   const getDistance = (
     lat1: number,
     lon1: number,
@@ -66,17 +68,9 @@ export default function ProductsPage() {
     return 2 * R * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
   }
 
-  // Trigger location when "Nearby" selected
-  useEffect(() => {
-    if (sort === 'nearby' && !coords) {
-      getUserLocation()
-    }
-  }, [sort])
-
-  // Fetch data
+  //  Fetch data
   useEffect(() => {
     async function fetchData() {
-      // products + vendor location
       const { data: p } = await supabase.from('products').select(`
         *,
         vendors (
@@ -91,7 +85,7 @@ export default function ProductsPage() {
         .from('reviews')
         .select('product_id, rating')
 
-      // rating map
+      //  Rating map
       const map: Record<string, { total: number; count: number }> = {}
 
       r?.forEach((rev) => {
@@ -102,8 +96,9 @@ export default function ProductsPage() {
         map[rev.product_id].count++
       })
 
-      const enriched =
-        p?.map((prod) => {
+      //  Enrich products
+      const enriched: ProductWithExtras[] =
+        p?.map((prod: ProductWithExtras) => {
           const stats = map[prod.id]
 
           return {
@@ -120,20 +115,45 @@ export default function ProductsPage() {
     fetchData()
   }, [])
 
-  // FILTER + SORT
+  //  FILTER + SORT LOGIC
+
   let filtered = [...products]
 
+  // Category
   if (selectedCategory !== 'all') {
     filtered = filtered.filter((p) => p.category_id === selectedCategory)
   }
 
+  // Search
   if (search) {
     filtered = filtered.filter((p) =>
       p.name.toLowerCase().includes(search.toLowerCase()),
     )
   }
 
-  // sorting
+  //  ALWAYS attach distance if coords exist
+  if (coords) {
+    filtered = filtered.map((p) => {
+      if (!p.vendors || p.vendors.length === 0) return p
+
+      const vendor = p.vendors[0]
+
+      if (!vendor.latitude || !vendor.longitude) return p
+
+      const distance = getDistance(
+        coords.lat,
+        coords.lng,
+        vendor.latitude,
+        vendor.longitude,
+      )
+
+      return { ...p, distance }
+
+      return { ...p, distance }
+    })
+  }
+
+  // Sorting
   if (sort === 'low') {
     filtered.sort((a, b) => a.price - b.price)
   }
@@ -146,29 +166,25 @@ export default function ProductsPage() {
     filtered.sort((a, b) => (b.rating || 0) - (a.rating || 0))
   }
 
-  // nearby sorting
+  //  Nearby sorting (Amazon-style)
   if (sort === 'nearby' && coords) {
     filtered = filtered
-      .map((p) => {
-        if (!p.vendors) return p
-
-        const distance = getDistance(
-          coords.lat,
-          coords.lng,
-          p.vendors.latitude,
-          p.vendors.longitude,
-        )
-
-        return { ...p, distance }
-      })
+      .filter((p) => p.distance !== undefined)
       .sort((a, b) => (a.distance || 0) - (b.distance || 0))
   }
 
   return (
     <div className='max-w-7xl mx-auto px-6 py-10'>
-      <h1 className='text-2xl font-bold mb-6 text-[#10b5cb]'>
+      <h1 className='text-2xl font-bold mb-2 text-[#10b5cb]'>
         Explore Products
       </h1>
+
+      {/* 📍 Indicator */}
+      {coords && (
+        <p className='text-sm text-gray-600 mb-6'>
+          Showing products near you 📍
+        </p>
+      )}
 
       {/* FILTERS */}
       <div className='flex flex-col md:flex-row gap-4 mb-8'>
