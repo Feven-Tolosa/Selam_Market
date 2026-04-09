@@ -29,8 +29,6 @@ export default function VendorsPage() {
   const [vendors, setVendors] = useState<Vendor[]>([])
   const [search, setSearch] = useState('')
   const [location, setLocation] = useState('')
-  const [category, setCategory] = useState('')
-  const [product, setProduct] = useState('')
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(
     null,
   )
@@ -40,8 +38,8 @@ export default function VendorsPage() {
     ssr: false,
   })
 
-  // ✅ Get user location
-  const getUserLocation = () => {
+  // ✅ AUTO detect location (Amazon-style)
+  useEffect(() => {
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         setCoords({
@@ -49,9 +47,11 @@ export default function VendorsPage() {
           lng: pos.coords.longitude,
         })
       },
-      (err) => console.error(err.message),
+      () => {
+        console.log('Location denied → fallback to normal search')
+      },
     )
-  }
+  }, [])
 
   // ✅ Distance formula
   const getDistance = (
@@ -73,7 +73,7 @@ export default function VendorsPage() {
     return 2 * R * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
   }
 
-  // ✅ Fetch ratings separately
+  // ✅ Attach ratings
   const attachRatings = async (vendorsData: Vendor[]) => {
     const { data: ratings } = await supabase
       .from('vendor_ratings')
@@ -99,15 +99,15 @@ export default function VendorsPage() {
     })
   }
 
-  // ✅ Main fetch
+  // ✅ Fetch vendors
   const fetchVendors = async () => {
     setLoading(true)
 
     try {
       let vendorsData: Vendor[] = []
 
-      // 🔥 CASE 1: Nearby vendors (RPC)
       if (coords) {
+        // 📍 Nearby vendors
         const { data, error } = await supabase.rpc('nearby_vendors', {
           user_lat: coords.lat,
           user_lng: coords.lng,
@@ -115,9 +115,17 @@ export default function VendorsPage() {
         })
 
         if (error) throw error
+
         vendorsData = data || []
+
+        // 🔍 Search inside nearby
+        if (search) {
+          vendorsData = vendorsData.filter((v) =>
+            v.store_name.toLowerCase().includes(search.toLowerCase()),
+          )
+        }
       } else {
-        // 🔥 CASE 2: Normal query
+        // 🔍 Normal search
         let query = supabase.from('vendors').select(`
           *,
           products (
@@ -126,10 +134,13 @@ export default function VendorsPage() {
           )
         `)
 
-        if (search) query = query.ilike('store_name', `%${search}%`)
-        if (location) query = query.ilike('location', `%${location}%`)
-        if (product) query = query.ilike('products.name', `%${product}%`)
-        if (category) query = query.eq('products.category', category)
+        if (search) {
+          query = query.ilike('store_name', `%${search}%`)
+        }
+
+        if (location) {
+          query = query.ilike('location', `%${location}%`)
+        }
 
         const { data, error } = await query
         if (error) throw error
@@ -137,10 +148,9 @@ export default function VendorsPage() {
         vendorsData = data || []
       }
 
-      // ✅ Attach ratings
       let result = await attachRatings(vendorsData)
 
-      // ✅ Add distance if coords exist
+      // 📏 Add distance + sort
       if (coords) {
         result = result
           .map((v) => ({
@@ -157,7 +167,7 @@ export default function VendorsPage() {
 
       setVendors(result)
     } catch (err) {
-      console.error('Error:', err)
+      console.error(err)
     } finally {
       setLoading(false)
     }
@@ -167,16 +177,23 @@ export default function VendorsPage() {
   useEffect(() => {
     const delay = setTimeout(fetchVendors, 400)
     return () => clearTimeout(delay)
-  }, [search, location, category, product, coords])
+  }, [search, location, coords])
 
   return (
     <div className='p-6 bg-white min-h-screen'>
-      <h1 className='text-2xl font-bold mb-6 text-[#10b5cb]'>Find Vendors</h1>
+      <h1 className='text-2xl font-bold mb-2 text-[#10b5cb]'>Find Vendors</h1>
+
+      {/* 📍 Nearby indicator */}
+      {coords && (
+        <p className='text-sm text-gray-600 mb-4'>
+          Showing vendors near you 📍
+        </p>
+      )}
 
       {/* Filters */}
-      <div className='grid md:grid-cols-4 gap-4 mb-6'>
+      <div className='grid md:grid-cols-3 gap-4 mb-6'>
         <input
-          placeholder='Store name...'
+          placeholder='Search store...'
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className='border p-2 rounded'
@@ -189,30 +206,12 @@ export default function VendorsPage() {
           className='border p-2 rounded'
         />
 
-        {/* <input
-          placeholder='Product...'
-          value={product}
-          onChange={(e) => setProduct(e.target.value)}
-          className='border p-2 rounded'
-        /> */}
-
-        <select
-          value={category}
-          onChange={(e) => setCategory(e.target.value)}
-          className='border p-2 rounded'
-        >
-          <option value=''>All Categories</option>
-          <option value='electronics'>Electronics</option>
-          <option value='fashion'>Fashion</option>
-          <option value='furniture'>Furniture</option>
-          <option value='food'>Food</option>
-        </select>
-
+        {/* Clear location */}
         <button
-          onClick={getUserLocation}
-          className='bg-[#10b5cb] text-white rounded px-4 py-2 hover:opacity-90'
+          onClick={() => setCoords(null)}
+          className='bg-gray-200 text-sm px-4 py-2 rounded'
         >
-          Use My Location
+          Clear Location
         </button>
       </div>
 

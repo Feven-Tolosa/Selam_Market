@@ -19,6 +19,7 @@ export default function VendorOnboarding() {
   const [loading, setLoading] = useState(false)
   const [userId, setUserId] = useState<string | null>(null)
   const [licenseFile, setLicenseFile] = useState<File | null>(null)
+  const [phone, setPhone] = useState('')
 
   // Get user
   useEffect(() => {
@@ -104,7 +105,7 @@ export default function VendorOnboarding() {
       const formData = new FormData(e.currentTarget)
 
       const storeName = formData.get('storeName') as string
-      const phone = formData.get('phone') as string
+      // const phone = formData.get('phone') as string
       const location = formData.get('location') as string
       const description = formData.get('description') as string
 
@@ -164,9 +165,13 @@ export default function VendorOnboarding() {
               />
               <label className='text-sm text-gray-600'>Contact Info</label>
               <input
+                type='tel'
                 name='phone'
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
                 required
                 placeholder='+251...'
+                pattern='^\+?[0-9]{9,15}$'
                 className='w-full mt-1 px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#10b5cb]'
               />
               <label className='text-sm text-gray-600'>Location</label>
@@ -192,7 +197,7 @@ export default function VendorOnboarding() {
           {/* LICENSE UPLOAD */}
           <div>
             <label className='text-sm text-gray-600 mb-2 block'>
-              Business License (Scan or Upload)
+              Business License (Upload - Max 5MB)
             </label>
 
             <div className='border-2 border-dashed rounded-lg p-4 text-center'>

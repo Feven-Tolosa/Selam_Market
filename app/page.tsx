@@ -17,10 +17,10 @@ export default function Home() {
       <HeroSection />
       <CategoriesSection />
       <Featured />
-      <WhyLocal />
-      <AvailableProducts />
-      <TopVendors />
       <HowItWorks />
+      <AvailableProducts />
+      <WhyLocal />
+      <TopVendors />
       <TopDeals />
       <Newsletter />
       <Footer />

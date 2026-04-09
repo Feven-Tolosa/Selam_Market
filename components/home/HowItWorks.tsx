@@ -9,13 +9,13 @@ const steps = [
   },
   {
     icon: Truck,
-    title: 'Fast Delivery',
-    desc: 'Receive your order quickly with local delivery options.',
+    title: 'Fast Ordering',
+    desc: 'Place your order in seconds with our easy-to-use platform.',
   },
   {
     icon: Smile,
     title: 'Enjoy & Support',
-    desc: 'Enjoy your purchase and support local businesses.',
+    desc: 'Receive your order quickly and support local businesses with every purchase.',
   },
 ]
 
