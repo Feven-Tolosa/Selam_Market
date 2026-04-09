@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { Facebook, Twitter, Instagram } from 'lucide-react'
+import LanguageSwitcher from '../Language/LanguageSwitcher'
 
 export default function Footer() {
   return (
@@ -9,7 +10,7 @@ export default function Footer() {
         <div className='grid grid-cols-2 md:grid-cols-4 gap-10'>
           {/* Brand */}
           <div>
-            <h2 className='text-lg font-semibold text-[#10b5cb]'>
+            <h2 className='text-lg font-semibold text-gray-800 mb-3'>
               LocalMarket
             </h2>
 
@@ -118,17 +119,17 @@ export default function Footer() {
         <div className='border-t mt-10 pt-6 flex flex-col md:flex-row justify-between items-center gap-4'>
           {/* Country / language selector */}
           <div className='flex gap-3 text-sm'>
-            <select className='border rounded px-2 py-1'>
-              <option>English</option>
-              <option>Amharic</option>
-              <option>Oromiffa</option>
+            <select className='border rounded px-2 py-1 transition duration-200 hover:scale-110'>
+              <option>Addis Ababa</option>
+              <option>Jimma</option>
+              <option>Hawasa</option>
+              <option>Adama</option>
+              <option>Bahir Dar</option>
+              <option>Gondar</option>
+              <option>Dire Dawa</option>
+              <option>Harar</option>
             </select>
-
-            <select className='border rounded px-2 py-1'>
-              <option>Ethiopia</option>
-              <option>USA</option>
-              <option>UK</option>
-            </select>
+            <LanguageSwitcher />
           </div>
 
           {/* Social icons */}
