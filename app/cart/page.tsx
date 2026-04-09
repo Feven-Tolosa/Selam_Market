@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -19,7 +19,7 @@ type CartItem = {
   cart_id: string
   product: Product | null
   quantity: number
-  status?: 'cart' | 'ordered' // ✅ New: tag to differentiate ordered vs cart items
+  status: 'cart' | 'ordered'
 }
 
 type CheckoutItem = {
@@ -38,156 +38,143 @@ export default function CartPage() {
   const [checkingOut, setCheckingOut] = useState(false)
   const [recommendedProducts, setRecommendedProducts] = useState<Product[]>([])
 
-  // ✅ Get logged-in user
+  // ✅ Get logged-in user from users table
   useEffect(() => {
     const getUser = async () => {
       const { data, error } = await supabase.auth.getUser()
-      if (error) {
-        console.error('Auth error:', error.message)
-        return
+      if (!error && data.user) {
+        setUserId(data.user.id)
+        setUserEmail(data.user.email ?? null)
       }
-      setUserId(data.user?.id ?? null)
-      setUserEmail(data.user?.email ?? null)
     }
     getUser()
   }, [])
 
   // ✅ Fetch cart items
-  useEffect(() => {
+  const fetchCartItems = useCallback(async () => {
     if (!userId) return
+    setLoading(true)
 
-    const fetchCartItems = async () => {
-      setLoading(true)
-      try {
-        // 🔹 Get all carts for user
-        const { data: carts, error: cartsError } = await supabase
-          .from('carts')
-          .select('id, status')
-          .eq('user_id', userId)
+    try {
+      const { data: carts } = await supabase
+        .from('carts')
+        .select('id, status')
+        .eq('user_id', userId)
 
-        if (cartsError || !carts) {
-          setCartItems([])
-          return
-        }
-
-        // 🔹 Get all items from all carts
-        let allItems: CartItem[] = []
-
-        for (const cart of carts) {
-          const { data: items, error: itemsError } = await supabase
-            .from('cart_items')
-            .select(
-              'id, cart_id, quantity, product:product_id(id,name,price,image_url,vendor_id)',
-            )
-            .eq('cart_id', cart.id)
-
-          if (itemsError) {
-            console.error(itemsError.message)
-            continue
-          }
-
-          // 🔹 Add status based on cart.status
-          const taggedItems = (items ?? []).map((item) => ({
-            ...item,
-            status: cart.status === 'pending' ? 'cart' : 'ordered',
-          }))
-
-          allItems = [...allItems, ...taggedItems]
-        }
-
-        setCartItems(allItems)
-      } catch (err) {
-        console.error('Unexpected error:', err)
-      } finally {
+      if (!carts || carts.length === 0) {
+        setCartItems([])
         setLoading(false)
+        return
       }
-    }
 
-    fetchCartItems()
+      const cartIds = carts.map((c) => c.id)
+
+      const { data: items } = await supabase
+        .from('cart_items')
+        .select(
+          'id, cart_id, quantity, product:product_id(id,name,price,image_url,vendor_id)',
+        )
+        .in('cart_id', cartIds)
+
+      if (!items) {
+        setCartItems([])
+        setLoading(false)
+        return
+      }
+
+      const enriched = items.map((item) => {
+        const cart = carts.find((c) => c.id === item.cart_id)
+        return {
+          ...item,
+          status: cart?.status !== 'pending' ? 'ordered' : 'cart',
+        }
+      })
+
+      setCartItems(enriched)
+    } catch (err) {
+      console.error('Cart fetch error', err)
+    } finally {
+      setLoading(false)
+    }
   }, [userId])
 
-  // ✅ Fetch recommended products (simple example)
+  useEffect(() => {
+    fetchCartItems()
+  }, [fetchCartItems])
+
+  // ✅ Recommended products
   useEffect(() => {
     const fetchRecommended = async () => {
-      const { data, error } = await supabase
-        .from('products')
-        .select('*')
-        .limit(4) // show 4 recommendations
-      if (!error) setRecommendedProducts(data ?? [])
+      const { data } = await supabase.from('products').select('*').limit(4)
+      if (data) setRecommendedProducts(data)
     }
     fetchRecommended()
   }, [])
 
   // ✅ Update quantity
-  const updateQuantity = async (cartItemId: string, quantity: number) => {
+  const updateQuantity = async (id: string, quantity: number) => {
     if (quantity < 1) return
-    setUpdatingId(cartItemId)
+    setUpdatingId(id)
     const prev = [...cartItems]
+
     setCartItems((items) =>
-      items.map((item) =>
-        item.id === cartItemId ? { ...item, quantity } : item,
-      ),
+      items.map((i) => (i.id === id ? { ...i, quantity } : i)),
     )
+
     const { error } = await supabase
       .from('cart_items')
       .update({ quantity })
-      .eq('id', cartItemId)
-    if (error) {
-      console.error(error.message)
-      setCartItems(prev)
-    }
+      .eq('id', id)
+
+    if (error) setCartItems(prev)
+
     setUpdatingId(null)
   }
 
   // ✅ Remove item
-  const removeItem = async (cartItemId: string) => {
+  const removeItem = async (id: string) => {
     const prev = [...cartItems]
-    setCartItems((items) => items.filter((item) => item.id !== cartItemId))
-    const { error } = await supabase
-      .from('cart_items')
-      .delete()
-      .eq('id', cartItemId)
-    if (error) {
-      console.error(error.message)
-      setCartItems(prev)
-    }
+    setCartItems((items) => items.filter((i) => i.id !== id))
+
+    const { error } = await supabase.from('cart_items').delete().eq('id', id)
+
+    if (error) setCartItems(prev)
   }
 
   // ✅ Checkout
   const handleCheckout = async () => {
-    if (!userEmail) return alert('Please login to continue')
-    if (cartItems.length === 0) return alert('Cart is empty')
-
+    if (!userEmail) return alert('Login required')
+    const activeItems = cartItems.filter((i) => i.status === 'cart')
+    if (activeItems.length === 0) return alert('No active cart items')
     setCheckingOut(true)
-    try {
-      const cleanItems: CheckoutItem[] = cartItems
-        .filter((item) => item.product !== null)
-        .map((item) => ({
-          id: item.product!.id,
-          name: item.product!.name,
-          price: item.product!.price,
-          quantity: item.quantity,
-        }))
 
+    const cleanItems: CheckoutItem[] = activeItems
+      .filter((i) => i.product)
+      .map((i) => ({
+        id: i.product!.id,
+        name: i.product!.name,
+        price: i.product!.price,
+        quantity: i.quantity,
+      }))
+
+    try {
       const res = await fetch('/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ items: cleanItems, userEmail }),
       })
 
-      const data: { checkout_url?: string; error?: string } = await res.json()
+      const data: { checkout_url?: string } = await res.json()
       if (data.checkout_url) window.location.href = data.checkout_url
-      else alert('Failed to start payment')
-    } catch (error) {
-      console.error(error)
-      alert('Something went wrong')
+    } catch (err) {
+      console.error(err)
+      alert('Checkout failed')
     } finally {
       setCheckingOut(false)
     }
   }
 
   if (loading) return <p className='p-8 text-center'>Loading cart...</p>
-
   if (!cartItems.length)
     return (
       <div className='p-8 text-center'>
@@ -198,102 +185,104 @@ export default function CartPage() {
       </div>
     )
 
-  const subtotal = cartItems.reduce((sum, item) => {
-    const price = item.product?.price ?? 0
-    return sum + price * item.quantity
-  }, 0)
+  // ✅ Multi-vendor grouping
+  const cartProducts = cartItems.filter((i) => i.status === 'cart')
+  const vendorsMap: Record<string, CartItem[]> = {}
+  cartProducts.forEach((item) => {
+    const vendorId = item.product?.vendor_id || 'unknown'
+    if (!vendorsMap[vendorId]) vendorsMap[vendorId] = []
+    vendorsMap[vendorId].push(item)
+  })
 
-  // ✅ Separate cart and ordered items
-  const cartProducts = cartItems.filter((item) => item.status === 'cart')
-  const orderedProducts = cartItems.filter((item) => item.status === 'ordered')
+  const subtotal = cartProducts.reduce(
+    (sum, i) => sum + (i.product?.price ?? 0) * i.quantity,
+    0,
+  )
 
   return (
     <div className='max-w-7xl mx-auto p-8 space-y-8'>
       <h1 className='text-3xl font-bold'>
-        Shopping Cart{' '}
-        <span className='text-gray-500 text-lg font-normal'>
-          ({cartItems.length} items)
-        </span>
+        Shopping Cart ({cartProducts.length})
       </h1>
 
-      {/* CART ITEMS */}
       <div className='grid md:grid-cols-3 gap-8'>
-        <div className='md:col-span-2 space-y-4'>
-          {cartProducts.map((item) => {
-            const product = item.product
-            if (!product) return null
-            return (
-              <div
-                key={item.id}
-                className='flex items-center gap-4 p-4 border rounded-lg hover:shadow-lg transition'
-              >
-                <Image
-                  src={product.image_url || '/placeholder.png'}
-                  alt={product.name}
-                  width={100}
-                  height={100}
-                  className='rounded-lg object-cover'
-                />
-                <div className='flex-1 space-y-1'>
-                  <h2 className='font-semibold text-lg'>{product.name}</h2>
-                  <p className='text-[#10b5cb] font-semibold text-lg'>
-                    {product.price.toFixed(2)}
-                  </p>
-                  <span className='text-sm text-green-600 font-medium'>
-                    In Cart
-                  </span>
-                </div>
-                <div className='flex flex-col items-center gap-2'>
-                  <input
-                    type='number'
-                    min={1}
-                    value={item.quantity}
-                    disabled={updatingId === item.id}
-                    onChange={(e) =>
-                      updateQuantity(item.id, Number(e.target.value))
-                    }
-                    className='w-20 p-1 border rounded text-center'
-                  />
-                  <button
-                    onClick={() => removeItem(item.id)}
-                    className='text-red-500 hover:underline text-sm'
-                  >
-                    Remove
-                  </button>
-                </div>
-              </div>
-            )
-          })}
-
-          {/* ORDERED ITEMS */}
-          {orderedProducts.length > 0 && (
-            <div className='mt-8'>
-              <h2 className='text-2xl font-semibold mb-4'>Ordered Products</h2>
-              {orderedProducts.map((item) => {
-                const product = item.product
-                if (!product) return null
+        {/* CART ITEMS */}
+        <div className='md:col-span-2 space-y-6'>
+          {Object.entries(vendorsMap).map(([vendorId, items]) => (
+            <div key={vendorId} className='border rounded-lg p-4 space-y-4'>
+              <h2 className='font-semibold text-xl mb-2'>Vendor: {vendorId}</h2>
+              {items.map((item) => {
+                const p = item.product
+                if (!p) return null
                 return (
                   <div
                     key={item.id}
-                    className='flex items-center gap-4 p-4 border rounded-lg bg-gray-50'
+                    className='flex items-center gap-4 border-b last:border-b-0 pb-2'
                   >
                     <Image
-                      src={product.image_url || '/placeholder.png'}
-                      alt={product.name}
+                      src={p.image_url || '/placeholder.png'}
+                      alt={p.name}
                       width={100}
                       height={100}
-                      className='rounded-lg object-cover'
+                      className='rounded object-cover'
                     />
                     <div className='flex-1 space-y-1'>
-                      <h2 className='font-semibold text-lg'>{product.name}</h2>
-                      <p className='text-gray-500 font-semibold text-lg'>
-                        {product.price.toFixed(2)}
+                      <h3 className='font-semibold'>{p.name}</h3>
+                      <p className='text-[#10b5cb] font-semibold'>
+                        {p.price.toFixed(2)}
                       </p>
-                      <span className='text-blue-600 font-medium'>Ordered</span>
+                    </div>
+                    <div className='flex flex-col items-center gap-2'>
+                      <input
+                        type='number'
+                        min={1}
+                        value={item.quantity}
+                        disabled={updatingId === item.id}
+                        onChange={(e) =>
+                          updateQuantity(item.id, Number(e.target.value))
+                        }
+                        className='w-20 p-1 border rounded text-center'
+                      />
+                      <button
+                        onClick={() => removeItem(item.id)}
+                        className='text-red-500 hover:underline text-sm'
+                      >
+                        Remove
+                      </button>
                     </div>
                   </div>
                 )
               })}
+            </div>
+          ))}
+
+          {/* RECOMMENDED PRODUCTS */}
+          {recommendedProducts.length > 0 && (
+            <div className='mt-12'>
+              <h2 className='text-2xl font-semibold mb-4'>
+                Recommended for You
+              </h2>
+              <div className='grid md:grid-cols-4 gap-6'>
+                {recommendedProducts.map((p) => (
+                  <Link
+                    key={p.id}
+                    href={`/products/${p.id}`}
+                    className='border p-4 rounded-lg hover:shadow-lg transition flex flex-col items-center'
+                  >
+                    <Image
+                      src={p.image_url || '/placeholder.png'}
+                      alt={p.name}
+                      width={150}
+                      height={150}
+                      className='object-cover rounded-lg'
+                    />
+                    <h3 className='mt-2 font-semibold text-center'>{p.name}</h3>
+                    <p className='text-[#10b5cb] font-semibold mt-1'>
+                      {p.price.toFixed(2)}
+                    </p>
+                  </Link>
+                ))}
+              </div>
             </div>
           )}
         </div>
@@ -319,36 +308,6 @@ export default function CartPage() {
           </button>
         </div>
       </div>
-
-      {/* RECOMMENDED PRODUCTS */}
-      {recommendedProducts.length > 0 && (
-        <div className='mt-12'>
-          <h2 className='text-2xl font-semibold mb-4'>Recommended for You</h2>
-          <div className='grid md:grid-cols-4 gap-6'>
-            {recommendedProducts.map((product) => (
-              <Link
-                key={product.id}
-                href={`/products/${product.id}`}
-                className='border p-4 rounded-lg hover:shadow-lg transition flex flex-col items-center'
-              >
-                <Image
-                  src={product.image_url || '/placeholder.png'}
-                  alt={product.name}
-                  width={150}
-                  height={150}
-                  className='object-cover rounded-lg'
-                />
-                <h3 className='mt-2 font-semibold text-center'>
-                  {product.name}
-                </h3>
-                <p className='text-[#10b5cb] font-semibold mt-1'>
-                  {product.price.toFixed(2)}
-                </p>
-              </Link>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   )
 }

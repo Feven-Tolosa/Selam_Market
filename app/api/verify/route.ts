@@ -2,29 +2,17 @@ import { NextResponse } from 'next/server'
 import axios from 'axios'
 import { supabase } from '@/lib/supabaseClient'
 
-type ChapaVerifyResponse = {
-  status: string
-  data: {
-    tx_ref: string
-    amount: number
-    currency: string
-    status: string
-    customer: {
-      email: string
-    }
-  }
-}
-
 export async function GET(req: Request) {
-  const { searchParams } = new URL(req.url)
-  const tx_ref = searchParams.get('tx_ref')
-
-  if (!tx_ref) {
-    return NextResponse.json({ error: 'Missing tx_ref' }, { status: 400 })
-  }
-
   try {
-    const response = await axios.get<ChapaVerifyResponse>(
+    const { searchParams } = new URL(req.url)
+    const tx_ref = searchParams.get('tx_ref')
+
+    if (!tx_ref) {
+      return NextResponse.json({ error: 'Missing tx_ref' }, { status: 400 })
+    }
+
+    // ✅ Verify payment
+    const verifyRes = await axios.get(
       `https://api.chapa.co/v1/transaction/verify/${tx_ref}`,
       {
         headers: {
@@ -33,7 +21,7 @@ export async function GET(req: Request) {
       },
     )
 
-    const payment = response.data.data
+    const payment = verifyRes.data.data
 
     if (payment.status !== 'success') {
       return NextResponse.redirect(
@@ -41,42 +29,78 @@ export async function GET(req: Request) {
       )
     }
 
-    // ✅ Prevent duplicate orders
-    const { data: existing } = await supabase
-      .from('orders')
-      .select('id')
-      .eq('tx_ref', tx_ref)
-      .maybeSingle()
+    const userEmail = payment.email
 
-    if (existing) {
+    // ✅ Get user
+    const { data: user } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('email', userEmail)
+      .single()
+
+    if (!user) throw new Error('User not found')
+
+    // ✅ Get active cart
+    const { data: cart } = await supabase
+      .from('carts')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('status', 'pending')
+      .single()
+
+    if (!cart) {
       return NextResponse.redirect(
         `${process.env.NEXT_PUBLIC_BASE_URL}/payment-success`,
       )
     }
 
-    // ✅ Insert order
-    const { error } = await supabase.from('orders').insert({
-      tx_ref: payment.tx_ref,
-      amount: payment.amount,
-      currency: payment.currency,
-      status: 'paid',
-      customer_email: payment.customer.email,
-    })
+    // ✅ Get cart items
+    const { data: cartItems } = await supabase
+      .from('cart_items')
+      .select('product_id, quantity, price')
+      .eq('cart_id', cart.id)
 
-    if (error) {
-      console.error('DB insert error:', error.message)
-      return NextResponse.redirect(
-        `${process.env.NEXT_PUBLIC_BASE_URL}/payment-failed`,
-      )
+    if (!cartItems || cartItems.length === 0) {
+      throw new Error('Cart empty')
     }
+
+    // ✅ Create order
+    const { data: order } = await supabase
+      .from('orders')
+      .insert({
+        user_id: user.id,
+        tx_ref,
+        amount: payment.amount,
+        status: 'paid',
+        currency: payment.currency,
+      })
+      .select()
+      .single()
+
+    // ✅ Insert order items
+    const orderItems = cartItems.map((item) => ({
+      order_id: order.id,
+      product_id: item.product_id,
+      quantity: item.quantity,
+      price: item.price,
+    }))
+
+    await supabase.from('order_items').insert(orderItems)
+
+    // ✅ Clear cart (IMPORTANT)
+    await supabase.from('cart_items').delete().eq('cart_id', cart.id)
+
+    // ✅ Mark cart completed
+    await supabase
+      .from('carts')
+      .update({ status: 'completed' })
+      .eq('id', cart.id)
 
     return NextResponse.redirect(
       `${process.env.NEXT_PUBLIC_BASE_URL}/payment-success`,
     )
-  } catch (error) {
-    console.error('Verification error:', error)
-    return NextResponse.redirect(
-      `${process.env.NEXT_PUBLIC_BASE_URL}/payment-failed`,
-    )
+  } catch (err) {
+    console.error('Verify error:', err)
+    return NextResponse.json({ error: 'Verification failed' }, { status: 500 })
   }
 }

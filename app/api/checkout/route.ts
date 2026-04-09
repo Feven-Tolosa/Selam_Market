@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import axios from 'axios'
+import { supabase } from '@/lib/supabaseClient'
 
 type CartItem = {
   id: string
@@ -11,7 +12,15 @@ type CartItem = {
 export async function POST(req: Request) {
   try {
     const body = await req.json()
-    const { items, userEmail }: { items: CartItem[]; userEmail: string } = body
+    const {
+      items,
+      userEmail,
+      cartId,
+    }: { items: CartItem[]; userEmail: string; cartId: string } = body
+    await supabase
+      .from('cart_items')
+      .update({ status: 'ordered' })
+      .eq('cart_id', cartId)
 
     if (!items || items.length === 0) {
       return NextResponse.json({ error: 'Cart is empty' }, { status: 400 })
@@ -40,6 +49,9 @@ export async function POST(req: Request) {
         customization: {
           title: 'Selam Market',
           description: 'Payment for your order',
+        },
+        metadata: {
+          userEmail, // 🔥 important
         },
       },
       {
