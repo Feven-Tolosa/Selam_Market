@@ -14,7 +14,7 @@ export default function AddProductPage() {
   const [name, setName] = useState('')
   const [price, setPrice] = useState('')
   const [description, setDescription] = useState('')
-  const [categoryId, setCategoryId] = useState('') // ✅ now dynamic
+  const [categoryId, setCategoryId] = useState('') // dynamic
   const [categories, setCategories] = useState<Category[]>([]) // dynamic categories
   const [image, setImage] = useState<File | null>(null)
   const [preview, setPreview] = useState<string | null>(null)
@@ -87,7 +87,7 @@ export default function AddProductPage() {
       name,
       price: Number(price),
       description,
-      category_id: categoryId, // ✅ dynamic
+      category_id: categoryId, //  dynamic
       image_url: imageUrl || '',
       vendor_id: vendorId,
     })

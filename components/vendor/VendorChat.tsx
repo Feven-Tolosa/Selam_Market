@@ -31,9 +31,8 @@ export default function VendorChat() {
   const [newMessage, setNewMessage] = useState('')
   const bottomRef = useRef<HTMLDivElement>(null)
 
-  // -------------------------
   // GET CURRENT VENDOR USER
-  // -------------------------
+
   useEffect(() => {
     const loadUser = async () => {
       const { data, error } = await supabase.auth.getUser()
@@ -43,9 +42,8 @@ export default function VendorChat() {
     loadUser()
   }, [])
 
-  // -------------------------
   // LOAD CONVERSATIONS
-  // -------------------------
+
   useEffect(() => {
     if (!userId) return
 
@@ -74,9 +72,8 @@ export default function VendorChat() {
     fetchConversations()
   }, [userId])
 
-  // -------------------------
   // LOAD MESSAGES + REALTIME
-  // -------------------------
+
   useEffect(() => {
     if (!activeConversation) return
     let isMounted = true
@@ -117,9 +114,8 @@ export default function VendorChat() {
     }
   }, [activeConversation])
 
-  // -------------------------
   // SEND MESSAGE
-  // -------------------------
+
   const sendMessage = async () => {
     if (!newMessage.trim() || !activeConversation || !userId) return
 
@@ -155,9 +151,8 @@ export default function VendorChat() {
     setMessages((prev) => prev.map((m) => (m.id === tempMessage.id ? data : m)))
   }
 
-  // -------------------------
   // ENTER KEY SEND
-  // -------------------------
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       e.preventDefault()
@@ -165,16 +160,14 @@ export default function VendorChat() {
     }
   }
 
-  // -------------------------
   // AUTO SCROLL
-  // -------------------------
+
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
-  // -------------------------
   // UI
-  // -------------------------
+
   return (
     <div className='flex gap-4'>
       {/* CONVERSATION LIST */}

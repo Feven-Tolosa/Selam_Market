@@ -5,7 +5,7 @@ export default async function CategoryPage({
 }: {
   params: { id: string }
 }) {
-  const categoryId = Number(params.id) // FIX HERE
+  const categoryId = Number(params.id)
 
   const { data: products, error } = await supabase
     .from('products')

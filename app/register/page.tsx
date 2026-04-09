@@ -14,7 +14,7 @@ export default function RegisterPage() {
   const [name, setName] = useState('')
   const [loading, setLoading] = useState(false)
 
-  // ✅ Strength logic
+  //  Strength logic
   const getPasswordStrength = (password: string) => {
     let score = 0
     if (password.length >= 8) score++
@@ -67,7 +67,7 @@ export default function RegisterPage() {
       return
     }
 
-    // ❌ REMOVE manual insert
+    // REMOVE manual insert
     setLoading(false)
 
     toast.success('Account created! Check your email.')

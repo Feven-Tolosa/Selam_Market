@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { Smartphone, Shirt, Sofa, Laptop, Watch, Home } from 'lucide-react'
 import type { Category } from '@/types'
 
-// ✅ map icons to category slug
+// map icons to category slug
 const iconMap: Record<string, React.ElementType> = {
   electronics: Smartphone,
   clothing: Shirt,

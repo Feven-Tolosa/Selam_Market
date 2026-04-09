@@ -90,7 +90,7 @@ export default function Featured() {
           },
         )
 
-        // ✅ Sort by Top Rated
+        // Sort by Top Rated
         featuredProducts.sort((a, b) => (b.rating || 0) - (a.rating || 0))
 
         setProducts(featuredProducts)

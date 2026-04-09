@@ -39,7 +39,7 @@ export default function ProductPage() {
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
-  // ⭐ NEW STATE
+  //  NEW STATE
   const [rating, setRating] = useState(0)
   const [comment, setComment] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -78,7 +78,7 @@ export default function ProductPage() {
     loadData()
   }, [id, router])
 
-  // 🔄 FETCH REVIEWS (REUSABLE)
+  //  FETCH REVIEWS (REUSABLE)
   const fetchReviews = async (productId: string) => {
     const { data } = await supabase
       .from('reviews')
@@ -89,7 +89,7 @@ export default function ProductPage() {
     setReviews(data || [])
   }
 
-  // 📊 AVERAGE RATING
+  //  AVERAGE RATING
   const averageRating =
     reviews.length > 0
       ? (
@@ -97,7 +97,7 @@ export default function ProductPage() {
         ).toFixed(1)
       : null
 
-  // 🛒 ADD TO CART
+  //  ADD TO CART
   const addToCart = async () => {
     const {
       data: { user },
@@ -107,7 +107,7 @@ export default function ProductPage() {
     if (!product || !product.id) return toast.error('Invalid product')
 
     try {
-      // 1️⃣ Get or create pending cart
+      // 1 Get or create pending cart
       let { data: cart, error: cartError } = await supabase
         .from('carts')
         .select('*')
@@ -133,7 +133,7 @@ export default function ProductPage() {
         return toast.error('Failed to fetch cart')
       }
 
-      // 2️⃣ Insert product into cart_items
+      // 2 Insert product into cart_items
       const { data: existingItem } = await supabase
         .from('cart_items')
         .select('*')
@@ -163,7 +163,7 @@ export default function ProductPage() {
     }
   }
 
-  // ❤️ WISHLIST
+  //  WISHLIST
   const addToWishlist = async () => {
     const { data } = await supabase.auth.getUser()
 
@@ -174,10 +174,10 @@ export default function ProductPage() {
       product_id: product?.id,
     })
 
-    toast.success('Saved ❤️')
+    toast.success('Saved')
   }
 
-  // ⭐ ADD REVIEW (REAL)
+  //  ADD REVIEW (REAL)
   const addReview = async () => {
     const { data } = await supabase.auth.getUser()
 

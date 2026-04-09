@@ -40,7 +40,7 @@ export default function HeroSection() {
 
   const wrapperRef = useRef<HTMLDivElement>(null)
 
-  // 🎞 Slider
+  // Slider
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrent((prev) => (prev + 1) % slides.length)
@@ -49,7 +49,7 @@ export default function HeroSection() {
     return () => clearInterval(interval)
   }, [slides.length])
 
-  // 🔍 Suggestions (debounced)
+  // Suggestions (debounced)
   useEffect(() => {
     if (!search.trim()) {
       setSuggestions([])
@@ -76,7 +76,7 @@ export default function HeroSection() {
     return () => clearTimeout(delay)
   }, [search])
 
-  // ❌ Close dropdown when clicking outside
+  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (
@@ -91,7 +91,7 @@ export default function HeroSection() {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  // 🔎 Search handler
+  // Search handler
   const handleSearch = () => {
     const params = new URLSearchParams()
 

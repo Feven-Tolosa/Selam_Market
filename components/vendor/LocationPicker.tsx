@@ -6,7 +6,7 @@ import { LeafletMouseEvent } from 'leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 
-// ✅ Type-safe fix (no any)
+//  Type-safe fix (no any)
 delete (L.Icon.Default.prototype as unknown as { _getIconUrl?: unknown })
   ._getIconUrl
 

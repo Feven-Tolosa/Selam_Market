@@ -38,7 +38,7 @@ export default function VendorsPage() {
     ssr: false,
   })
 
-  // ✅ AUTO detect location (Amazon-style)
+  //  AUTO detect location (Amazon-style)
   useEffect(() => {
     navigator.geolocation.getCurrentPosition(
       (pos) => {
@@ -53,7 +53,7 @@ export default function VendorsPage() {
     )
   }, [])
 
-  // ✅ Distance formula
+  //  Distance formula
   const getDistance = (
     lat1: number,
     lon1: number,
@@ -73,7 +73,7 @@ export default function VendorsPage() {
     return 2 * R * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
   }
 
-  // ✅ Attach ratings
+  //  Attach ratings
   const attachRatings = async (vendorsData: Vendor[]) => {
     const { data: ratings } = await supabase
       .from('vendor_ratings')
@@ -99,7 +99,7 @@ export default function VendorsPage() {
     })
   }
 
-  // ✅ Fetch vendors
+  //  Fetch vendors
   const fetchVendors = async () => {
     setLoading(true)
 
@@ -107,7 +107,7 @@ export default function VendorsPage() {
       let vendorsData: Vendor[] = []
 
       if (coords) {
-        // 📍 Nearby vendors
+        //  Nearby vendors
         const { data, error } = await supabase.rpc('nearby_vendors', {
           user_lat: coords.lat,
           user_lng: coords.lng,
@@ -118,14 +118,14 @@ export default function VendorsPage() {
 
         vendorsData = data || []
 
-        // 🔍 Search inside nearby
+        //  Search inside nearby
         if (search) {
           vendorsData = vendorsData.filter((v) =>
             v.store_name.toLowerCase().includes(search.toLowerCase()),
           )
         }
       } else {
-        // 🔍 Normal search
+        //  Normal search
         let query = supabase.from('vendors').select(`
           *,
           products (
@@ -150,7 +150,7 @@ export default function VendorsPage() {
 
       let result = await attachRatings(vendorsData)
 
-      // 📏 Add distance + sort
+      //  Add distance + sort
       if (coords) {
         result = result
           .map((v) => ({
@@ -173,7 +173,7 @@ export default function VendorsPage() {
     }
   }
 
-  // ✅ Debounce
+  // Debounce
   useEffect(() => {
     const delay = setTimeout(fetchVendors, 400)
     return () => clearTimeout(delay)
@@ -183,7 +183,7 @@ export default function VendorsPage() {
     <div className='p-6 bg-white min-h-screen'>
       <h1 className='text-2xl font-bold mb-2 text-[#10b5cb]'>Find Vendors</h1>
 
-      {/* 📍 Nearby indicator */}
+      {/*  Nearby indicator */}
       {coords && (
         <p className='text-sm text-gray-600 mb-4'>
           Showing vendors near you 📍

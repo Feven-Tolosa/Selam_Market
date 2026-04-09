@@ -17,7 +17,7 @@ type ProductWithExtras = {
 }
 
 export default async function AvailableProducts() {
-  // 📦 Fetch products
+  //  Fetch products
   const { data: products } = await supabase
     .from('products')
     .select(
@@ -35,12 +35,12 @@ export default async function AvailableProducts() {
     )
     .limit(12)
 
-  // ⭐ Fetch ratings
+  // Fetch ratings
   const { data: reviews } = await supabase
     .from('reviews')
     .select('product_id, rating')
 
-  // 🧠 Build rating map
+  // Build rating map
   const ratingMap: Record<string, { total: number; count: number }> = {}
 
   reviews?.forEach((r) => {
@@ -51,7 +51,7 @@ export default async function AvailableProducts() {
     ratingMap[r.product_id].count++
   })
 
-  // 🔗 Attach ratings
+  // Attach ratings
   const enrichedProducts: ProductWithExtras[] =
     products?.map((p) => {
       const stats = ratingMap[p.id]

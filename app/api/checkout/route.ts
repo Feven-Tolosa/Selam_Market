@@ -51,7 +51,7 @@ export async function POST(req: Request) {
           description: 'Payment for your order',
         },
         metadata: {
-          userEmail, // 🔥 important
+          userEmail, // important
         },
       },
       {

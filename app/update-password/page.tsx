@@ -21,13 +21,13 @@ export default function UpdatePasswordPage() {
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    // ✅ Check match
+    // Check match
     if (password !== confirmPassword) {
       toast.error('Passwords do not match')
       return
     }
 
-    // ✅ Check strength
+    //  Check strength
     if (!validatePassword(password)) {
       toast.error(
         'Password must be 8+ chars, include uppercase, lowercase, number, and special character',

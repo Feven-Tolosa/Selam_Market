@@ -38,7 +38,7 @@ export default function CartPage() {
   const [checkingOut, setCheckingOut] = useState(false)
   const [recommendedProducts, setRecommendedProducts] = useState<Product[]>([])
 
-  // ✅ Get logged-in user from users table
+  // Get logged-in user from users table
   useEffect(() => {
     const getUser = async () => {
       const { data, error } = await supabase.auth.getUser()
@@ -50,7 +50,7 @@ export default function CartPage() {
     getUser()
   }, [])
 
-  // ✅ Fetch cart items
+  //  Fetch cart items
   const fetchCartItems = useCallback(async () => {
     if (!userId) return
     setLoading(true)
@@ -102,7 +102,7 @@ export default function CartPage() {
     fetchCartItems()
   }, [fetchCartItems])
 
-  // ✅ Recommended products
+  //  Recommended products
   useEffect(() => {
     const fetchRecommended = async () => {
       const { data } = await supabase.from('products').select('*').limit(4)
@@ -111,7 +111,7 @@ export default function CartPage() {
     fetchRecommended()
   }, [])
 
-  // ✅ Update quantity
+  //  Update quantity
   const updateQuantity = async (id: string, quantity: number) => {
     if (quantity < 1) return
     setUpdatingId(id)
@@ -131,7 +131,7 @@ export default function CartPage() {
     setUpdatingId(null)
   }
 
-  // ✅ Remove item
+  //  Remove item
   const removeItem = async (id: string) => {
     const prev = [...cartItems]
     setCartItems((items) => items.filter((i) => i.id !== id))
@@ -141,7 +141,7 @@ export default function CartPage() {
     if (error) setCartItems(prev)
   }
 
-  // ✅ Checkout
+  //  Checkout
   const handleCheckout = async () => {
     if (!userEmail) return alert('Login required')
     const activeItems = cartItems.filter((i) => i.status === 'cart')
@@ -185,7 +185,7 @@ export default function CartPage() {
       </div>
     )
 
-  // ✅ Multi-vendor grouping
+  //  Multi-vendor grouping
   const cartProducts = cartItems.filter((i) => i.status === 'cart')
   const vendorsMap: Record<string, CartItem[]> = {}
   cartProducts.forEach((item) => {

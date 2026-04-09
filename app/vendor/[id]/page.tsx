@@ -35,7 +35,7 @@ type Review = {
   created_at: string
   user_id: string
   vendor_id: string
-  edited?: boolean // ✅ new
+  edited?: boolean //  new
 }
 
 type RatingStats = {
@@ -88,7 +88,7 @@ export default function VendorPublicPage() {
 
       setVendor(vendorData)
 
-      // ✅ Load logo
+      //  Load logo
       if (vendorData.logo_url) {
         const { data } = supabase.storage
           .from('vendor-logos')
@@ -97,7 +97,7 @@ export default function VendorPublicPage() {
         setLogoUrl(data.publicUrl)
       }
 
-      // ✅ Load banner
+      //  Load banner
       if (vendorData.banner_url) {
         const { data } = supabase.storage
           .from('vendor-banners')
@@ -106,7 +106,7 @@ export default function VendorPublicPage() {
         setBannerUrl(data.publicUrl)
       }
 
-      // ✅ Load products
+      //  Load products
       const { data: productData } = await supabase
         .from('products')
         .select('id,name,price,image_url')
@@ -126,7 +126,7 @@ export default function VendorPublicPage() {
         setAverageRating(Number(avg.toFixed(1)))
       }
 
-      // ✅ Get current user's rating
+      //  Get current user's rating
       const { data: userData } = await supabase.auth.getUser()
 
       if (userData.user) {
@@ -142,7 +142,7 @@ export default function VendorPublicPage() {
         }
       }
 
-      // ⭐ Fetch reviews
+      //  Fetch reviews
       const { data: reviewData } = await supabase
         .from('vendor_ratings')
         .select('*')
@@ -151,7 +151,7 @@ export default function VendorPublicPage() {
 
       setReviews((reviewData ?? []) as Review[])
 
-      // 📊 Fetch stats
+      //  Fetch stats
       const { data: statsData } = await supabase
         .from('vendor_rating_stats')
         .select('*')
@@ -194,7 +194,7 @@ export default function VendorPublicPage() {
     setRatingLoading(false)
   }
 
-  // ✅ FIXED: now properly outside
+  //  FIXED: now properly outside
   const submitReview = async (value: number) => {
     const { data } = await supabase.auth.getUser()
 
@@ -213,7 +213,7 @@ export default function VendorPublicPage() {
       return
     }
 
-    // 🔍 check if user already reviewed
+    // check if user already reviewed
     const existing = reviews.find((r) => r.user_id === data.user.id)
 
     const { error } = await supabase.from('vendor_ratings').upsert(
@@ -241,17 +241,17 @@ export default function VendorPublicPage() {
       created_at: new Date().toISOString(),
       user_id: data.user.id,
       vendor_id: vendor.id,
-      edited: !!existing, // ✅ mark edited
+      edited: !!existing, //  mark edited
     }
 
-    // ✅ prevent duplicate + replace old review
+    //  prevent duplicate + replace old review
     const updatedReviews = existing
       ? reviews.map((r) => (r.user_id === data.user!.id ? newReview : r))
       : [newReview, ...reviews]
 
     setReviews(updatedReviews)
 
-    // ⚡ auto update average rating
+    //  auto update average rating
     const avg =
       updatedReviews.reduce((sum, r) => sum + r.rating, 0) /
       updatedReviews.length
@@ -263,7 +263,7 @@ export default function VendorPublicPage() {
     setComment('')
   }
 
-  // 🛒 ADD TO CART
+  //  ADD TO CART
   const addToCart = async (productId: string) => {
     const { data } = await supabase.auth.getUser()
 
@@ -376,7 +376,7 @@ export default function VendorPublicPage() {
             <p className='text-sm'>📍 {vendor.location}</p>
           </div>
 
-          {/* ⭐ RATING */}
+          {/*  RATING */}
           <div className='bg-white border p-6 rounded-xl'>
             <h2 className='font-semibold mb-3'>Rating</h2>
 

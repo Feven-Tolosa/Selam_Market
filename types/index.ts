@@ -1,5 +1,3 @@
-// types/index.ts
-
 export type Category = {
   id: string
   name: string
@@ -22,8 +20,8 @@ export type Vendor = {
   description: string
   banner_url: string | null
   location: string
-  latitude: number // Add latitude and longitude properties
-  longitude: number // Add latitude and longitude properties
+  latitude: number //  latitude and longitude properties
+  longitude: number // latitude and longitude properties
 }
 
 export interface Message {

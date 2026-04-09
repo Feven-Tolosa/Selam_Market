@@ -29,10 +29,7 @@ export default function EditProductPage() {
 
   const [loading, setLoading] = useState(false)
 
-  // -------------------------
   // LOAD PRODUCT
-  // -------------------------
-
   useEffect(() => {
     async function loadProduct() {
       const { data, error } = await supabase
@@ -70,10 +67,7 @@ export default function EditProductPage() {
     loadProduct()
   }, [id])
 
-  // -------------------------
   // IMAGE VALIDATION
-  // -------------------------
-
   function validateImage(file: File) {
     if (!file.type.startsWith('image/')) {
       toast.error('Only images allowed')
@@ -88,10 +82,7 @@ export default function EditProductPage() {
     return true
   }
 
-  // -------------------------
   // UPLOAD
-  // -------------------------
-
   async function uploadFile(file: File) {
     const fileName = `${Date.now()}-${file.name}`
 
@@ -107,9 +98,7 @@ export default function EditProductPage() {
     return data.path
   }
 
-  // -------------------------
   // DELETE EXISTING IMAGE
-  // -------------------------
 
   async function deleteExistingImage(imageId: string) {
     const { error } = await supabase
@@ -125,9 +114,7 @@ export default function EditProductPage() {
     setExistingImages((prev) => prev.filter((img) => img.id !== imageId))
   }
 
-  // -------------------------
   // HANDLE SAVE
-  // -------------------------
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault()

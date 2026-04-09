@@ -43,10 +43,7 @@ export default function VendorProfile() {
     },
   )
 
-  // -------------------------
   // Load Vendor Data (FIXED)
-  // -------------------------
-
   useEffect(() => {
     async function loadVendor() {
       const { data: userData } = await supabase.auth.getUser()
@@ -58,14 +55,14 @@ export default function VendorProfile() {
         .from('vendors')
         .select('*')
         .eq('user_id', user.id)
-        .maybeSingle() // ✅ FIX (no crash)
+        .maybeSingle() //fix
 
       if (error) {
         console.error(error)
         return
       }
 
-      // 🚨 If vendor not created yet
+      // If vendor not created yet
       if (!vendor) {
         toast.error('Your vendor account is not approved yet.')
         return
@@ -112,10 +109,7 @@ export default function VendorProfile() {
     loadVendor()
   }, [])
 
-  // -------------------------
   // Delete Product
-  // -------------------------
-
   async function deleteProduct(productId: string) {
     const confirmDelete = confirm('Delete this product?')
     if (!confirmDelete) return
@@ -133,10 +127,7 @@ export default function VendorProfile() {
     setProducts((prev) => prev.filter((p) => p.id !== productId))
   }
 
-  // -------------------------
   // Upload File (IMPROVED)
-  // -------------------------
-
   async function uploadFile(file: File, bucket: string) {
     const fileName = `${Date.now()}-${file.name}`
 
@@ -152,10 +143,7 @@ export default function VendorProfile() {
     return data.path
   }
 
-  // -------------------------
   // Save Profile (FIXED)
-  // -------------------------
-
   async function handleSave(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
 

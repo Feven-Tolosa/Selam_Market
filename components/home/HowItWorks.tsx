@@ -1,4 +1,3 @@
-// components/home/HowItWorks.tsx
 import { ShoppingCart, Truck, Smile } from 'lucide-react'
 
 const steps = [

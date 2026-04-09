@@ -33,7 +33,7 @@ export default function ProductsPage() {
     null,
   )
 
-  // 📍 Get user location
+  //Get user location
   const getUserLocation = () => {
     navigator.geolocation.getCurrentPosition(
       (pos) => {
@@ -46,7 +46,7 @@ export default function ProductsPage() {
     )
   }
 
-  // 📏 Distance
+  // Distance
   const getDistance = (
     lat1: number,
     lon1: number,
@@ -66,14 +66,14 @@ export default function ProductsPage() {
     return 2 * R * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
   }
 
-  // 📍 Trigger location when "Nearby" selected
+  // Trigger location when "Nearby" selected
   useEffect(() => {
     if (sort === 'nearby' && !coords) {
       getUserLocation()
     }
   }, [sort])
 
-  // 📦 Fetch data
+  // Fetch data
   useEffect(() => {
     async function fetchData() {
       // products + vendor location
@@ -91,7 +91,7 @@ export default function ProductsPage() {
         .from('reviews')
         .select('product_id, rating')
 
-      // ⭐ rating map
+      // rating map
       const map: Record<string, { total: number; count: number }> = {}
 
       r?.forEach((rev) => {
@@ -120,7 +120,7 @@ export default function ProductsPage() {
     fetchData()
   }, [])
 
-  // 🔍 FILTER + SORT
+  // FILTER + SORT
   let filtered = [...products]
 
   if (selectedCategory !== 'all') {
@@ -146,7 +146,7 @@ export default function ProductsPage() {
     filtered.sort((a, b) => (b.rating || 0) - (a.rating || 0))
   }
 
-  // 📍 nearby sorting
+  // nearby sorting
   if (sort === 'nearby' && coords) {
     filtered = filtered
       .map((p) => {

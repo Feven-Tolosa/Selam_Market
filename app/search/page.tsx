@@ -33,13 +33,13 @@ export default function SearchPage() {
 
       setLoading(true)
 
-      // 🔍 Search Products
+      //  Search Products
       const { data: productData } = await supabase
         .from('products')
         .select('*')
         .ilike('name', `%${query}%`)
 
-      // 🔍 Search Vendors (from users table or vendor table)
+      //  Search Vendors (from users table or vendor table)
       const { data: vendorData } = await supabase
         .from('users')
         .select('id, business_name')

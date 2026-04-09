@@ -16,10 +16,7 @@ export default function VendorProducts() {
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
 
-  // -------------------------
   // FETCH ONLY VENDOR PRODUCTS
-  // -------------------------
-
   const fetchProducts = async () => {
     setLoading(true)
 
@@ -49,7 +46,7 @@ export default function VendorProducts() {
     const { data, error } = await supabase
       .from('products')
       .select('*')
-      .eq('vendor_id', vendor.id) // ✅ KEY FIX
+      .eq('vendor_id', vendor.id) // ✅ FIX: filter by vendor_id
       .order('created_at', { ascending: false })
 
     if (!error && data) {

@@ -11,7 +11,7 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: 'Missing tx_ref' }, { status: 400 })
     }
 
-    // ✅ Verify payment
+    //  Verify payment
     const verifyRes = await axios.get(
       `https://api.chapa.co/v1/transaction/verify/${tx_ref}`,
       {
@@ -31,7 +31,7 @@ export async function GET(req: Request) {
 
     const userEmail = payment.email
 
-    // ✅ Get user
+    //  Get user
     const { data: user } = await supabase
       .from('profiles')
       .select('id')
@@ -40,7 +40,7 @@ export async function GET(req: Request) {
 
     if (!user) throw new Error('User not found')
 
-    // ✅ Get active cart
+    //  Get active cart
     const { data: cart } = await supabase
       .from('carts')
       .select('id')
@@ -54,7 +54,7 @@ export async function GET(req: Request) {
       )
     }
 
-    // ✅ Get cart items
+    //  Get cart items
     const { data: cartItems } = await supabase
       .from('cart_items')
       .select('product_id, quantity, price')
@@ -64,7 +64,7 @@ export async function GET(req: Request) {
       throw new Error('Cart empty')
     }
 
-    // ✅ Create order
+    //  Create order
     const { data: order } = await supabase
       .from('orders')
       .insert({
@@ -77,7 +77,7 @@ export async function GET(req: Request) {
       .select()
       .single()
 
-    // ✅ Insert order items
+    //  Insert order items
     const orderItems = cartItems.map((item) => ({
       order_id: order.id,
       product_id: item.product_id,
@@ -87,10 +87,10 @@ export async function GET(req: Request) {
 
     await supabase.from('order_items').insert(orderItems)
 
-    // ✅ Clear cart (IMPORTANT)
+    //  Clear cart
     await supabase.from('cart_items').delete().eq('cart_id', cart.id)
 
-    // ✅ Mark cart completed
+    //  Mark cart completed
     await supabase
       .from('carts')
       .update({ status: 'completed' })

@@ -41,7 +41,7 @@ export default function Navbar() {
 
   const dropdownRef = useRef<HTMLDivElement>(null)
 
-  // 🔍 SEARCH STATE (ONLY ADDITION)
+  //  SEARCH STATE (ONLY ADDITION)
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<SearchResult[]>([])
   const [showDropdown, setShowDropdown] = useState(false)
@@ -49,7 +49,7 @@ export default function Navbar() {
 
   const router = useRouter()
 
-  // ✅ Fetch user + role + vendor status
+  //  Fetch user + role + vendor status
   useEffect(() => {
     const getUser = async () => {
       const { data } = await supabase.auth.getUser()
@@ -96,7 +96,7 @@ export default function Navbar() {
     }
   }, [])
 
-  // 🔍 LIVE SEARCH (ONLY ADDITION)
+  //  LIVE SEARCH (ONLY ADDITION)
   useEffect(() => {
     const delay = setTimeout(async () => {
       if (!query.trim()) {
@@ -142,7 +142,7 @@ export default function Navbar() {
     return () => clearTimeout(delay)
   }, [query])
 
-  // 🔍 Close search dropdown (ONLY ADDITION — merged safely with existing logic)
+  //  Close search dropdown (ONLY ADDITION — merged safely with existing logic)
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (
@@ -161,13 +161,13 @@ export default function Navbar() {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  // ✅ Logout
+  //  Logout
   const handleLogout = async () => {
     await supabase.auth.signOut()
     window.location.reload()
   }
 
-  // ✅ Vendor click logic (UNCHANGED)
+  //  Vendor click logic (UNCHANGED)
   const handleVendorClick = () => {
     if (!user) return
 
