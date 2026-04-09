@@ -328,39 +328,47 @@ export default function VendorPublicPage() {
             )}
 
             <div className='grid grid-cols-2 md:grid-cols-3 gap-6'>
-              {products.map((product) => (
-                <div
-                  key={product.id}
-                  className='border rounded-xl overflow-hidden bg-white hover:shadow-md transition'
-                >
-                  <div className='h-40 bg-gray-100'>
-                    <Image
-                      alt={product.name}
-                      width={300}
-                      height={300}
-                      src={product.image_url ?? '/placeholder.png'}
-                      className='w-full h-full object-cover hover:scale-105 transition hover:shadow-lg ease-in-out duration-300'
-                    />
+              {products.map((product) => {
+                // Normalize src
+                const imageSrc = product.image_url
+                  ? product.image_url.startsWith('http')
+                    ? product.image_url // full URL
+                    : `/products/${product.image_url}` // relative to public folder
+                  : '/placeholder.png' // fallback
+
+                return (
+                  <div
+                    key={product.id}
+                    className='border rounded-xl overflow-hidden bg-white hover:shadow-md transition'
+                  >
+                    <div className='h-40 bg-gray-100'>
+                      <Image
+                        alt={product.name}
+                        width={300}
+                        height={300}
+                        src={imageSrc}
+                        className='w-full h-full object-cover hover:scale-105 transition hover:shadow-lg ease-in-out duration-300'
+                      />
+                    </div>
+
+                    <div className='p-3'>
+                      <Link href={`/products/${product.id}`}>
+                        <h3 className='text-sm font-medium'>{product.name}</h3>
+                        <p className='text-[#10b5cb] font-semibold mt-1'>
+                          ${product.price}
+                        </p>
+                      </Link>
+
+                      <button
+                        onClick={() => addToCart(product.id)}
+                        className='mt-3 w-full bg-[#10b5cb] text-white py-2 rounded'
+                      >
+                        Add to Cart
+                      </button>
+                    </div>
                   </div>
-
-                  <div className='p-3'>
-                    <Link href={`/products/${product.id}`}>
-                      <h3 className='text-sm font-medium'>{product.name}</h3>
-
-                      <p className='text-[#10b5cb] font-semibold mt-1'>
-                        ${product.price}
-                      </p>
-                    </Link>
-
-                    <button
-                      onClick={() => addToCart(product.id)}
-                      className='mt-3 w-full bg-[#10b5cb] text-white py-2 rounded'
-                    >
-                      Add to Cart
-                    </button>
-                  </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           </div>
         </div>

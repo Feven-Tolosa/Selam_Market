@@ -123,9 +123,7 @@ export default function VendorProducts() {
                 <tr key={product.id} className='border-t hover:bg-gray-50'>
                   <td className='p-4 flex items-center gap-4'>
                     <img
-                      src={
-                        product.image_url || 'https://via.placeholder.com/100'
-                      }
+                      src={product.image_url || '/placeholder'}
                       className='w-14 h-14 rounded-lg object-cover border'
                     />
 
