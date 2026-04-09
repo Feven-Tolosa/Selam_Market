@@ -166,11 +166,9 @@ export default function VendorOnboarding() {
               <label className='text-sm text-gray-600'>Contact Info</label>
               <input
                 type='tel'
-                name='phone'
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                required
-                placeholder='+251...'
+                placeholder='Phone (+25134567890)'
                 pattern='^\+?[0-9]{9,15}$'
                 className='w-full mt-1 px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#10b5cb]'
               />
