@@ -284,7 +284,7 @@ export default function Navbar() {
 
         {/* RIGHT SIDE (UNCHANGED) */}
         <div className='flex items-center gap-6'>
-          <div className='transition duration-200 hover:scale-110'>
+          <div className='transition duration-200 hover:scale-110 mt-2'>
             <LanguageSwitcher />
           </div>
 
