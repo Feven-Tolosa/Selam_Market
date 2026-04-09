@@ -19,6 +19,22 @@ type UserType = {
   vendor_status: VendorStatus
 }
 
+type ProductSearchResult = {
+  id: string
+  name: string
+  image_url: string | null
+  price: number
+  type: 'product'
+}
+
+type VendorSearchResult = {
+  id: string
+  store_name: string
+  type: 'vendor'
+}
+
+type SearchResult = ProductSearchResult | VendorSearchResult
+
 export default function Navbar() {
   const [user, setUser] = useState<UserType | null>(null)
   const [open, setOpen] = useState(false)
@@ -27,7 +43,7 @@ export default function Navbar() {
 
   // 🔍 SEARCH STATE (ONLY ADDITION)
   const [query, setQuery] = useState('')
-  const [results, setResults] = useState<any[]>([])
+  const [results, setResults] = useState<SearchResult[]>([])
   const [showDropdown, setShowDropdown] = useState(false)
   const searchRef = useRef<HTMLDivElement>(null)
 
@@ -100,9 +116,23 @@ export default function Navbar() {
         .ilike('store_name', `%${query}%`)
         .limit(5)
 
-      const formatted = [
-        ...(products || []).map((p) => ({ ...p, type: 'product' })),
-        ...(vendors || []).map((v) => ({ ...v, type: 'vendor' })),
+      const formatted: SearchResult[] = [
+        ...(products || []).map(
+          (p): ProductSearchResult => ({
+            id: p.id,
+            name: p.name,
+            image_url: p.image_url,
+            price: p.price,
+            type: 'product',
+          }),
+        ),
+        ...(vendors || []).map(
+          (v): VendorSearchResult => ({
+            id: v.id,
+            store_name: v.store_name,
+            type: 'vendor',
+          }),
+        ),
       ]
 
       setResults(formatted)
@@ -198,7 +228,7 @@ export default function Navbar() {
               <div className='absolute top-full left-0 w-full bg-white border rounded-lg shadow-lg mt-2 z-50 max-h-80 overflow-y-auto'>
                 {/* PRODUCTS */}
                 {results
-                  .filter((r) => r.type === 'product')
+                  .filter((r): r is ProductSearchResult => r.type === 'product')
                   .map((item) => (
                     <Link
                       key={item.id}
@@ -224,7 +254,7 @@ export default function Navbar() {
 
                 {/* VENDORS */}
                 {results
-                  .filter((r) => r.type === 'vendor')
+                  .filter((r): r is VendorSearchResult => r.type === 'vendor')
                   .map((item) => (
                     <Link
                       key={item.id}
