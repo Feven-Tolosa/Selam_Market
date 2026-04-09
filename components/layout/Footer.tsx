@@ -19,6 +19,20 @@ export default function Footer() {
             </p>
 
             {/* App downloads */}
+            <div className='flex gap-4 mt-4'>
+              <Link
+                href='https://www.apple.com/app-store/'
+                className='px-3 py-2 bg-gray-800 text-white rounded text-sm hover:bg-gray-700'
+              >
+                App Store
+              </Link>
+              <Link
+                href='https://play.google.com/store/games?hl=en'
+                className='px-3 py-2 bg-gray-800 text-white rounded text-sm hover:bg-gray-700'
+              >
+                Google Play
+              </Link>
+            </div>
           </div>
 
           {/* Marketplace */}
@@ -117,36 +131,32 @@ export default function Footer() {
             </select>
           </div>
 
-          {/* Payment icons */}
-
-          {/* <div className='flex items-center gap-4'>
-            <Image src='/visa.png' alt='Visa' width={40} height={25} />
-            <Image
-              src='/mastercard.png'
-              alt='Mastercard'
-              width={40}
-              height={25}
-            />
-            <Image src='/paypal.png' alt='PayPal' width={40} height={25} />
-          </div> */}
-
           {/* Social icons */}
           <div className='flex space-x-4'>
-            <a className='text-gray-500 hover:text-[#10b5cb]'>
+            <Link
+              href='https://facebook.com'
+              className='text-gray-500 hover:text-[#10b5cb]'
+            >
               <Facebook size={20} />
-            </a>
+            </Link>
 
-            <a className='text-gray-500 hover:text-[#10b5cb]'>
+            <Link
+              href='https://twitter.com'
+              className='text-gray-500 hover:text-[#10b5cb]'
+            >
               <Twitter size={20} />
-            </a>
+            </Link>
 
-            <a className='text-gray-500 hover:text-[#10b5cb]'>
+            <Link
+              href='https://instagram.com'
+              className='text-gray-500 hover:text-[#10b5cb]'
+            >
               <Instagram size={20} />
-            </a>
+            </Link>
           </div>
         </div>
 
-        <p className='text-center text-gray-500 text-sm mt-6'>
+        <p className='text-center text-gray-500 text-sm mt-2'>
           © {new Date().getFullYear()} LocalMarket. All rights reserved.
         </p>
       </div>
