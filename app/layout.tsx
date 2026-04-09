@@ -30,13 +30,18 @@ export const metadata: Metadata = {
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode
-}>) {
+}) {
   return (
-    <html lang='en' className={cn('font-mono', jetbrainsMono.variable)}>
+    <html
+      lang='en'
+      className={cn('font-mono', jetbrainsMono.variable)}
+      suppressHydrationWarning
+    >
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        suppressHydrationWarning
       >
         <VendorProvider>
           <Navbar />

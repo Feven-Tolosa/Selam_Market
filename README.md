@@ -1,36 +1,70 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+### Selam Marketplace
 
-## Getting Started
+A modern marketplace for Ethiopian products, connecting local vendors with customers worldwide. Built with Next.js, Supabase, and a modern React stack.
 
-First, run the development server:
+# Features
 
-```bash
+Multi-vendor marketplace
+Real-time chat overlay for vendors and customers
+Vendor dashboard with trial management
+Product listing with category filtering
+Cart system supporting multi-vendor orders
+Notifications via react-hot-toast
+Fully responsive UI
+Server-Side Rendering (SSR) with hydration-safe fonts
+
+# 🛠 Tech Stack
+
+Framework: Next.js 13 (App Router)
+UI & Fonts: Next.js Google Fonts (JetBrains Mono, Geist, Geist Mono)
+Backend: Supabase (Auth, Database, Realtime)
+Styling: Tailwind CSS
+State Management: React Context (VendorProvider)
+Notifications: react-hot-toast
+Image Handling: Next.js Image component
+
+# 📦 Project Structure
+
+/app
+/products
+/layout.tsx # Root layout with fonts, navbar, and providers
+/components
+/layout
+Navbar.tsx
+/chat
+ChatOverlay.tsx
+/lib
+VendorContext.tsx
+supabaseClient.ts
+utils.ts
+/pages (if using any pages route)
+
+# ⚡ Getting Started
+
+1. Clone the repo
+   git clone https://github.com/yourusername/selam-marketplace.git
+   cd selam-marketplace
+2. Install dependencies
+   npm install
+
+# or
+
+yarn 3. Setup environment variables
+Create a .env.local file at the root:
+
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key 4. Run the development server
 npm run dev
+
 # or
+
 yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Visit http://localhost:3000
+to view the app.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+# 🛒 Cart & Vendor Features
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Cart supports multi-vendor orders
+Vendors can set trial periods and receive payment notifications
+Vendors and customers can chat in real-time via the overlay
