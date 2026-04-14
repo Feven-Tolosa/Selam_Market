@@ -9,8 +9,8 @@ export default function WhyLocal() {
     },
     {
       icon: Truck,
-      title: 'Fast Local Delivery',
-      description: 'Get your products faster with local delivery options.',
+      title: 'Local Options',
+      description: 'Get your products faster with local options.',
     },
     {
       icon: ShieldCheck,
