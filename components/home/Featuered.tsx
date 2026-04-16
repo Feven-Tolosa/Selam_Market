@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import ProductCard from './ProductCard'
+import { Link } from 'lucide-react'
 
 interface Vendor {
   store_name: string

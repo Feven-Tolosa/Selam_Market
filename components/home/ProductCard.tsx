@@ -49,7 +49,7 @@ export default function ProductCard({ product }: { product: Product }) {
       )}
 
       {/* Image */}
-      <Link href={`/product/${product.id}`}>
+      <Link href={`/products/${product.id}`}>
         <div className='relative h-80 bg-gray-100 overflow-hidden'>
           <Image
             src={product.image_url || '/placeholder.png'}
