@@ -236,9 +236,7 @@ export default function HeroSection() {
         aria-label="Scroll to footer"
       >
         <ChevronDown size={24} className="animate-bounce" />
-        <span className="absolute right-full mr-2 top-1/2 -translate-y-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">
-          Scroll to Footer
-        </span>
+        
       </button>
 
       {/* Animated Scroll Indicator (always visible at bottom) */}
