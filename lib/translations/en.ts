@@ -44,4 +44,24 @@ export const en: Translation = {
     loading: 'Loading featured products...',
     empty: 'No featured products found.',
   },
+
+  vendorOnboarding: {
+    title: 'Become a Vendor',
+    subtitle: 'Register your business',
+
+    businessName: 'Business Name',
+    contactInfo: 'Contact Info',
+    location: 'Location',
+    description: 'Description',
+
+    licenseTitle: 'Business License (Upload - Max 5MB)',
+    licenseHint: 'Click to upload or scan',
+    uploadHint: 'JPG, PNG, or PDF',
+
+    submit: 'Request Vendor Account',
+    submitting: 'Submitting...',
+
+    loginError: 'You must be logged in',
+    licenseError: 'Please upload your business license',
+  },
 }

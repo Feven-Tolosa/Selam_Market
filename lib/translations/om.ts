@@ -46,4 +46,24 @@ export const om: Translation = {
     loading: 'Oomishaalee filatamoo fe’amaa jiru...',
     empty: 'Oomisha filatamoo hin argamne',
   },
+
+  vendorOnboarding: {
+    title: 'Daldalaa Ta’i',
+    subtitle: 'Daldala kee galmeessi',
+
+    businessName: 'Maqaa Daldalaa',
+    contactInfo: 'Odeeffannoo quunnamtii',
+    location: 'Bakka',
+    description: 'Ibsa',
+
+    licenseTitle: 'Hayyama daldalaa (Max 5MB)',
+    licenseHint: 'Upload godhuuf cuqaasi',
+    uploadHint: 'JPG, PNG ykn PDF',
+
+    submit: 'Gaaffii daldalaa ergi',
+    submitting: 'Ergamaa jira...',
+
+    loginError: 'Seenuu qabda',
+    licenseError: 'Hayyama kee galchi',
+  },
 }
