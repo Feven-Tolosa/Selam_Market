@@ -32,4 +32,18 @@ export const om: Translation = {
   search: 'Barbaadi',
   browseProducts: 'Oomisha Ilaali',
   becomeVendor: "Daldalaa Ta'i",
+
+  categoryPage: {
+    title: 'Ramaddii Ilaali',
+    loading: 'Ramaddiin fe’amaa jira...',
+    empty: 'Ramaddiin hin argamne',
+  },
+
+  featured: {
+    title: 'Oomisha Filatamoo',
+    description:
+      'Oomishaalee sadarkaa olaanaa daldaltoota amanamoo irraa filataman argadhu.',
+    loading: 'Oomishaalee filatamoo fe’amaa jiru...',
+    empty: 'Oomisha filatamoo hin argamne',
+  },
 }
