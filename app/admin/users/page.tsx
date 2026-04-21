@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import toast from 'react-hot-toast'
+import Link from 'next/link'
 
 type User = {
   id: string
@@ -11,65 +12,57 @@ type User = {
   created_at: string
 }
 
+type Vendor = {
+  user_id: string
+  subscription_status: string
+}
+
 export default function AdminUsersPage() {
   const [users, setUsers] = useState<User[]>([])
-  const [loading, setLoading] = useState(true)
+  const [vendors, setVendors] = useState<Vendor[]>([])
+  const [search, setSearch] = useState('')
 
-  const fetchUsers = async () => {
-    setLoading(true)
+  const fetchData = async () => {
+    const [{ data: usersData }, { data: vendorData }] = await Promise.all([
+      supabase
+        .from('users')
+        .select('*')
+        .order('created_at', { ascending: false }),
+      supabase.from('vendors').select('user_id, subscription_status'),
+    ])
 
-    const { data, error } = await supabase
-      .from('users')
-      .select('*')
-      .order('created_at', { ascending: false })
-
-    if (error) {
-      toast.error(error.message)
-      setLoading(false)
-      return
-    }
-
-    setUsers(data || [])
-    setLoading(false)
+    setUsers(usersData || [])
+    setVendors(vendorData || [])
   }
 
   useEffect(() => {
-    fetchUsers()
+    fetchData()
   }, [])
 
-  // 👑 Promote to admin
-  const makeAdmin = async (id: string) => {
-    const { error } = await supabase
-      .from('users')
-      .update({ role: 'admin' })
-      .eq('id', id)
-
-    if (error) return toast.error(error.message)
-
-    toast.success('User promoted to admin 👑')
-    fetchUsers()
+  const getVendorStatus = (userId: string) => {
+    return (
+      vendors.find((v) => v.user_id === userId)?.subscription_status || 'none'
+    )
   }
 
-  // 👤 Demote to user
-  const removeAdmin = async (id: string) => {
-    const { error } = await supabase
-      .from('users')
-      .update({ role: 'user' })
-      .eq('id', id)
-
-    if (error) return toast.error(error.message)
-
-    toast.success('Admin removed')
-    fetchUsers()
-  }
-
-  if (loading) return <p className='p-10'>Loading users...</p>
+  const filteredUsers = users.filter((u) =>
+    u.email?.toLowerCase().includes(search.toLowerCase()),
+  )
 
   return (
     <div className='p-6 bg-gray-50 min-h-screen'>
       <h1 className='text-3xl font-bold text-[#10b5cb] mb-6'>
-        User Management
+        Users Management
       </h1>
+
+      {/* 🔍 Search bar */}
+      <input
+        type='text'
+        placeholder='Search by email...'
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        className='w-full p-3 mb-4 border rounded'
+      />
 
       <div className='overflow-x-auto bg-white rounded shadow'>
         <table className='w-full text-left'>
@@ -77,14 +70,15 @@ export default function AdminUsersPage() {
             <tr>
               <th className='p-3'>Email</th>
               <th className='p-3'>Role</th>
+              <th className='p-3'>Vendor Status</th>
               <th className='p-3'>Created</th>
-              <th className='p-3'>Actions</th>
+              <th className='p-3'>Action</th>
             </tr>
           </thead>
 
           <tbody>
-            {users.map((user) => (
-              <tr key={user.id} className='border-t'>
+            {filteredUsers.map((user) => (
+              <tr key={user.id} className='border-t hover:bg-gray-50'>
                 <td className='p-3'>{user.email}</td>
 
                 <td className='p-3'>
@@ -99,26 +93,35 @@ export default function AdminUsersPage() {
                   </span>
                 </td>
 
+                {/* 🧠 Vendor status */}
+                <td className='p-3'>
+                  <span
+                    className={`px-2 py-1 rounded text-xs ${
+                      getVendorStatus(user.id) === 'active'
+                        ? 'bg-green-200 text-green-800'
+                        : getVendorStatus(user.id) === 'trial'
+                          ? 'bg-yellow-200 text-yellow-800'
+                          : getVendorStatus(user.id) === 'expired'
+                            ? 'bg-red-200 text-red-800'
+                            : 'bg-gray-200 text-gray-700'
+                    }`}
+                  >
+                    {getVendorStatus(user.id)}
+                  </span>
+                </td>
+
                 <td className='p-3 text-sm text-gray-500'>
                   {new Date(user.created_at).toLocaleDateString()}
                 </td>
 
-                <td className='p-3 flex gap-2'>
-                  {user.role !== 'admin' ? (
-                    <button
-                      onClick={() => makeAdmin(user.id)}
-                      className='bg-green-500 text-white px-3 py-1 rounded'
-                    >
-                      Make Admin
-                    </button>
-                  ) : (
-                    <button
-                      onClick={() => removeAdmin(user.id)}
-                      className='bg-red-500 text-white px-3 py-1 rounded'
-                    >
-                      Remove Admin
-                    </button>
-                  )}
+                {/* 👆 click for full details */}
+                <td className='p-3'>
+                  <Link
+                    href={`/admin/users/${user.id}`}
+                    className='bg-[#10b5cb] text-white px-3 py-1 rounded'
+                  >
+                    View
+                  </Link>
                 </td>
               </tr>
             ))}
