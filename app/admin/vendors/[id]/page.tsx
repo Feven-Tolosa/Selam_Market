@@ -63,15 +63,44 @@ export default function VendorDetails() {
   const removeVendor = async () => {
     if (!confirm('Are you sure you want to remove this vendor?')) return
     if (!vendor) return
-    // 1. Delete from vendors table
-    const { error: deleteError } = await supabase
+
+    // 1. Get vendor products
+    const { data: products, error: prodError } = await supabase
+      .from('products')
+      .select('id')
+      .eq('vendor_id', vendor.user_id)
+
+    if (prodError) return toast.error(prodError.message)
+
+    const productIds = products?.map((p) => p.id) || []
+
+    if (productIds.length > 0) {
+      // 2. Delete cart items referencing those products
+      const { error: cartError } = await supabase
+        .from('cart_items')
+        .delete()
+        .in('product_id', productIds)
+
+      if (cartError) return toast.error(cartError.message)
+
+      // 3. Delete products
+      const { error: deleteProductsError } = await supabase
+        .from('products')
+        .delete()
+        .eq('vendor_id', vendor.user_id)
+
+      if (deleteProductsError) return toast.error(deleteProductsError.message)
+    }
+
+    // 4. Delete vendor
+    const { error: deleteVendorError } = await supabase
       .from('vendors')
       .delete()
       .eq('user_id', vendor.user_id)
 
-    if (deleteError) return toast.error(deleteError.message)
+    if (deleteVendorError) return toast.error(deleteVendorError.message)
 
-    // 2. Optionally reset status to rejected (or pending)
+    // 5. Update request status
     const { error: updateError } = await supabase
       .from('vendor_requests')
       .update({ status: 'rejected' })
@@ -79,7 +108,7 @@ export default function VendorDetails() {
 
     if (updateError) return toast.error(updateError.message)
 
-    toast.success('Vendor removed')
+    toast.success('Vendor removed successfully')
     fetchVendor()
     fetchRecent()
   }
