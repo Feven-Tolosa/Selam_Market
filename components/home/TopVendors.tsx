@@ -1,8 +1,7 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { supabase } from '@/lib/supabaseClient'
-import Image from 'next/image'
 import Link from 'next/link'
 import VendorCard from '../vendor/VendorCard'
 
@@ -25,21 +24,22 @@ interface Vendor {
 export default function TopVendors() {
   const [vendors, setVendors] = useState<Vendor[]>([])
   const [loading, setLoading] = useState(true)
+  const [currentIndex, setCurrentIndex] = useState(0)
+  const [direction, setDirection] = useState(1) // 1 = right, -1 = left
+  const [visibleCards, setVisibleCards] = useState(3)
+  const extendedVendors = [...vendors, ...vendors, ...vendors]
 
   const getImageUrl = (bucket: string, path: string | null | undefined) => {
     if (!path) return '/placeholder.jpg'
-
     const { data } = supabase.storage.from(bucket).getPublicUrl(path)
-
     return data.publicUrl || '/placeholder.jpg'
   }
 
   const fetchTopVendors = async () => {
-    // Step 1: get vendors
     const { data: vendorsData, error: vendorsError } = await supabase
       .from('vendors')
       .select('*')
-      .limit(6)
+      .limit(12)
 
     if (vendorsError) {
       console.error('Error fetching vendors:', vendorsError.message)
@@ -47,7 +47,6 @@ export default function TopVendors() {
       return
     }
 
-    // Step 2: get ratings grouped by vendor_id
     const { data: ratingsData, error: ratingsError } = await supabase
       .from('vendor_ratings')
       .select('vendor_id, rating')
@@ -58,10 +57,8 @@ export default function TopVendors() {
       return
     }
 
-    // Step 3: calculate averages
     const ratingMap: Record<string, { total: number; count: number }> = {}
-
-    ratingsData.forEach((r) => {
+    ratingsData?.forEach((r) => {
       if (!ratingMap[r.vendor_id]) {
         ratingMap[r.vendor_id] = { total: 0, count: 0 }
       }
@@ -69,51 +66,117 @@ export default function TopVendors() {
       ratingMap[r.vendor_id].count += 1
     })
 
-    // Step 4: merge with vendors
-    const vendorsWithRatings = vendorsData.map((vendor) => {
-      const stats = ratingMap[vendor.id]
+    const vendorsWithRatings = vendorsData.map((vendor) => ({
+      ...vendor,
+      rating: ratingMap[vendor.id] ? ratingMap[vendor.id].total / ratingMap[vendor.id].count : 0,
+    }))
 
-      return {
-        ...vendor,
-        rating: stats ? stats.total / stats.count : 0,
-      }
-    })
-
-    // Optional: sort by rating
     vendorsWithRatings.sort((a, b) => b.rating - a.rating)
-
     setVendors(vendorsWithRatings)
+    setCurrentIndex(vendorsWithRatings.length)
     setLoading(false)
   }
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 640) {
+        setVisibleCards(1)
+      } else if (window.innerWidth < 768) {
+        setVisibleCards(2)
+      } else {
+        setVisibleCards(3)
+      }
+    }
+    handleResize()
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
+
   useEffect(() => {
     fetchTopVendors()
   }, [])
 
+  // Smooth back-and-forth animation
+  useEffect(() => {
+    if (vendors.length === 0) return
+
+    const interval = setInterval(() => {
+      setCurrentIndex((prev) => {
+        const maxIndex = vendors.length * 2 - visibleCards
+        const minIndex = vendors.length
+        const next = prev + direction
+
+        // Change direction at boundaries
+        if (next > maxIndex) {
+          setDirection(-1)
+          return prev - 1
+        } else if (next < minIndex) {
+          setDirection(1)
+          return prev + 1
+        }
+        return next
+      })
+    }, 2500) // Move every 2.5 seconds
+
+    return () => clearInterval(interval)
+  }, [vendors.length, direction, visibleCards])
+
   if (loading) {
-    return <p className='text-center py-10'>Loading vendors...</p>
+    return (
+      <div className='py-10 px-4 text-center'>
+        <div className='inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-[#10b5cb]'></div>
+        <p className='mt-2 text-gray-500'>Loading vendors...</p>
+      </div>
+    )
+  }
+
+  if (vendors.length === 0) {
+    return null
   }
 
   return (
-    <section className='py-10 px-4'>
+    <section className='py-10 px-4 overflow-hidden'>
       {/* Section header */}
-      <div className='flex items-center justify-between mb-10'>
+      <div className='flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 gap-4'>
         <div>
           <h2 className='text-3xl font-bold text-gray-900'>Popular Vendors</h2>
           <p className='text-gray-500 mt-1 text-sm'>
             Discover trusted local vendors and explore their products.
           </p>
         </div>
-        <Link
-          href='/vendor'
-          className='text-sm font-medium text-[#10b5cb] hover:underline'
-        >
+        
+        <Link href='/vendor' className='text-sm font-medium text-[#10b5cb] hover:underline'>
           View all →
         </Link>
       </div>
-      <div className='grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6'>
-        {vendors.map((vendor) => (
-          <VendorCard key={vendor.id} vendor={vendor} />
-        ))}
+
+      {/* Auto-sliding Carousel */}
+      <div className='relative overflow-hidden'>
+        <div
+          className='flex transition-transform duration-700 ease-in-out gap-6'
+          style={{
+            transform: `translateX(-${currentIndex * (100 / visibleCards)}%)`,
+          }}
+        >
+          {extendedVendors.map((vendor, idx) => (
+            <div
+              key={`${vendor.id}-${idx}`}
+              className='flex-shrink-0 transition-all duration-300 hover:scale-105'
+              style={{ width: `calc(${100 / visibleCards}% - ${(visibleCards - 1) * 24 / visibleCards}px)` }}
+            >
+              <VendorCard vendor={vendor} />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Simple direction indicator */}
+      <div className='flex justify-center mt-6'>
+        <div className='flex gap-1 text-gray-400 text-xs'>
+          <span className={direction === -1 ? 'text-[#10b5cb] font-bold' : ''}>←</span>
+          <span>Auto-sliding</span>
+          <span className={direction === 1 ? 'text-[#10b5cb] font-bold' : ''}>→</span>
+        </div>
       </div>
     </section>
   )
