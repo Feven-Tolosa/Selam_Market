@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
-import { Search, Store } from 'lucide-react'
+import { Search, Store, ChevronDown } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 import { getTranslation } from '@/lib/i18n'
@@ -37,6 +37,7 @@ export default function HeroSection() {
   const [location, setLocation] = useState('')
   const [suggestions, setSuggestions] = useState<Product[]>([])
   const [loading, setLoading] = useState(false)
+  const [showScrollButton, setShowScrollButton] = useState(false)
 
   const wrapperRef = useRef<HTMLDivElement>(null)
 
@@ -48,6 +49,15 @@ export default function HeroSection() {
 
     return () => clearInterval(interval)
   }, [slides.length])
+
+  // Check scroll position to show/hide scroll button
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowScrollButton(window.scrollY > 200)
+    }
+    window.addEventListener('scroll', handleScroll)
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
 
   // Suggestions (debounced)
   useEffect(() => {
@@ -100,6 +110,14 @@ export default function HeroSection() {
 
     router.push(`/products?${params.toString()}`)
     setSuggestions([])
+  }
+
+  // Scroll to footer function
+  const scrollToFooter = () => {
+    const footer = document.querySelector('footer')
+    if (footer) {
+      footer.scrollIntoView({ behavior: 'smooth', block: 'end' })
+    }
   }
 
   return (
@@ -208,6 +226,59 @@ export default function HeroSection() {
           </div>
         </div>
       </section>
+
+      {/* Scroll to Footer Button - Appears after scrolling */}
+      <button
+        onClick={scrollToFooter}
+        className={`fixed bottom-8 right-8 z-50 bg-[#10b5cb] hover:bg-[#0e9db0] text-white p-3 rounded-full shadow-lg transition-all duration-300 hover:scale-110 hover:shadow-xl group ${
+          showScrollButton ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10 pointer-events-none'
+        }`}
+        aria-label="Scroll to footer"
+      >
+        <ChevronDown size={24} className="animate-bounce" />
+        <span className="absolute right-full mr-2 top-1/2 -translate-y-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">
+          Scroll to Footer
+        </span>
+      </button>
+
+      {/* Animated Scroll Indicator (always visible at bottom) */}
+      <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-20 flex flex-col items-center gap-2 cursor-pointer" onClick={scrollToFooter}>
+        <span className="text-white/70 text-xs uppercase tracking-wider">Scroll Down</span>
+        <div className="w-6 h-10 border-2 border-white/40 rounded-full flex justify-center">
+          <div className="w-1.5 h-2 bg-white/60 rounded-full mt-2 animate-scroll-down"></div>
+        </div>
+        <ChevronDown size={18} className="text-white/60 animate-bounce" />
+      </div>
+
+      <style jsx>{`
+        @keyframes scroll-down {
+          0% {
+            opacity: 1;
+            transform: translateY(0);
+          }
+          100% {
+            opacity: 0;
+            transform: translateY(8px);
+          }
+        }
+        
+        @keyframes bounce {
+          0%, 100% {
+            transform: translateY(0);
+          }
+          50% {
+            transform: translateY(5px);
+          }
+        }
+        
+        .animate-scroll-down {
+          animation: scroll-down 1.5s ease-in-out infinite;
+        }
+        
+        .animate-bounce {
+          animation: bounce 1s ease-in-out infinite;
+        }
+      `}</style>
     </main>
   )
 }
