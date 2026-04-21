@@ -26,6 +26,64 @@ export default function VendorDetails() {
   const [loading, setLoading] = useState(true)
   const [licenseOpen, setLicenseOpen] = useState(false)
 
+  // APPROVE or RE-APPROVE vendor
+  const approveVendor = async () => {
+    if (!vendor) return
+
+    // 1. Insert into vendors table
+    const { error: insertError } = await supabase.from('vendors').insert({
+      user_id: vendor.user_id,
+      store_name: vendor.store_name,
+      description: vendor.store_description,
+      phone: vendor.phone,
+      location: vendor.location,
+    })
+
+    if (insertError) {
+      // Avoid duplicate insert crash
+      if (!insertError.message.includes('duplicate')) {
+        return toast.error(insertError.message)
+      }
+    }
+
+    // 2. Update request status
+    const { error } = await supabase
+      .from('vendor_requests')
+      .update({ status: 'approved' })
+      .eq('id', vendor.id)
+
+    if (error) return toast.error(error.message)
+
+    toast.success('Vendor approved')
+    fetchVendor()
+    fetchRecent()
+  }
+
+  // REMOVE approved vendor
+  const removeVendor = async () => {
+    if (!confirm('Are you sure you want to remove this vendor?')) return
+    if (!vendor) return
+    // 1. Delete from vendors table
+    const { error: deleteError } = await supabase
+      .from('vendors')
+      .delete()
+      .eq('user_id', vendor.user_id)
+
+    if (deleteError) return toast.error(deleteError.message)
+
+    // 2. Optionally reset status to rejected (or pending)
+    const { error: updateError } = await supabase
+      .from('vendor_requests')
+      .update({ status: 'rejected' })
+      .eq('id', vendor.id)
+
+    if (updateError) return toast.error(updateError.message)
+
+    toast.success('Vendor removed')
+    fetchVendor()
+    fetchRecent()
+  }
+
   const fetchVendor = async () => {
     if (!id) return
     const { data, error } = await supabase
@@ -131,22 +189,45 @@ export default function VendorDetails() {
           </button>
         )}
 
-        {vendor.status === 'pending' && (
-          <div className='mt-4 flex gap-2'>
+        <div className='mt-4 flex gap-2'>
+          {/* Pending */}
+          {vendor.status === 'pending' && (
+            <>
+              <button
+                onClick={approveVendor}
+                className='bg-green-500 text-white px-3 py-1 rounded hover:opacity-90'
+              >
+                Approve
+              </button>
+              <button
+                onClick={() => updateStatus('rejected')}
+                className='bg-red-500 text-white px-3 py-1 rounded hover:opacity-90'
+              >
+                Reject
+              </button>
+            </>
+          )}
+
+          {/* Re-accept rejected */}
+          {vendor.status === 'rejected' && (
             <button
-              onClick={() => updateStatus('approved')}
-              className='bg-green-500 text-white px-3 py-1 rounded hover:opacity-90'
+              onClick={approveVendor}
+              className='bg-blue-500 text-white px-3 py-1 rounded hover:opacity-90'
             >
-              Approve
+              Accept Again
             </button>
+          )}
+
+          {/* Remove approved */}
+          {vendor.status === 'approved' && (
             <button
-              onClick={() => updateStatus('rejected')}
-              className='bg-red-500 text-white px-3 py-1 rounded hover:opacity-90'
+              onClick={removeVendor}
+              className='bg-red-600 text-white px-3 py-1 rounded hover:opacity-90'
             >
-              Reject
+              Remove Vendor
             </button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       {/* Recent vendors */}
