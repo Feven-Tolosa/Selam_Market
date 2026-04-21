@@ -84,9 +84,9 @@ export default function Footer() {
               </li>
 
               <li className='transform hover:translate-x-2 transition-all duration-200'>
-                <Link href='/vendors' className='hover:text-[#10b5cb] inline-block transition-colors'>
-                  Vendors
-                </Link>
+                <Link href='/vendor' className='hover:text-[#10b5cb] inline-block transition-colors'>
+  Vendors
+</Link>
               </li>
             </ul>
           </div>
@@ -115,9 +115,10 @@ export default function Footer() {
               </li>
 
               <li className='transform hover:translate-x-2 transition-all duration-200'>
-                <Link href='/vendor/guide' className='hover:text-[#10b5cb] inline-block transition-colors'>
-                  Vendor Guide
-                </Link>
+               
+<Link href='/vendor/guide' className='hover:text-[#10b5cb] inline-block transition-colors'>
+  Vendor Guide
+</Link>
               </li>
             </ul>
           </div>
