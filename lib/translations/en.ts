@@ -31,4 +31,17 @@ export const en: Translation = {
   search: 'Search',
   browseProducts: 'Browse Products',
   becomeVendor: 'Become a Vendor',
+  categoryPage: {
+    title: 'Browse Categories',
+    loading: 'Loading categories...',
+    empty: 'No categories found',
+  },
+
+  featured: {
+    title: 'Featured Products',
+    description:
+      'Discover our top-rated products from trusted vendors. Handpicked for you!',
+    loading: 'Loading featured products...',
+    empty: 'No featured products found.',
+  },
 }

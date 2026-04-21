@@ -29,4 +29,17 @@ export const am: Translation = {
   search: 'ፈልግ',
   browseProducts: 'ምርቶችን ይመልከቱ',
   becomeVendor: 'ነጋዴ ይሁኑ',
+
+  categoryPage: {
+    title: 'ምድቦችን ይመልከቱ',
+    loading: 'ምድቦች በመጫን ላይ...',
+    empty: 'ምንም ምድቦች አልተገኙም',
+  },
+
+  featured: {
+    title: 'ተመራጭ ምርቶች',
+    description: 'ከታመኑ ነጋዴዎች የተመረጡ ከፍተኛ ደረጃ ምርቶችን ያግኙ።',
+    loading: 'ተመራጭ ምርቶች በመጫን ላይ...',
+    empty: 'ምንም ተመራጭ ምርቶች አልተገኙም',
+  },
 }
