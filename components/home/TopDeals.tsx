@@ -21,6 +21,23 @@ export default function TopDeals() {
   const [loading, setLoading] = useState(true)
   const [activeIndex, setActiveIndex] = useState(0)
 
+  function getImageSrc(url: string | null) {
+    if (!url) return '/placeholder.png'
+
+    // already absolute URL
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      return url
+    }
+
+    // already root path
+    if (url.startsWith('/')) {
+      return url
+    }
+
+    // otherwise assume it's a local upload filename
+    return `/uploads/${url}`
+  }
+
   // Cycle through products for spotlight effect
   useEffect(() => {
     if (deals.length > 0) {
@@ -140,8 +157,9 @@ export default function TopDeals() {
                           isActive ? 'opacity-30' : 'opacity-0'
                         }`}
                       ></div>
+
                       <Image
-                        src={deal.image_url || '/placeholder.png'}
+                        src={getImageSrc(deal.image_url)}
                         width={90}
                         height={90}
                         alt={deal.name}
