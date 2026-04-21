@@ -40,4 +40,24 @@ export type Translation = {
     loading: string
     empty: string
   }
+
+  vendorOnboarding: {
+    title: string
+    subtitle: string
+
+    businessName: string
+    contactInfo: string
+    location: string
+    description: string
+
+    licenseTitle: string
+    licenseHint: string
+    uploadHint: string
+
+    submit: string
+    submitting: string
+
+    loginError: string
+    licenseError: string
+  }
 }

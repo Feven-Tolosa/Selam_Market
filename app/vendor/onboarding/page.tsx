@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { useState, useEffect } from 'react'
 import toast from 'react-hot-toast'
 import { RealtimePostgresChangesPayload } from '@supabase/supabase-js'
+import { getTranslation } from '@/lib/i18n'
 
 type VendorRequestType = {
   id: string
@@ -15,7 +16,9 @@ type VendorRequestType = {
 }
 
 export default function VendorOnboarding() {
+  const t = getTranslation()
   const router = useRouter()
+
   const [loading, setLoading] = useState(false)
   const [userId, setUserId] = useState<string | null>(null)
   const [licenseFile, setLicenseFile] = useState<File | null>(null)
@@ -26,7 +29,8 @@ export default function VendorOnboarding() {
     const getUser = async () => {
       const { data, error } = await supabase.auth.getUser()
       if (error || !data.user) {
-        toast.error('You must be logged in')
+        toast.error(t.vendorOnboarding.loginError)
+        router.push('/login')
         return
       }
       setUserId(data.user.id)
@@ -90,12 +94,12 @@ export default function VendorOnboarding() {
     e.preventDefault()
 
     if (!userId) {
-      toast.error('User not logged in')
+      toast.error(t.vendorOnboarding.loginError)
       return
     }
 
     if (!licenseFile) {
-      toast.error('Please upload your business license')
+      toast.error(t.vendorOnboarding.licenseError)
       return
     }
 
@@ -105,11 +109,9 @@ export default function VendorOnboarding() {
       const formData = new FormData(e.currentTarget)
 
       const storeName = formData.get('storeName') as string
-      // const phone = formData.get('phone') as string
       const location = formData.get('location') as string
       const description = formData.get('description') as string
 
-      // Upload license
       const licenseUrl = await uploadLicense(licenseFile)
 
       const { error } = await supabase.from('vendor_requests').insert({
@@ -147,15 +149,20 @@ export default function VendorOnboarding() {
               <Store className='text-[#10b5cb]' size={32} />
             </div>
           </div>
-          <h1 className='text-2xl font-semibold'>Become a Vendor</h1>
-          <p className='text-gray-500'>Register your business</p>
+
+          <h1 className='text-2xl font-semibold'>{t.vendorOnboarding.title}</h1>
+
+          <p className='text-gray-500'>{t.vendorOnboarding.subtitle}</p>
         </div>
 
         <form onSubmit={handleSubmit} className='space-y-6'>
           {/* Inputs */}
           <div className='grid md:grid-cols-2 gap-6'>
             <div className='space-y-4'>
-              <label className='text-sm text-gray-600'>Business Name</label>
+              <label className='text-sm text-gray-600'>
+                {t.vendorOnboarding.businessName}
+              </label>
+
               <input
                 required
                 name='storeName'
@@ -163,7 +170,11 @@ export default function VendorOnboarding() {
                 placeholder='Your shop name'
                 className='w-full mt-1 px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#10b5cb]'
               />
-              <label className='text-sm text-gray-600'>Contact Info</label>
+
+              <label className='text-sm text-gray-600'>
+                {t.vendorOnboarding.contactInfo}
+              </label>
+
               <input
                 type='tel'
                 value={phone}
@@ -172,7 +183,11 @@ export default function VendorOnboarding() {
                 pattern='^\+?[0-9]{9,15}$'
                 className='w-full mt-1 px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#10b5cb]'
               />
-              <label className='text-sm text-gray-600'>Location</label>
+
+              <label className='text-sm text-gray-600'>
+                {t.vendorOnboarding.location}
+              </label>
+
               <input
                 name='location'
                 required
@@ -182,7 +197,10 @@ export default function VendorOnboarding() {
             </div>
 
             <div className='space-y-4'>
-              <label className='text-sm text-gray-600'>Description</label>
+              <label className='text-sm text-gray-600'>
+                {t.vendorOnboarding.description}
+              </label>
+
               <textarea
                 name='description'
                 required
@@ -195,7 +213,7 @@ export default function VendorOnboarding() {
           {/* LICENSE UPLOAD */}
           <div>
             <label className='text-sm text-gray-600 mb-2 block'>
-              Business License (Upload - Max 5MB)
+              {t.vendorOnboarding.licenseTitle}
             </label>
 
             <div className='border-2 border-dashed rounded-lg p-4 text-center'>
@@ -218,9 +236,11 @@ export default function VendorOnboarding() {
               >
                 <Upload />
                 <span className='text-sm text-gray-500'>
-                  Click to upload or scan
+                  {t.vendorOnboarding.licenseHint}
                 </span>
-                <span className='text-xs text-gray-400'>JPG, PNG, or PDF</span>
+                <span className='text-xs text-gray-400'>
+                  {t.vendorOnboarding.uploadHint}
+                </span>
               </label>
 
               {licenseFile && (
@@ -236,7 +256,9 @@ export default function VendorOnboarding() {
             disabled={loading}
             className='w-full bg-[#10b5cb] text-white py-3 rounded-md'
           >
-            {loading ? 'Submitting...' : 'Request Vendor Account'}
+            {loading
+              ? t.vendorOnboarding.submitting
+              : t.vendorOnboarding.submit}
           </button>
         </form>
       </div>
