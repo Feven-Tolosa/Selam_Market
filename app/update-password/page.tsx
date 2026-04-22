@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
+import { FiEye, FiEyeOff } from 'react-icons/fi'
 
 export default function UpdatePasswordPage() {
   const router = useRouter()
@@ -11,6 +12,8 @@ export default function UpdatePasswordPage() {
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [loading, setLoading] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
   const validatePassword = (password: string) => {
     const regex =
@@ -60,23 +63,41 @@ export default function UpdatePasswordPage() {
       >
         <h1 className='text-xl font-semibold text-center'>Set New Password</h1>
 
-        <input
-          type='password'
-          placeholder='New password'
-          className='w-full border px-4 py-2 rounded-md'
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
+        <div className='relative'>
+          <input
+            type={showPassword ? 'text' : 'password'}
+            placeholder='New password'
+            className='w-full border px-4 py-2 pr-10 rounded-md'
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
+          <button
+            type='button'
+            onClick={() => setShowPassword(!showPassword)}
+            className='absolute right-3 top-1/2 -translate-y-1/2 text-gray-500'
+          >
+            {showPassword ? <FiEyeOff /> : <FiEye />}
+          </button>
+        </div>
 
-        <input
-          type='password'
-          placeholder='Confirm password'
-          className='w-full border px-4 py-2 rounded-md'
-          value={confirmPassword}
-          onChange={(e) => setConfirmPassword(e.target.value)}
-          required
-        />
+        <div className='relative'>
+          <input
+            type={showConfirmPassword ? 'text' : 'password'}
+            placeholder='Confirm new password'
+            className='w-full border px-4 py-2 pr-10 rounded-md'
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            required
+          />
+          <button
+            type='button'
+            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+            className='absolute right-3 top-1/2 -translate-y-1/2 text-gray-500'
+          >
+            {showConfirmPassword ? <FiEyeOff /> : <FiEye />}
+          </button>
+        </div>
 
         {/* ✅ Password Rules UI */}
         <p className='text-xs text-gray-500'>
