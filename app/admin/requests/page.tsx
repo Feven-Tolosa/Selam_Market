@@ -64,18 +64,16 @@ export default function AdminDashboard() {
   }
 
   const renderVendorCard = (vendor: VendorRequest) => (
-    <div
+    <Link
+      href={`/admin/vendors/${vendor.id}`}
       key={vendor.id}
       className='relative bg-white rounded-lg shadow-md p-4 group hover:shadow-xl transition-transform transform hover:-translate-y-1 duration-300 cursor-pointer'
     >
       <h4 className='font-bold text-lg mb-2'>{vendor.store_name}</h4>
       {/* View Details button */}
-      <Link
-        href={`/admin/vendors/${vendor.id}`}
-        className='block bg-[#10b5cb] text-white text-center py-2 rounded font-semibold'
-      >
+      <div className='block bg-[#10b5cb] text-white text-center py-2 rounded font-semibold'>
         View Details
-      </Link>
+      </div>
 
       {/* Hover info card */}
       <div className='absolute top-6 left-4 right-4 mt-4 p-3 bg-white border rounded-lg shadow-lg opacity-0 group-hover:opacity-100 scale-95 group-hover:scale-100 transition-all duration-300 pointer-events-none'>
@@ -97,7 +95,7 @@ export default function AdminDashboard() {
           <strong>Location:</strong> {vendor.location}
         </p>
       </div>
-    </div>
+    </Link>
   )
 
   return (
