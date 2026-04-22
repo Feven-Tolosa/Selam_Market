@@ -36,18 +36,24 @@ export default function VendorProfile() {
 
   const [latitude, setLatitude] = useState<number | null>(null)
   const [longitude, setLongitude] = useState<number | null>(null)
+
   const LocationPicker = dynamic(
     () => import('@/components/vendor/LocationPicker'),
-    {
-      ssr: false,
-    },
+    { ssr: false },
   )
 
-  // Load Vendor Data (FIXED)
+  // ✅ Load Vendor Data (Refined + Debuggable)
   useEffect(() => {
     async function loadVendor() {
-      const { data: userData } = await supabase.auth.getUser()
+      const { data: userData, error: userError } = await supabase.auth.getUser()
+
+      if (userError) {
+        console.error('Auth error:', userError)
+        return
+      }
+
       const user = userData.user
+      console.log('USER:', user)
 
       if (!user) return
 
@@ -55,14 +61,17 @@ export default function VendorProfile() {
         .from('vendors')
         .select('*')
         .eq('user_id', user.id)
-        .maybeSingle() //fix
+        .maybeSingle()
+
+      console.log('VENDOR DATA:', vendor)
+      console.log('VENDOR ERROR:', error)
 
       if (error) {
+        toast.error('Failed to load vendor')
         console.error(error)
         return
       }
 
-      // If vendor not created yet
       if (!vendor) {
         toast.error('Your vendor account is not approved yet.')
         return
@@ -76,8 +85,8 @@ export default function VendorProfile() {
       setPhone(vendor.phone ?? '')
       setLocation(vendor.location ?? '')
 
-      setLatitude(vendor.latitude || null)
-      setLongitude(vendor.longitude || null)
+      setLatitude(vendor.latitude ?? null)
+      setLongitude(vendor.longitude ?? null)
 
       // Logo
       if (vendor.logo_url) {
@@ -98,10 +107,14 @@ export default function VendorProfile() {
       }
 
       // Products
-      const { data: vendorProducts } = await supabase
+      const { data: vendorProducts, error: productsError } = await supabase
         .from('products')
         .select('id,name,price,image_url')
         .eq('vendor_id', vendor.id)
+
+      if (productsError) {
+        console.error('Products error:', productsError)
+      }
 
       setProducts(vendorProducts ?? [])
     }
@@ -109,7 +122,7 @@ export default function VendorProfile() {
     loadVendor()
   }, [])
 
-  // Delete Product
+  // ✅ Delete Product
   async function deleteProduct(productId: string) {
     const confirmDelete = confirm('Delete this product?')
     if (!confirmDelete) return
@@ -121,13 +134,14 @@ export default function VendorProfile() {
 
     if (error) {
       toast.error('Delete failed')
+      console.error(error)
       return
     }
 
     setProducts((prev) => prev.filter((p) => p.id !== productId))
   }
 
-  // Upload File (IMPROVED)
+  // ✅ Upload File
   async function uploadFile(file: File, bucket: string) {
     const fileName = `${Date.now()}-${file.name}`
 
@@ -136,14 +150,14 @@ export default function VendorProfile() {
       .upload(fileName, file)
 
     if (error) {
-      console.error(error)
+      console.error('Upload error:', error)
       return null
     }
 
     return data.path
   }
 
-  // Save Profile (FIXED)
+  // ✅ Save Profile
   async function handleSave(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
 
@@ -158,11 +172,11 @@ export default function VendorProfile() {
     let banner_url: string | undefined
 
     if (logo) {
-      logo_url = (await uploadFile(logo, 'vendor-logos')) || undefined
+      logo_url = (await uploadFile(logo, 'vendor-logos')) ?? undefined
     }
 
     if (banner) {
-      banner_url = (await uploadFile(banner, 'vendor-banners')) || undefined
+      banner_url = (await uploadFile(banner, 'vendor-banners')) ?? undefined
     }
 
     const { error } = await supabase
@@ -181,11 +195,13 @@ export default function VendorProfile() {
       .eq('id', vendorId)
 
     setLoading(false)
+
     if (error) {
       toast.error('Update failed')
       console.error(error)
       return
     }
+
     toast.success('Profile updated successfully!')
   }
 
@@ -270,7 +286,7 @@ export default function VendorProfile() {
             onChange={(e) => setPhone(e.target.value)}
             placeholder='Phone (+25134567890)'
             className='w-full border p-3 rounded'
-            pattern='^\+?[0-9]{9,15}$'
+            pattern='^\\+?[0-9]{9,15}$'
           />
 
           <input
@@ -282,6 +298,7 @@ export default function VendorProfile() {
         </div>
       </div>
 
+      {/* Map */}
       <div className='h-75 w-full'>
         <h2 className='font-semibold text-lg'>Store Location (Map)</h2>
 
@@ -294,14 +311,14 @@ export default function VendorProfile() {
           }}
         />
 
-        {latitude && longitude && (
+        {latitude !== null && longitude !== null && (
           <p className='text-sm text-gray-500'>
             Selected: {latitude.toFixed(5)}, {longitude.toFixed(5)}
           </p>
         )}
       </div>
 
-      {/* Save Button */}
+      {/* Save */}
       <button
         disabled={loading}
         className='bg-[#10b5cb] text-white px-6 py-3 rounded-lg hover:bg-[#0ea3b7]'
