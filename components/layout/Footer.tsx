@@ -131,7 +131,7 @@ export default function Footer() {
 
             <ul className='space-y-2 text-sm text-gray-300'>
               <li className='transform hover:translate-x-2 transition-all duration-200'>
-                <Link href='/help' className='hover:text-[#10b5cb] inline-block transition-colors'>
+                <Link href='/help-center' className='hover:text-[#10b5cb] inline-block transition-colors'>
                   Help Center
                 </Link>
               </li>
