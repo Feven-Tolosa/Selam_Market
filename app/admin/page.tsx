@@ -5,6 +5,21 @@ import { supabase } from '@/lib/supabaseClient'
 import VendorsTable from '@/components/admin/VendorsTable'
 import OrdersTable from '@/components/admin/OrdersTable'
 
+const Card = ({
+  title,
+  value,
+  color,
+}: {
+  title: string
+  value: number
+  color: string
+}) => (
+  <div className='bg-white rounded-xl shadow-sm p-5 hover:shadow-md transition'>
+    <p className='text-sm text-gray-500'>{title}</p>
+    <h2 className={`text-3xl font-bold mt-2 ${color}`}>{value}</h2>
+  </div>
+)
+
 type Stats = {
   vendors: number
   products: number
@@ -42,21 +57,6 @@ export default function AdminDashboard() {
 
     fetchStats()
   }, [])
-
-  const Card = ({
-    title,
-    value,
-    color,
-  }: {
-    title: string
-    value: number
-    color: string
-  }) => (
-    <div className='bg-white rounded-xl shadow-sm p-5 hover:shadow-md transition'>
-      <p className='text-sm text-gray-500'>{title}</p>
-      <h2 className={`text-3xl font-bold mt-2 ${color}`}>{value}</h2>
-    </div>
-  )
 
   return (
     <div className='p-6 bg-gray-50 min-h-screen'>

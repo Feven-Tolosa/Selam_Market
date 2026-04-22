@@ -17,10 +17,10 @@ export async function POST(req: Request) {
       userEmail,
       cartId,
     }: { items: CartItem[]; userEmail: string; cartId: string } = body
-    await supabase
-      .from('cart_items')
-      .update({ status: 'ordered' })
-      .eq('cart_id', cartId)
+    // await supabase
+    //   .from('cart_items')
+    //   .update({ status: 'ordered' })
+    //   .eq('cart_id', cartId)
 
     if (!items || items.length === 0) {
       return NextResponse.json({ error: 'Cart is empty' }, { status: 400 })

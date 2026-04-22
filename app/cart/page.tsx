@@ -161,7 +161,11 @@ export default function CartPage() {
       const res = await fetch('/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ items: cleanItems, userEmail }),
+        body: JSON.stringify({
+          items: cleanItems,
+          userEmail,
+          userId,
+        }),
       })
 
       const data: { checkout_url?: string } = await res.json()

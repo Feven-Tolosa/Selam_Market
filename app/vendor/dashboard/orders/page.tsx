@@ -44,10 +44,11 @@ export default function VendorOrders() {
           price,
           product:product_id(name),
           order:order_id(id,email,created_at)
+          
         `,
         )
         .eq('vendor_id', vendorId)
-        .order('created_at', { ascending: false })
+        .order('order.created_at', { ascending: false })
 
       if (data) setOrders(data)
     }

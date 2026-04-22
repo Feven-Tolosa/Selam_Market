@@ -75,7 +75,15 @@ export default function VendorDetails() {
     const productIds = products?.map((p) => p.id) || []
 
     if (productIds.length > 0) {
-      // 2. Delete cart items referencing those products
+      // 🔥 2. Delete reviews FIRST
+      const { error: reviewError } = await supabase
+        .from('reviews')
+        .delete()
+        .in('product_id', productIds)
+
+      if (reviewError) return toast.error(reviewError.message)
+
+      // 🔥 3. Delete cart items
       const { error: cartError } = await supabase
         .from('cart_items')
         .delete()
@@ -83,7 +91,7 @@ export default function VendorDetails() {
 
       if (cartError) return toast.error(cartError.message)
 
-      // 3. Delete products
+      // 🔥 4. Delete products
       const { error: deleteProductsError } = await supabase
         .from('products')
         .delete()
@@ -92,7 +100,7 @@ export default function VendorDetails() {
       if (deleteProductsError) return toast.error(deleteProductsError.message)
     }
 
-    // 4. Delete vendor
+    // 🔥 5. Delete vendor
     const { error: deleteVendorError } = await supabase
       .from('vendors')
       .delete()
@@ -100,7 +108,7 @@ export default function VendorDetails() {
 
     if (deleteVendorError) return toast.error(deleteVendorError.message)
 
-    // 5. Update request status
+    // 🔥 6. Update request status
     const { error: updateError } = await supabase
       .from('vendor_requests')
       .update({ status: 'rejected' })
