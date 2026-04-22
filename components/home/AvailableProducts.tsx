@@ -11,7 +11,7 @@ type ProductWithExtras = {
   vendors?: {
     id: string
     store_name: string
-  }
+  }[]
   rating?: number
   ratingCount?: number
 }

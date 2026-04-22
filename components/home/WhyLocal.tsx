@@ -43,7 +43,36 @@ export default function WhyLocal() {
     },
   ]
 
-  const stats = []
+  // const stats = []
+  //the change i made for the stats section
+  interface Stat {
+    icon: React.ElementType
+    value: string | number
+    label: string
+  }
+
+  const stats: Stat[] = [
+    {
+      icon: Store,
+      value: '500+',
+      label: 'Local Vendors',
+    },
+    {
+      icon: Users,
+      value: '10K+',
+      label: 'Happy Customers',
+    },
+    {
+      icon: Clock,
+      value: '24/7',
+      label: 'Customer Support',
+    },
+    {
+      icon: Heart,
+      value: '100%',
+      label: 'Satisfaction Guarantee',
+    },
+  ]
 
   // Intersection Observer to trigger animations when section comes into view
   useEffect(() => {
