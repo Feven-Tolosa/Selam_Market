@@ -180,8 +180,8 @@ export default function VendorOnboarding() {
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 placeholder='Phone (+25134567890)'
-                pattern='^\+?[0-9]{9,15}$'
                 className='w-full mt-1 px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#10b5cb]'
+                pattern='^\+?[0-9]{9,15}$'
               />
 
               <label className='text-sm text-gray-600'>
