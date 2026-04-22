@@ -232,12 +232,6 @@ export default function VendorsPage() {
     <div className='p-6 bg-white min-h-screen'>
       <h1 className='text-2xl font-bold mb-2 text-[#10b5cb]'>Find Vendors</h1>
 
-      {coords && (
-        <p className='text-sm text-gray-600 mb-4'>
-          Showing vendors near you 📍
-        </p>
-      )}
-
       {/* Filters */}
       <div className='grid md:grid-cols-3 gap-4 mb-6'>
         <input
