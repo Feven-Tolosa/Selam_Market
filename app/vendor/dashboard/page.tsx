@@ -60,15 +60,16 @@ export default function VendorProfile() {
       }
 
       const user = userData.user
-      console.log('USER:', user)
-
       if (!user) return
 
-      const { data: vendor, error } = await supabase
+      console.log('USER ID:', user.id)
+
+      // ✅ Fetch ONLY one vendor (prevents breaking UI if duplicates exist)
+      const { data: vendors, error } = await supabase
         .from('vendors')
         .select('*')
         .eq('user_id', user.id)
-        .maybeSingle()
+        .limit(2) // detect duplicates
 
       if (error) {
         toast.error('Failed to load vendor')
@@ -76,10 +77,18 @@ export default function VendorProfile() {
         return
       }
 
-      if (!vendor) {
+      if (!vendors || vendors.length === 0) {
         toast.error('Your vendor account is not approved yet.')
         return
       }
+
+      // 🚨 Detect duplicates
+      if (vendors.length > 1) {
+        console.warn('DUPLICATE VENDORS FOUND:', vendors)
+        toast.error('Duplicate vendor accounts detected. Contact admin.')
+      }
+
+      const vendor = vendors[0] // ✅ always use first
 
       setVendorId(vendor.id)
       setStoreName(vendor.store_name ?? '')
@@ -87,24 +96,30 @@ export default function VendorProfile() {
       setEmail(vendor.email ?? '')
       setPhone(vendor.phone ?? '')
       setLocation(vendor.location ?? '')
-      setLatitude(vendor.latitude || null)
-      setLongitude(vendor.longitude || null)
 
+      setLatitude(vendor.latitude ?? null)
+      setLongitude(vendor.longitude ?? null)
+
+      // Logo
       if (vendor.logo_url) {
         const { data } = supabase.storage
           .from('vendor-logos')
           .getPublicUrl(vendor.logo_url)
+
         setLogoPreview(data.publicUrl)
       }
 
+      // Banner
       if (vendor.banner_url) {
         const { data } = supabase.storage
           .from('vendor-banners')
           .getPublicUrl(vendor.banner_url)
+
         setBannerPreview(data.publicUrl)
       }
 
-      const { data: vendorProducts } = await supabase
+      // ✅ FIXED products error bug
+      const { data: vendorProducts, error: productsError } = await supabase
         .from('products')
         .select('id,name,price,image_url')
         .eq('vendor_id', vendor.id)
