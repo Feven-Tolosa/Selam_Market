@@ -76,12 +76,11 @@ export default function ProductsPage() {
   useEffect(() => {
     async function fetchData() {
       const { data: p } = await supabase.from('products').select(`
-        *,
-        vendors (
-          latitude,
-          longitude
-        )
-      `)
+  *,
+  vendor:vendors (
+    latitude,
+    longitude
+)`)
 
       const { data: c } = await supabase.from('categories').select('*')
 
