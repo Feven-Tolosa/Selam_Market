@@ -18,11 +18,6 @@ export default function VendorsTable() {
       .from('vendors')
       .select('id, store_name, is_approved')
 
-    if (error) {
-      toast.error('Failed to fetch vendors')
-      return
-    }
-
     setVendors(data ?? [])
   }
 
