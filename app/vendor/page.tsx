@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import dynamic from 'next/dynamic'
 import VendorCard from '@/components/vendor/VendorCard'
@@ -34,13 +34,14 @@ export default function VendorsPage() {
   )
   const [loading, setLoading] = useState(true)
 
-  const VendorsMap = dynamic(() => import('@/components/vendor/VendorsMap'), {
-    ssr: false,
-  })
   const [nearbyOnly, setNearbyOnly] = useState(false)
   const MAX_DISTANCE_KM = 20
 
-  // ✅ Auto detect location
+  const VendorsMap = dynamic(() => import('@/components/vendor/VendorsMap'), {
+    ssr: false,
+  })
+
+  // 📍 Get user location
   useEffect(() => {
     navigator.geolocation.getCurrentPosition(
       (pos) => {
@@ -49,13 +50,11 @@ export default function VendorsPage() {
           lng: pos.coords.longitude,
         })
       },
-      () => {
-        console.log('Location denied → fallback to normal search')
-      },
+      () => console.log('Location denied'),
     )
   }, [])
 
-  // ✅ Distance formula (safe)
+  // 📏 Distance formula (Haversine)
   const getDistance = (
     lat1: number,
     lon1: number,
@@ -75,7 +74,7 @@ export default function VendorsPage() {
     return 2 * R * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
   }
 
-  // ✅ Attach ratings (optimized)
+  // ⭐ Attach ratings
   const attachRatings = async (vendorsData: Vendor[]) => {
     if (vendorsData.length === 0) return vendorsData
 
@@ -87,7 +86,7 @@ export default function VendorsPage() {
       .in('vendor_id', vendorIds)
 
     if (error) {
-      console.error('Ratings error:', error)
+      console.error(error)
       return vendorsData
     }
 
@@ -111,49 +110,22 @@ export default function VendorsPage() {
     })
   }
 
-  // ✅ Remove duplicate vendors (important!)
+  // 🧹 Remove duplicates
   const dedupeVendors = (vendors: Vendor[]) => {
     const map = new Map<string, Vendor>()
     vendors.forEach((v) => {
-      if (!map.has(v.id)) {
-        map.set(v.id, v)
-      }
+      if (!map.has(v.id)) map.set(v.id, v)
     })
     return Array.from(map.values())
   }
 
-  // ✅ Fetch vendors
+  // 🚀 Fetch vendors (FIXED)
   const fetchVendors = async () => {
     setLoading(true)
 
     try {
-      let vendorsData: Vendor[] = []
-
-      //  STEP 1: Try nearby vendors
-      if (coords) {
-        const { data, error } = await supabase.rpc('nearby_vendors', {
-          user_lat: coords.lat,
-          user_lng: coords.lng,
-          radius_km: 20, //  increased radius
-        })
-
-        if (error) {
-          console.error('RPC error:', error)
-        }
-
-        vendorsData = data || []
-
-        console.log('Nearby vendors:', vendorsData)
-
-        //  fallback if empty
-        if (vendorsData.length === 0) {
-          console.warn('No nearby vendors → fallback to all vendors')
-        }
-      }
-
-      //  STEP 2: fallback OR no coords
-      if (!coords || vendorsData.length === 0) {
-        let query = supabase.from('vendors').select(`
+      // STEP 1: fetch ALL vendors (no RPC!)
+      let query = supabase.from('vendors').select(`
         *,
         products (
           name,
@@ -161,36 +133,27 @@ export default function VendorsPage() {
         )
       `)
 
-        if (search) {
-          query = query.ilike('store_name', `%${search}%`)
-        }
-
-        if (location) {
-          query = query.ilike('location', `%${location}%`)
-        }
-
-        const { data, error } = await query
-
-        if (error) throw error
-
-        vendorsData = data || []
-
-        console.log('Fallback vendors:', vendorsData)
-      }
-
-      //  STEP 3: safer search filtering (client-side)
       if (search) {
-        vendorsData = vendorsData.filter((v) =>
-          v.store_name?.toLowerCase().includes(search.toLowerCase()),
-        )
+        query = query.ilike('store_name', `%${search}%`)
       }
 
-      //  STEP 4: dedupe
-      vendorsData = dedupeVendors(vendorsData)
+      if (location) {
+        query = query.ilike('location', `%${location}%`)
+      }
 
-      let result = await attachRatings(vendorsData)
+      const { data, error } = await query
 
-      //  STEP 5: attach distance
+      if (error) throw error
+
+      let result: Vendor[] = data || []
+
+      // STEP 2: dedupe
+      result = dedupeVendors(result)
+
+      // STEP 3: ratings
+      result = await attachRatings(result)
+
+      // STEP 4: distance calculation
       if (coords) {
         result = result.map((v) => {
           if (v.latitude == null || v.longitude == null) {
@@ -209,17 +172,16 @@ export default function VendorsPage() {
         })
       }
 
-      //  STEP 6: apply nearby filter + sorting (controlled)
+      // STEP 5: nearby filter (NOW WORKS)
       if (nearbyOnly && coords) {
         result = result
-          .filter((v) => v.distance != null && v.distance <= MAX_DISTANCE_KM)
+          .filter((v) => v.distance !== Infinity)
+          .filter((v) => (v.distance || 0) <= MAX_DISTANCE_KM)
           .sort((a, b) => (a.distance || 0) - (b.distance || 0))
       } else if (coords) {
-        // soft sort (not strict filtering)
+        // soft sorting only
         result.sort((a, b) => (a.distance || 0) - (b.distance || 0))
       }
-
-      console.log('FINAL vendors:', result)
 
       setVendors(result)
     } catch (err) {
@@ -229,14 +191,14 @@ export default function VendorsPage() {
     }
   }
 
-  // ✅ Debounce (stable)
+  // 🔁 re-fetch when filters change
   useEffect(() => {
     const timeout = setTimeout(() => {
       fetchVendors()
-    }, 400)
+    }, 300)
 
     return () => clearTimeout(timeout)
-  }, [search, location, coords])
+  }, [search, location, coords, nearbyOnly])
 
   return (
     <div className='p-6 bg-white min-h-screen'>
@@ -265,6 +227,8 @@ export default function VendorsPage() {
           Clear Location
         </button>
       </div>
+
+      {/* Nearby toggle */}
       <div className='flex items-center gap-4 mb-6'>
         <label className='flex items-center gap-2 cursor-pointer'>
           <input
@@ -272,17 +236,15 @@ export default function VendorsPage() {
             checked={nearbyOnly}
             onChange={(e) => setNearbyOnly(e.target.checked)}
           />
-          Nearby vendors 📍
+          Nearby vendors 📍 (within {MAX_DISTANCE_KM} km)
         </label>
       </div>
 
-      {/* Vendors */}
+      {/* Loading */}
       {loading ? (
         <p>Loading...</p>
       ) : vendors.length === 0 ? (
-        <p className='text-gray-500'>
-          No vendors found. Try changing location or search.
-        </p>
+        <p className='text-gray-500'>No vendors found. Try changing filters.</p>
       ) : (
         <div className='grid sm:grid-cols-2 md:grid-cols-3 gap-6'>
           {vendors.map((vendor) => (
