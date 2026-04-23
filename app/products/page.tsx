@@ -50,7 +50,7 @@ export default function ProductsPage() {
     )
   }, [])
 
-  // 📏 Distance
+  // Distance
   const getDistance = (
     lat1: number,
     lon1: number,
@@ -70,7 +70,7 @@ export default function ProductsPage() {
     return 2 * R * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
   }
 
-  // 📦 Fetch
+  // Fetch
   useEffect(() => {
     async function fetchData() {
       const { data: p } = await supabase.from('products').select(`
@@ -114,10 +114,10 @@ export default function ProductsPage() {
     fetchData()
   }, [])
 
-  // 🔍 FILTER + SORT
+  //  FILTER + SORT
   let filtered = [...products]
 
-  // 📍 Attach distance
+  // Attach distance
   if (coords) {
     filtered = filtered.map((p) => {
       if (!p.vendor) return p
@@ -136,47 +136,52 @@ export default function ProductsPage() {
     filtered = filtered.filter((p) => p.category_id === selectedCategory)
   }
 
-  // 🔎 Search
+  //  Search
   if (search) {
     filtered = filtered.filter((p) =>
       p.name.toLowerCase().includes(search.toLowerCase()),
     )
   }
 
-  // ⭐ Top Rated filter (independent)
+  //  Top Rated filter (independent)
   if (topRatedOnly) {
     filtered = filtered.filter((p) => (p.rating || 0) >= 4)
   }
 
-  // 📍 Nearby filter (independent)
+  //  Nearby filter (independent)
   const MAX_DISTANCE_KM = 10 // adjust (5–20km works well)
 
+  // PRIORITY: Nearby sorting
   if (nearbyOnly && coords) {
     filtered = filtered
-      .filter((p) => p.distance != null && p.distance <= MAX_DISTANCE_KM)
+      .filter((p) => p.distance != null)
       .sort((a, b) => (a.distance || 0) - (b.distance || 0))
   }
 
-  // 🔽 Sorting (still works)
-  if (sort === 'latest') {
-    filtered.sort(
-      (a, b) =>
-        new Date(b.created_at || '').getTime() -
-        new Date(a.created_at || '').getTime(),
-    )
+  {
+    // Normal sorting
+    if (sort === 'latest') {
+      filtered.sort(
+        (a, b) =>
+          new Date(b.created_at || '').getTime() -
+          new Date(a.created_at || '').getTime(),
+      )
+    }
+
+    if (sort === 'low') {
+      filtered.sort((a, b) => a.price - b.price)
+    }
+
+    if (sort === 'high') {
+      filtered.sort((a, b) => b.price - a.price)
+    }
+
+    if (sort === 'rating') {
+      filtered.sort((a, b) => (b.rating || 0) - (a.rating || 0))
+    }
   }
 
-  if (sort === 'low') {
-    filtered.sort((a, b) => a.price - b.price)
-  }
-
-  if (sort === 'high') {
-    filtered.sort((a, b) => b.price - a.price)
-  }
-
-  if (sort === 'rating') {
-    filtered.sort((a, b) => (b.rating || 0) - (a.rating || 0))
-  }
+  //  Sorting (still works)
 
   return (
     <div className='max-w-7xl mx-auto px-6 py-10'>
@@ -219,7 +224,7 @@ export default function ProductsPage() {
         </select>
       </div>
 
-      {/* ✅ EXTRA FILTERS */}
+      {/* EXTRA FILTERS */}
       <div className='flex gap-6 mb-6 flex-wrap'>
         <label className='flex items-center gap-2 cursor-pointer'>
           <input
