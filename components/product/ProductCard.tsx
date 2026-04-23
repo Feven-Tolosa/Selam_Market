@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
+import ReportButton from '../chat/ReportButton'
 
 export interface Product {
   id: string
@@ -62,9 +63,11 @@ export default function ProductCard({ product }: { product: Product }) {
         </div>
 
         {/* Price */}
-        <p className='text-[#10b5cb] font-semibold'>
-          ${product.price.toFixed(2)}
-        </p>
+        <div className='flex items-center justify-between'>
+          <p className='text-[#10b5cb] font-semibold'>
+            ${product.price.toFixed(2)}
+          </p>
+        </div>
 
         {/* Category */}
         {product.category_name && (
