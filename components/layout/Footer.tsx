@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { Facebook, Twitter, Instagram, ArrowUp } from 'lucide-react'
 import LanguageSwitcher from '../Language/LanguageSwitcher'
 import { useState, useEffect } from 'react'
+import ReportButton from '../chat/ReportButton'
 
 export default function Footer() {
   const [isVisible, setIsVisible] = useState(true)
@@ -19,7 +20,7 @@ export default function Footer() {
         setIsVisible(true)
       }
       setLastScrollY(window.scrollY)
-      
+
       // Show scroll to top button when scrolled down
       setShowScrollTop(window.scrollY > 300)
     }
@@ -32,21 +33,24 @@ export default function Footer() {
   const scrollToTop = () => {
     window.scrollTo({
       top: 0,
-      behavior: 'smooth'
+      behavior: 'smooth',
     })
   }
 
   return (
     <footer>
-      <footer className={`bg-[#1a2a3a] text-white border-t border-[#2a3a4a] mt-20 transition-all duration-500 transform ${
-        isVisible ? 'translate-y-0' : 'translate-y-full'
-      } relative z-50`}>
+      <footer
+        className={`bg-[#1a2a3a] text-white border-t border-[#2a3a4a] mt-20 transition-all duration-500 transform relative z-50`}
+      >
         {/* Decorative top border gradient */}
-        <div className="h-1 bg-gradient-to-r from-[#10b5cb] via-[#1a2a3a] to-[#10b5cb]" style={{
-          animation: 'gradient-x 3s ease infinite',
-          backgroundSize: '200% 100%'
-        }}></div>
-        
+        <div
+          className='h-1 bg-gradient-to-r from-[#10b5cb] via-[#1a2a3a] to-[#10b5cb]'
+          style={{
+            animation: 'gradient-x 3s ease infinite',
+            backgroundSize: '200% 100%',
+          }}
+        ></div>
+
         {/* Main footer */}
         <div className='max-w-7xl mx-auto px-6 py-14'>
           <div className='grid grid-cols-2 md:grid-cols-4 gap-10'>
@@ -88,19 +92,28 @@ export default function Footer() {
 
               <ul className='space-y-2 text-sm text-gray-300'>
                 <li className='transform hover:translate-x-2 transition-all duration-200'>
-                  <Link href='/products' className='hover:text-[#10b5cb] inline-block transition-colors'>
+                  <Link
+                    href='/products'
+                    className='hover:text-[#10b5cb] inline-block transition-colors'
+                  >
                     Browse Products
                   </Link>
                 </li>
 
                 <li className='transform hover:translate-x-2 transition-all duration-200'>
-                  <Link href='/categories' className='hover:text-[#10b5cb] inline-block transition-colors'>
+                  <Link
+                    href='/categories'
+                    className='hover:text-[#10b5cb] inline-block transition-colors'
+                  >
                     Categories
                   </Link>
                 </li>
 
                 <li className='transform hover:translate-x-2 transition-all duration-200'>
-                  <Link href='/vendor' className='hover:text-[#10b5cb] inline-block transition-colors'>
+                  <Link
+                    href='/vendor'
+                    className='hover:text-[#10b5cb] inline-block transition-colors'
+                  >
                     Vendors
                   </Link>
                 </li>
@@ -125,13 +138,19 @@ export default function Footer() {
                 </li>
 
                 <li className='transform hover:translate-x-2 transition-all duration-200'>
-                  <Link href='/vendor/dashboard' className='hover:text-[#10b5cb] inline-block transition-colors'>
+                  <Link
+                    href='/vendor/dashboard'
+                    className='hover:text-[#10b5cb] inline-block transition-colors'
+                  >
                     Vendor Dashboard
                   </Link>
                 </li>
 
                 <li className='transform hover:translate-x-2 transition-all duration-200'>
-                  <Link href='/vendor/guide' className='hover:text-[#10b5cb] inline-block transition-colors'>
+                  <Link
+                    href='/vendor/guide'
+                    className='hover:text-[#10b5cb] inline-block transition-colors'
+                  >
                     Vendor Guide
                   </Link>
                 </li>
@@ -147,21 +166,33 @@ export default function Footer() {
 
               <ul className='space-y-2 text-sm text-gray-300'>
                 <li className='transform hover:translate-x-2 transition-all duration-200'>
-                  <Link href='/help' className='hover:text-[#10b5cb] inline-block transition-colors'>
+                  <Link
+                    href='/help'
+                    className='hover:text-[#10b5cb] inline-block transition-colors'
+                  >
                     Help Center
                   </Link>
                 </li>
 
                 <li className='transform hover:translate-x-2 transition-all duration-200'>
-                  <Link href='/contact' className='hover:text-[#10b5cb] inline-block transition-colors'>
+                  <Link
+                    href='/contact'
+                    className='hover:text-[#10b5cb] inline-block transition-colors'
+                  >
                     Contact Us
                   </Link>
                 </li>
 
                 <li className='transform hover:translate-x-2 transition-all duration-200'>
-                  <Link href='/privacy' className='hover:text-[#10b5cb] inline-block transition-colors'>
+                  <Link
+                    href='/privacy'
+                    className='hover:text-[#10b5cb] inline-block transition-colors'
+                  >
                     Privacy Policy
                   </Link>
+                </li>
+                <li className='transform hover:translate-x-2 transition-all duration-200'>
+                  <ReportButton type='platform' />
                 </li>
               </ul>
             </div>
@@ -181,7 +212,7 @@ export default function Footer() {
                 <option>Dire Dawa</option>
                 <option>Harar</option>
               </select>
-              <div className="transform hover:scale-105 transition-all duration-300">
+              <div className='transform hover:scale-105 transition-all duration-300'>
                 <LanguageSwitcher />
               </div>
             </div>
@@ -191,8 +222,8 @@ export default function Footer() {
               <Link
                 href='https://facebook.com'
                 className='text-gray-400 hover:text-[#10b5cb] transition-all duration-300 hover:scale-125 inline-block'
-                target="_blank"
-                rel="noopener noreferrer"
+                target='_blank'
+                rel='noopener noreferrer'
               >
                 <Facebook size={20} />
               </Link>
@@ -200,8 +231,8 @@ export default function Footer() {
               <Link
                 href='https://twitter.com'
                 className='text-gray-400 hover:text-[#10b5cb] transition-all duration-300 hover:scale-125 inline-block'
-                target="_blank"
-                rel="noopener noreferrer"
+                target='_blank'
+                rel='noopener noreferrer'
               >
                 <Twitter size={20} />
               </Link>
@@ -209,17 +240,20 @@ export default function Footer() {
               <Link
                 href='https://instagram.com'
                 className='text-gray-400 hover:text-[#10b5cb] transition-all duration-300 hover:scale-125 inline-block'
-                target="_blank"
-                rel="noopener noreferrer"
+                target='_blank'
+                rel='noopener noreferrer'
               >
                 <Instagram size={20} />
               </Link>
             </div>
           </div>
 
-          <p className='text-center text-gray-400 text-sm mt-2' style={{
-            animation: 'pulse-slow 3s ease-in-out infinite'
-          }}>
+          <p
+            className='text-center text-gray-400 text-sm mt-2'
+            style={{
+              animation: 'pulse-slow 3s ease-in-out infinite',
+            }}
+          >
             © {new Date().getFullYear()} LocalMarket. All rights reserved.
           </p>
         </div>
@@ -229,38 +263,45 @@ export default function Footer() {
       <button
         onClick={scrollToTop}
         className={`fixed bottom-8 right-8 z-50 bg-[#10b5cb] hover:bg-[#0e9db0] text-white p-3 rounded-full shadow-lg transition-all duration-300 hover:scale-110 hover:shadow-xl group ${
-          showScrollTop ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10 pointer-events-none'
+          showScrollTop
+            ? 'opacity-100 translate-y-0'
+            : 'opacity-0 translate-y-10 pointer-events-none'
         }`}
-        aria-label="Scroll to top"
+        aria-label='Scroll to top'
       >
-        <ArrowUp size={24} style={{
-          animation: 'bounce-up 1s ease-in-out infinite'
-        }} />
-        
+        <ArrowUp
+          size={24}
+          style={{
+            animation: 'bounce-up 1s ease-in-out infinite',
+          }}
+        />
       </button>
 
       {/* Global styles for animations */}
       <style jsx global>{`
         @keyframes gradient-x {
-          0%, 100% {
+          0%,
+          100% {
             background-position: 0% 50%;
           }
           50% {
             background-position: 100% 50%;
           }
         }
-        
+
         @keyframes pulse-slow {
-          0%, 100% {
+          0%,
+          100% {
             opacity: 1;
           }
           50% {
             opacity: 0.7;
           }
         }
-        
+
         @keyframes bounce-up {
-          0%, 100% {
+          0%,
+          100% {
             transform: translateY(0);
           }
           50% {
@@ -268,7 +309,6 @@ export default function Footer() {
           }
         }
       `}</style>
-      
     </footer>
   )
 }
