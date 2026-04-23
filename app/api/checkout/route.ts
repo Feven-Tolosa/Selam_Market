@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server'
 import axios from 'axios'
-import { supabase } from '@/lib/supabaseClient'
 
 type CartItem = {
   id: string
@@ -12,15 +11,7 @@ type CartItem = {
 export async function POST(req: Request) {
   try {
     const body = await req.json()
-    const {
-      items,
-      userEmail,
-      cartId,
-    }: { items: CartItem[]; userEmail: string; cartId: string } = body
-    // await supabase
-    //   .from('cart_items')
-    //   .update({ status: 'ordered' })
-    //   .eq('cart_id', cartId)
+    const { items, userEmail }: { items: CartItem[]; userEmail: string } = body
 
     if (!items || items.length === 0) {
       return NextResponse.json({ error: 'Cart is empty' }, { status: 400 })
@@ -51,7 +42,7 @@ export async function POST(req: Request) {
           description: 'Payment for your order',
         },
         metadata: {
-          userEmail, // important
+          userEmail,
         },
       },
       {
@@ -63,7 +54,6 @@ export async function POST(req: Request) {
 
     return NextResponse.json({
       checkout_url: response.data.data.checkout_url,
-      tx_ref,
     })
   } catch (error) {
     console.error('Checkout error:', error)

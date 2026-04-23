@@ -21,7 +21,7 @@ type Message = {
 
 type User = {
   id: string
-  name: string
+  email: string
 }
 
 export default function VendorChatPage() {
@@ -35,7 +35,7 @@ export default function VendorChatPage() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
 
-  // USER
+  // ✅ LOAD USER
   useEffect(() => {
     const load = async () => {
       const { data } = await supabase.auth.getUser()
@@ -44,15 +44,17 @@ export default function VendorChatPage() {
     load()
   }, [])
 
-  // CONVERSATIONS
+  // ✅ LOAD CONVERSATIONS
   useEffect(() => {
     if (!userId) return
 
     const load = async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('conversations')
         .select('*')
         .eq('vendor_id', userId)
+
+      if (error) console.error(error)
 
       setConversations(data ?? [])
     }
@@ -60,28 +62,37 @@ export default function VendorChatPage() {
     load()
   }, [userId])
 
-  // LOAD MESSAGES + USERS
+  // ✅ LOAD MESSAGES + USER EMAILS
   useEffect(() => {
     if (!activeConversation) return
 
     const load = async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('messages')
         .select('*')
         .eq('conversation_id', activeConversation.id)
         .order('created_at', { ascending: true })
 
+      if (error) {
+        console.error(error)
+        return
+      }
+
       setMessages(data ?? [])
 
+      // 🔥 Get unique sender IDs
       const ids = [...new Set(data?.map((m) => m.sender_id))]
+
+      // ✅ Fetch emails from users table
       const { data: users } = await supabase
         .from('users')
-        .select('id, name')
+        .select('id, email')
         .in('id', ids)
 
       const map: Record<string, string> = {}
+
       users?.forEach((u: User) => {
-        map[u.id] = u.name
+        map[u.id] = u.email
       })
 
       setUsersMap(map)
@@ -90,7 +101,7 @@ export default function VendorChatPage() {
     load()
   }, [activeConversation])
 
-  // SEND
+  // ✅ SEND MESSAGE
   const sendMessage = async () => {
     if (!newMessage.trim() || !userId || !activeConversation) return
 
@@ -103,13 +114,20 @@ export default function VendorChatPage() {
     setNewMessage('')
   }
 
-  // FILE
+  // ✅ FILE UPLOAD
   const uploadFile = async (file: File) => {
     if (!activeConversation || !userId) return
 
     const path = `chat/${Date.now()}-${file.name}`
 
-    await supabase.storage.from('chat-files').upload(path, file)
+    const { error } = await supabase.storage
+      .from('chat-files')
+      .upload(path, file)
+
+    if (error) {
+      console.error(error)
+      return
+    }
 
     const { data } = supabase.storage.from('chat-files').getPublicUrl(path)
 
@@ -121,49 +139,65 @@ export default function VendorChatPage() {
     })
   }
 
-  // AUTO SCROLL
+  // ✅ AUTO SCROLL
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
   return (
-    <div className='flex h-[80vh] bg-white rounded-xl overflow-hidden'>
-      {/* LEFT */}
-      <div className='w-1/3 border-r'>
+    <div className='flex h-[85vh] bg-white rounded-xl overflow-hidden shadow'>
+      {/* LEFT PANEL */}
+      <div className='w-1/3 border-r bg-gray-50'>
+        <div className='p-4 font-semibold border-b'>Conversations</div>
+
         {conversations.map((c) => (
           <div
             key={c.id}
             onClick={() => setActiveConversation(c)}
-            className='p-4 border-b cursor-pointer hover:bg-gray-100'
+            className={`p-4 border-b cursor-pointer hover:bg-gray-100 ${
+              activeConversation?.id === c.id ? 'bg-gray-200' : ''
+            }`}
           >
-            {usersMap[c.customer_id] || c.customer_id}
+            📧 {usersMap[c.customer_id] || 'Loading...'}
           </div>
         ))}
       </div>
 
-      {/* RIGHT */}
+      {/* RIGHT PANEL */}
       <div className='flex-1 flex flex-col'>
-        {activeConversation && (
+        {activeConversation ? (
           <>
-            <div className='flex-1 p-4 space-y-2 overflow-y-auto bg-gray-50'>
+            {/* HEADER */}
+            <div className='p-4 border-b font-semibold bg-gray-50'>
+              Chat with: {usersMap[activeConversation.customer_id] || '...'}
+            </div>
+
+            {/* MESSAGES */}
+            <div className='flex-1 p-4 space-y-3 overflow-y-auto bg-gray-100'>
               {messages.map((msg) => {
-                const isVendor = msg.sender_id === userId
+                const isMe = msg.sender_id === userId
 
                 return (
-                  <div key={msg.id}>
+                  <div
+                    key={msg.id}
+                    className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}
+                  >
                     <div
-                      className={`max-w-[65%] px-3 py-2 rounded-lg ${
-                        isVendor
-                          ? 'ml-auto bg-[#10b5cb] text-white'
-                          : 'bg-gray-200'
+                      className={`max-w-[70%] px-4 py-2 rounded-xl text-sm shadow ${
+                        isMe ? 'bg-[#10b5cb] text-white' : 'bg-white border'
                       }`}
                     >
+                      {/* Sender email */}
+                      <div className='text-xs opacity-70 mb-1'>
+                        {usersMap[msg.sender_id] || '...'}
+                      </div>
+
                       {msg.message}
 
                       {msg.file_url && (
                         <img
                           src={msg.file_url}
-                          className='mt-2 rounded max-h-40'
+                          className='mt-2 rounded-lg max-h-48'
                         />
                       )}
                     </div>
@@ -173,8 +207,14 @@ export default function VendorChatPage() {
               <div ref={bottomRef} />
             </div>
 
-            <div className='p-3 border-t flex gap-2'>
-              <button onClick={() => fileInputRef.current?.click()}>📎</button>
+            {/* INPUT */}
+            <div className='p-3 border-t flex gap-2 bg-white'>
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className='px-2'
+              >
+                📎
+              </button>
 
               <input
                 type='file'
@@ -189,17 +229,22 @@ export default function VendorChatPage() {
               <input
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
-                className='flex-1 border rounded px-3 py-2'
+                placeholder='Type a message...'
+                className='flex-1 border rounded-full px-4 py-2 focus:outline-none'
               />
 
               <button
                 onClick={sendMessage}
-                className='bg-[#10b5cb] text-white px-4 rounded'
+                className='bg-[#10b5cb] text-white px-4 rounded-full'
               >
                 Send
               </button>
             </div>
           </>
+        ) : (
+          <div className='flex items-center justify-center h-full text-gray-400'>
+            Select a conversation
+          </div>
         )}
       </div>
     </div>

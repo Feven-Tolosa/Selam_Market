@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import dynamic from 'next/dynamic'
 import VendorCard from '@/components/vendor/VendorCard'
@@ -17,8 +17,8 @@ interface Vendor {
   banner_url: string
   logo_url: string
   location: string
-  latitude: number
-  longitude: number
+  latitude: number | null
+  longitude: number | null
   products: Product[]
   rating?: number
   ratingCount?: number
@@ -38,7 +38,7 @@ export default function VendorsPage() {
     ssr: false,
   })
 
-  //  AUTO detect location (Amazon-style)
+  // ✅ Auto detect location
   useEffect(() => {
     navigator.geolocation.getCurrentPosition(
       (pos) => {
@@ -53,7 +53,7 @@ export default function VendorsPage() {
     )
   }, [])
 
-  //  Distance formula
+  // ✅ Distance formula (safe)
   const getDistance = (
     lat1: number,
     lon1: number,
@@ -73,11 +73,21 @@ export default function VendorsPage() {
     return 2 * R * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
   }
 
-  //  Attach ratings
+  // ✅ Attach ratings (optimized)
   const attachRatings = async (vendorsData: Vendor[]) => {
-    const { data: ratings } = await supabase
+    if (vendorsData.length === 0) return vendorsData
+
+    const vendorIds = vendorsData.map((v) => v.id)
+
+    const { data: ratings, error } = await supabase
       .from('vendor_ratings')
       .select('vendor_id, rating')
+      .in('vendor_id', vendorIds)
+
+    if (error) {
+      console.error('Ratings error:', error)
+      return vendorsData
+    }
 
     const map: Record<string, { total: number; count: number }> = {}
 
@@ -99,40 +109,55 @@ export default function VendorsPage() {
     })
   }
 
-  //  Fetch vendors
+  // ✅ Remove duplicate vendors (important!)
+  const dedupeVendors = (vendors: Vendor[]) => {
+    const map = new Map<string, Vendor>()
+    vendors.forEach((v) => {
+      if (!map.has(v.id)) {
+        map.set(v.id, v)
+      }
+    })
+    return Array.from(map.values())
+  }
+
+  // ✅ Fetch vendors
   const fetchVendors = async () => {
     setLoading(true)
 
     try {
       let vendorsData: Vendor[] = []
 
+      // 🔥 STEP 1: Try nearby vendors
       if (coords) {
-        //  Nearby vendors
         const { data, error } = await supabase.rpc('nearby_vendors', {
           user_lat: coords.lat,
           user_lng: coords.lng,
-          radius_km: 10,
+          radius_km: 20, // 🔥 increased radius
         })
 
-        if (error) throw error
+        if (error) {
+          console.error('RPC error:', error)
+        }
 
         vendorsData = data || []
 
-        //  Search inside nearby
-        if (search) {
-          vendorsData = vendorsData.filter((v) =>
-            v.store_name.toLowerCase().includes(search.toLowerCase()),
-          )
+        console.log('Nearby vendors:', vendorsData)
+
+        // 🔥 fallback if empty
+        if (vendorsData.length === 0) {
+          console.warn('No nearby vendors → fallback to all vendors')
         }
-      } else {
-        //  Normal search
+      }
+
+      // 🔥 STEP 2: fallback OR no coords
+      if (!coords || vendorsData.length === 0) {
         let query = supabase.from('vendors').select(`
-          *,
-          products (
-            name,
-            category
-          )
-        `)
+        *,
+        products (
+          name,
+          category
+        )
+      `)
 
         if (search) {
           query = query.ilike('store_name', `%${search}%`)
@@ -143,52 +168,69 @@ export default function VendorsPage() {
         }
 
         const { data, error } = await query
+
         if (error) throw error
 
         vendorsData = data || []
+
+        console.log('Fallback vendors:', vendorsData)
       }
+
+      // 🔥 STEP 3: safer search filtering (client-side)
+      if (search) {
+        vendorsData = vendorsData.filter((v) =>
+          v.store_name?.toLowerCase().includes(search.toLowerCase()),
+        )
+      }
+
+      // 🔥 STEP 4: dedupe
+      vendorsData = dedupeVendors(vendorsData)
 
       let result = await attachRatings(vendorsData)
 
-      //  Add distance + sort
+      // 🔥 STEP 5: distance (safe)
       if (coords) {
         result = result
-          .map((v) => ({
-            ...v,
-            distance: getDistance(
-              coords.lat,
-              coords.lng,
-              v.latitude,
-              v.longitude,
-            ),
-          }))
+          .map((v) => {
+            if (v.latitude == null || v.longitude == null) {
+              return { ...v, distance: Infinity }
+            }
+
+            return {
+              ...v,
+              distance: getDistance(
+                coords.lat,
+                coords.lng,
+                v.latitude,
+                v.longitude,
+              ),
+            }
+          })
           .sort((a, b) => (a.distance || 0) - (b.distance || 0))
       }
 
+      console.log('FINAL vendors:', result)
+
       setVendors(result)
     } catch (err) {
-      console.error(err)
+      console.error('Fetch vendors error:', err)
     } finally {
       setLoading(false)
     }
   }
 
-  // Debounce
+  // ✅ Debounce (stable)
   useEffect(() => {
-    const delay = setTimeout(fetchVendors, 400)
-    return () => clearTimeout(delay)
+    const timeout = setTimeout(() => {
+      fetchVendors()
+    }, 400)
+
+    return () => clearTimeout(timeout)
   }, [search, location, coords])
 
   return (
     <div className='p-6 bg-white min-h-screen'>
       <h1 className='text-2xl font-bold mb-2 text-[#10b5cb]'>Find Vendors</h1>
-
-      {/*  Nearby indicator */}
-      {coords && (
-        <p className='text-sm text-gray-600 mb-4'>
-          Showing vendors near you 📍
-        </p>
-      )}
 
       {/* Filters */}
       <div className='grid md:grid-cols-3 gap-4 mb-6'>
@@ -206,7 +248,6 @@ export default function VendorsPage() {
           className='border p-2 rounded'
         />
 
-        {/* Clear location */}
         <button
           onClick={() => setCoords(null)}
           className='bg-gray-200 text-sm px-4 py-2 rounded'
@@ -219,7 +260,9 @@ export default function VendorsPage() {
       {loading ? (
         <p>Loading...</p>
       ) : vendors.length === 0 ? (
-        <p>No vendors found.</p>
+        <p className='text-gray-500'>
+          No vendors found. Try changing location or search.
+        </p>
       ) : (
         <div className='grid sm:grid-cols-2 md:grid-cols-3 gap-6'>
           {vendors.map((vendor) => (

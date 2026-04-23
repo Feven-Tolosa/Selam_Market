@@ -6,7 +6,18 @@ import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import dynamic from 'next/dynamic'
 import toast from 'react-hot-toast/headless'
-import { Menu, X, ChevronRight, Edit3, Trash2, Plus, MapPin, Phone, Mail, Store as StoreIcon } from 'lucide-react'
+import {
+  Menu,
+  X,
+  ChevronRight,
+  Edit3,
+  Trash2,
+  Plus,
+  MapPin,
+  Phone,
+  Mail,
+  Store as StoreIcon,
+} from 'lucide-react'
 
 type Product = {
   id: string
@@ -35,34 +46,49 @@ export default function VendorProfile() {
 
   const LocationPicker = dynamic(
     () => import('@/components/vendor/LocationPicker'),
-    {
-      ssr: false,
-    },
+    { ssr: false },
   )
 
   // Load Vendor Data
   useEffect(() => {
     async function loadVendor() {
-      const { data: userData } = await supabase.auth.getUser()
-      const user = userData.user
+      const { data: userData, error: userError } = await supabase.auth.getUser()
 
+      if (userError) {
+        console.error('Auth error:', userError)
+        return
+      }
+
+      const user = userData.user
       if (!user) return
 
-      const { data: vendor, error } = await supabase
+      console.log('USER ID:', user.id)
+
+      // ✅ Fetch ONLY one vendor (prevents breaking UI if duplicates exist)
+      const { data: vendors, error } = await supabase
         .from('vendors')
         .select('*')
         .eq('user_id', user.id)
-        .maybeSingle()
+        .limit(2) // detect duplicates
 
       if (error) {
+        toast.error('Failed to load vendor')
         console.error(error)
         return
       }
 
-      if (!vendor) {
+      if (!vendors || vendors.length === 0) {
         toast.error('Your vendor account is not approved yet.')
         return
       }
+
+      // 🚨 Detect duplicates
+      if (vendors.length > 1) {
+        console.warn('DUPLICATE VENDORS FOUND:', vendors)
+        toast.error('Duplicate vendor accounts detected. Contact admin.')
+      }
+
+      const vendor = vendors[0] // ✅ always use first
 
       setVendorId(vendor.id)
       setStoreName(vendor.store_name ?? '')
@@ -70,27 +96,37 @@ export default function VendorProfile() {
       setEmail(vendor.email ?? '')
       setPhone(vendor.phone ?? '')
       setLocation(vendor.location ?? '')
-      setLatitude(vendor.latitude || null)
-      setLongitude(vendor.longitude || null)
 
+      setLatitude(vendor.latitude ?? null)
+      setLongitude(vendor.longitude ?? null)
+
+      // Logo
       if (vendor.logo_url) {
         const { data } = supabase.storage
           .from('vendor-logos')
           .getPublicUrl(vendor.logo_url)
+
         setLogoPreview(data.publicUrl)
       }
 
+      // Banner
       if (vendor.banner_url) {
         const { data } = supabase.storage
           .from('vendor-banners')
           .getPublicUrl(vendor.banner_url)
+
         setBannerPreview(data.publicUrl)
       }
 
-      const { data: vendorProducts } = await supabase
+      // ✅ FIXED products error bug
+      const { data: vendorProducts, error: productsError } = await supabase
         .from('products')
         .select('id,name,price,image_url')
         .eq('vendor_id', vendor.id)
+
+      if (productsError) {
+        console.error('Products error:', productsError)
+      }
 
       setProducts(vendorProducts ?? [])
     }
@@ -109,6 +145,7 @@ export default function VendorProfile() {
 
     if (error) {
       toast.error('Delete failed')
+      console.error(error)
       return
     }
 
@@ -124,7 +161,7 @@ export default function VendorProfile() {
       .upload(fileName, file)
 
     if (error) {
-      console.error(error)
+      console.error('Upload error:', error)
       return null
     }
 
@@ -145,11 +182,11 @@ export default function VendorProfile() {
     let banner_url: string | undefined
 
     if (logo) {
-      logo_url = (await uploadFile(logo, 'vendor-logos')) || undefined
+      logo_url = (await uploadFile(logo, 'vendor-logos')) ?? undefined
     }
 
     if (banner) {
-      banner_url = (await uploadFile(banner, 'vendor-banners')) || undefined
+      banner_url = (await uploadFile(banner, 'vendor-banners')) ?? undefined
     }
 
     const { error } = await supabase
@@ -168,30 +205,32 @@ export default function VendorProfile() {
       .eq('id', vendorId)
 
     setLoading(false)
+
     if (error) {
       toast.error('Update failed')
       console.error(error)
       return
     }
+
     toast.success('Profile updated successfully!')
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20">
+    <div className='min-h-screen bg-gray-50 pb-20'>
       {/* Mobile Navigation Tabs */}
-      <div className="md:hidden sticky top-0 z-20 bg-white border-b shadow-sm">
-        <div className="flex justify-between items-center px-4 py-3">
-          <h1 className="font-semibold text-gray-800">Vendor Dashboard</h1>
+      <div className='md:hidden sticky top-0 z-20 bg-white border-b shadow-sm'>
+        <div className='flex justify-between items-center px-4 py-3'>
+          <h1 className='font-semibold text-gray-800'>Vendor Dashboard</h1>
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="p-2 rounded-lg bg-gray-100"
+            className='p-2 rounded-lg bg-gray-100'
           >
             {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
         </div>
-        
+
         {mobileMenuOpen && (
-          <div className="flex flex-col border-t bg-white">
+          <div className='flex flex-col border-t bg-white'>
             {[
               { id: 'info', label: 'Store Info', icon: StoreIcon },
               { id: 'products', label: 'Products', icon: StoreIcon },
@@ -202,38 +241,45 @@ export default function VendorProfile() {
                 onClick={() => {
                   setActiveTab(tab.id)
                   setMobileMenuOpen(false)
-                  document.getElementById(tab.id)?.scrollIntoView({ behavior: 'smooth' })
+                  document
+                    .getElementById(tab.id)
+                    ?.scrollIntoView({ behavior: 'smooth' })
                 }}
                 className={`flex items-center gap-3 px-4 py-3 text-left transition ${
-                  activeTab === tab.id ? 'bg-[#10b5cb]/10 text-[#10b5cb] border-l-4 border-[#10b5cb]' : 'text-gray-600'
+                  activeTab === tab.id
+                    ? 'bg-[#10b5cb]/10 text-[#10b5cb] border-l-4 border-[#10b5cb]'
+                    : 'text-gray-600'
                 }`}
               >
                 <tab.icon size={18} />
                 <span>{tab.label}</span>
-                <ChevronRight size={16} className="ml-auto" />
+                <ChevronRight size={16} className='ml-auto' />
               </button>
             ))}
           </div>
         )}
       </div>
 
-      <form onSubmit={handleSave} className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-8'>
+      <form
+        onSubmit={handleSave}
+        className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-8'
+      >
         {/* Banner Section - Responsive */}
-        <div id="info" className='scroll-mt-20'>
+        <div id='info' className='scroll-mt-20'>
           <div className='relative h-40 sm:h-48 md:h-56 lg:h-64 rounded-xl overflow-hidden bg-gradient-to-r from-gray-200 to-gray-300'>
-            <Image 
-              src={bannerPreview} 
-              alt='banner' 
-              fill 
+            <Image
+              src={bannerPreview}
+              alt='banner'
+              fill
               className='object-cover'
-              sizes="(max-width: 640px) 100vw, (max-width: 768px) 100vw, 1200px"
+              sizes='(max-width: 640px) 100vw, (max-width: 768px) 100vw, 1200px'
             />
             <label className='absolute bottom-3 right-3 bg-black/60 hover:bg-black/70 text-white text-xs sm:text-sm px-3 py-1.5 rounded-lg cursor-pointer transition backdrop-blur-sm'>
               Change Banner
               <input
                 type='file'
                 className='hidden'
-                accept="image/*"
+                accept='image/*'
                 onChange={(e) => {
                   const file = e.target.files?.[0]
                   if (file) {
@@ -261,7 +307,7 @@ export default function VendorProfile() {
                 <input
                   type='file'
                   className='hidden'
-                  accept="image/*"
+                  accept='image/*'
                   onChange={(e) => {
                     const file = e.target.files?.[0]
                     if (file) {
@@ -273,12 +319,12 @@ export default function VendorProfile() {
               </label>
             </div>
 
-            <div className="flex-1 text-center sm:text-left">
+            <div className='flex-1 text-center sm:text-left'>
               <input
                 value={storeName}
                 onChange={(e) => setStoreName(e.target.value)}
                 className='text-xl sm:text-2xl md:text-3xl font-bold border-none focus:outline-none focus:ring-2 focus:ring-[#10b5cb] rounded-lg px-3 py-2 w-full sm:w-auto bg-white shadow-sm'
-                placeholder="Store Name"
+                placeholder='Store Name'
               />
             </div>
           </div>
@@ -288,7 +334,7 @@ export default function VendorProfile() {
         <div className='grid md:grid-cols-2 gap-6'>
           <div className='bg-white rounded-xl shadow-sm border p-4 sm:p-6 space-y-4'>
             <h2 className='font-semibold text-lg flex items-center gap-2'>
-              <StoreIcon size={20} className="text-[#10b5cb]" />
+              <StoreIcon size={20} className='text-[#10b5cb]' />
               Store Information
             </h2>
 
@@ -303,13 +349,16 @@ export default function VendorProfile() {
 
           <div className='bg-white rounded-xl shadow-sm border p-4 sm:p-6 space-y-4'>
             <h2 className='font-semibold text-lg flex items-center gap-2'>
-              <StoreIcon size={20} className="text-[#10b5cb]" />
+              <StoreIcon size={20} className='text-[#10b5cb]' />
               Contact Information
             </h2>
 
-            <div className="space-y-3">
-              <div className="relative">
-                <Mail size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <div className='space-y-3'>
+              <div className='relative'>
+                <Mail
+                  size={18}
+                  className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400'
+                />
                 <input
                   type='email'
                   value={email}
@@ -319,8 +368,11 @@ export default function VendorProfile() {
                 />
               </div>
 
-              <div className="relative">
-                <Phone size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <div className='relative'>
+                <Phone
+                  size={18}
+                  className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400'
+                />
                 <input
                   type='tel'
                   value={phone}
@@ -330,8 +382,11 @@ export default function VendorProfile() {
                 />
               </div>
 
-              <div className="relative">
-                <MapPin size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <div className='relative'>
+                <MapPin
+                  size={18}
+                  className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400'
+                />
                 <input
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
@@ -344,13 +399,16 @@ export default function VendorProfile() {
         </div>
 
         {/* Map Section */}
-        <div id="map" className='scroll-mt-20 bg-white rounded-xl shadow-sm border p-4 sm:p-6'>
+        <div
+          id='map'
+          className='scroll-mt-20 bg-white rounded-xl shadow-sm border p-4 sm:p-6'
+        >
           <h2 className='font-semibold text-lg mb-4 flex items-center gap-2'>
-            <MapPin size={20} className="text-[#10b5cb]" />
+            <MapPin size={20} className='text-[#10b5cb]' />
             Store Location (Map)
           </h2>
 
-          <div className="h-64 sm:h-80 md:h-96 w-full rounded-lg overflow-hidden">
+          <div className='h-64 sm:h-80 md:h-96 w-full rounded-lg overflow-hidden'>
             <LocationPicker
               lat={latitude}
               lng={longitude}
@@ -369,7 +427,7 @@ export default function VendorProfile() {
         </div>
 
         {/* Save Button */}
-        <div className="flex justify-center md:justify-start">
+        <div className='flex justify-center md:justify-start'>
           <button
             disabled={loading}
             className='bg-[#10b5cb] text-white px-6 sm:px-8 py-3 rounded-lg hover:bg-[#0e9db0] transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed font-semibold shadow-md hover:shadow-lg w-full sm:w-auto'
@@ -379,12 +437,14 @@ export default function VendorProfile() {
         </div>
 
         {/* Products Section */}
-        <div id="products" className='scroll-mt-20 pt-6'>
+        <div id='products' className='scroll-mt-20 pt-6'>
           <div className='flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6'>
             <h2 className='text-xl font-semibold flex items-center gap-2'>
-              <StoreIcon size={22} className="text-[#10b5cb]" />
+              <StoreIcon size={22} className='text-[#10b5cb]' />
               My Products
-              <span className="text-sm text-gray-500 font-normal">({products.length})</span>
+              <span className='text-sm text-gray-500 font-normal'>
+                ({products.length})
+              </span>
             </h2>
 
             <Link
@@ -398,12 +458,12 @@ export default function VendorProfile() {
 
           {/* Products Grid - Responsive */}
           {products.length === 0 ? (
-            <div className="text-center py-12 bg-white rounded-xl border">
-              <StoreIcon size={48} className="mx-auto text-gray-300 mb-3" />
-              <p className="text-gray-500">No products yet</p>
+            <div className='text-center py-12 bg-white rounded-xl border'>
+              <StoreIcon size={48} className='mx-auto text-gray-300 mb-3' />
+              <p className='text-gray-500'>No products yet</p>
               <Link
                 href='/vendor/dashboard/products/new'
-                className="inline-block mt-3 text-[#10b5cb] hover:underline"
+                className='inline-block mt-3 text-[#10b5cb] hover:underline'
               >
                 Add your first product →
               </Link>

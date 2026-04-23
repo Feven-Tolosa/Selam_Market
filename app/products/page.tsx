@@ -189,12 +189,6 @@ export default function ProductsPage() {
         Explore Products
       </h1>
 
-      {coords && (
-        <p className='text-sm text-gray-600 mb-6'>
-          Showing products near you 📍
-        </p>
-      )}
-
       {/* FILTERS */}
       <div className='flex flex-col md:flex-row gap-4 mb-6'>
         <input
