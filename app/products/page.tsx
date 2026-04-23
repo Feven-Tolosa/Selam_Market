@@ -17,12 +17,10 @@ type ProductWithExtras = {
   ratingCount?: number
   distance?: number
 
-  vendors?:
-    | {
-        latitude: number | null
-        longitude: number | null
-      }[]
-    | null
+  vendor?: {
+    latitude: number | null
+    longitude: number | null
+  } | null
 }
 
 export default function ProductsPage() {
@@ -80,7 +78,7 @@ export default function ProductsPage() {
   vendor:vendors (
     latitude,
     longitude
-)`)
+  )`)
 
       const { data: c } = await supabase.from('categories').select('*')
 
@@ -122,22 +120,17 @@ export default function ProductsPage() {
   // 📍 Attach distance
   if (coords) {
     filtered = filtered.map((p) => {
-      if (!p.vendors || p.vendors.length === 0) return p
+      if (!p.vendor) return p
 
-      const vendor = p.vendors[0]
-      if (!vendor.latitude || !vendor.longitude) return p
+      const { latitude, longitude } = p.vendor
 
-      const distance = getDistance(
-        coords.lat,
-        coords.lng,
-        vendor.latitude,
-        vendor.longitude,
-      )
+      if (latitude == null || longitude == null) return p
+
+      const distance = getDistance(coords.lat, coords.lng, latitude, longitude)
 
       return { ...p, distance }
     })
   }
-
   // 🏷 Category
   if (selectedCategory !== 'all') {
     filtered = filtered.filter((p) => p.category_id === selectedCategory)
@@ -156,9 +149,11 @@ export default function ProductsPage() {
   }
 
   // 📍 Nearby filter (independent)
+  const MAX_DISTANCE_KM = 10 // adjust (5–20km works well)
+
   if (nearbyOnly && coords) {
     filtered = filtered
-      .filter((p) => p.distance !== undefined)
+      .filter((p) => p.distance != null && p.distance <= MAX_DISTANCE_KM)
       .sort((a, b) => (a.distance || 0) - (b.distance || 0))
   }
 
