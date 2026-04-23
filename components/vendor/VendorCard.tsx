@@ -13,6 +13,7 @@ export interface Vendor {
   location: string
   rating?: number
   ratingCount?: number
+  distance?: number
 }
 
 interface Props {
@@ -74,6 +75,11 @@ export default function VendorCard({ vendor }: Props) {
               </span>
             ) : null}
           </span>
+          {vendor.distance !== undefined && vendor.distance !== Infinity && (
+            <p className='text-xs text-gray-500'>
+              {vendor.distance.toFixed(1)} km away
+            </p>
+          )}
         </div>
       </div>
     </Link>

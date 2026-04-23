@@ -37,6 +37,8 @@ export default function VendorsPage() {
   const VendorsMap = dynamic(() => import('@/components/vendor/VendorsMap'), {
     ssr: false,
   })
+  const [nearbyOnly, setNearbyOnly] = useState(false)
+  const MAX_DISTANCE_KM = 20
 
   // ✅ Auto detect location
   useEffect(() => {
@@ -127,12 +129,12 @@ export default function VendorsPage() {
     try {
       let vendorsData: Vendor[] = []
 
-      // 🔥 STEP 1: Try nearby vendors
+      //  STEP 1: Try nearby vendors
       if (coords) {
         const { data, error } = await supabase.rpc('nearby_vendors', {
           user_lat: coords.lat,
           user_lng: coords.lng,
-          radius_km: 20, // 🔥 increased radius
+          radius_km: 20, //  increased radius
         })
 
         if (error) {
@@ -143,13 +145,13 @@ export default function VendorsPage() {
 
         console.log('Nearby vendors:', vendorsData)
 
-        // 🔥 fallback if empty
+        //  fallback if empty
         if (vendorsData.length === 0) {
           console.warn('No nearby vendors → fallback to all vendors')
         }
       }
 
-      // 🔥 STEP 2: fallback OR no coords
+      //  STEP 2: fallback OR no coords
       if (!coords || vendorsData.length === 0) {
         let query = supabase.from('vendors').select(`
         *,
@@ -176,37 +178,45 @@ export default function VendorsPage() {
         console.log('Fallback vendors:', vendorsData)
       }
 
-      // 🔥 STEP 3: safer search filtering (client-side)
+      //  STEP 3: safer search filtering (client-side)
       if (search) {
         vendorsData = vendorsData.filter((v) =>
           v.store_name?.toLowerCase().includes(search.toLowerCase()),
         )
       }
 
-      // 🔥 STEP 4: dedupe
+      //  STEP 4: dedupe
       vendorsData = dedupeVendors(vendorsData)
 
       let result = await attachRatings(vendorsData)
 
-      // 🔥 STEP 5: distance (safe)
+      //  STEP 5: attach distance
       if (coords) {
-        result = result
-          .map((v) => {
-            if (v.latitude == null || v.longitude == null) {
-              return { ...v, distance: Infinity }
-            }
+        result = result.map((v) => {
+          if (v.latitude == null || v.longitude == null) {
+            return { ...v, distance: Infinity }
+          }
 
-            return {
-              ...v,
-              distance: getDistance(
-                coords.lat,
-                coords.lng,
-                v.latitude,
-                v.longitude,
-              ),
-            }
-          })
+          return {
+            ...v,
+            distance: getDistance(
+              coords.lat,
+              coords.lng,
+              v.latitude,
+              v.longitude,
+            ),
+          }
+        })
+      }
+
+      //  STEP 6: apply nearby filter + sorting (controlled)
+      if (nearbyOnly && coords) {
+        result = result
+          .filter((v) => v.distance != null && v.distance <= MAX_DISTANCE_KM)
           .sort((a, b) => (a.distance || 0) - (b.distance || 0))
+      } else if (coords) {
+        // soft sort (not strict filtering)
+        result.sort((a, b) => (a.distance || 0) - (b.distance || 0))
       }
 
       console.log('FINAL vendors:', result)
@@ -254,6 +264,16 @@ export default function VendorsPage() {
         >
           Clear Location
         </button>
+      </div>
+      <div className='flex items-center gap-4 mb-6'>
+        <label className='flex items-center gap-2 cursor-pointer'>
+          <input
+            type='checkbox'
+            checked={nearbyOnly}
+            onChange={(e) => setNearbyOnly(e.target.checked)}
+          />
+          Nearby vendors 📍
+        </label>
       </div>
 
       {/* Vendors */}
