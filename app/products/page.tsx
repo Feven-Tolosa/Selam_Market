@@ -11,18 +11,16 @@ type ProductWithExtras = {
   price: number
   image_url: string | null
   category_id: string
-  category_name?: string
+  created_at?: string
 
   rating?: number
   ratingCount?: number
   distance?: number
 
-  vendors?:
-    | {
-        latitude: number | null
-        longitude: number | null
-      }[]
-    | null
+  vendor?: {
+    latitude: number | null
+    longitude: number | null
+  } | null
 }
 
 export default function ProductsPage() {
@@ -31,11 +29,15 @@ export default function ProductsPage() {
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [search, setSearch] = useState('')
   const [sort, setSort] = useState('latest')
+
+  const [nearbyOnly, setNearbyOnly] = useState(false)
+  const [topRatedOnly, setTopRatedOnly] = useState(false)
+
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(
     null,
   )
 
-  //  AUTO location (Amazon-style)
+  // 📍 Get location
   useEffect(() => {
     navigator.geolocation.getCurrentPosition(
       (pos) => {
@@ -48,7 +50,7 @@ export default function ProductsPage() {
     )
   }, [])
 
-  //  Distance calculator
+  // Distance
   const getDistance = (
     lat1: number,
     lon1: number,
@@ -68,16 +70,15 @@ export default function ProductsPage() {
     return 2 * R * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
   }
 
-  //  Fetch data
+  // Fetch
   useEffect(() => {
     async function fetchData() {
       const { data: p } = await supabase.from('products').select(`
-        *,
-        vendors (
-          latitude,
-          longitude
-        )
-      `)
+  *,
+  vendor:vendors (
+    latitude,
+    longitude
+  )`)
 
       const { data: c } = await supabase.from('categories').select('*')
 
@@ -85,7 +86,6 @@ export default function ProductsPage() {
         .from('reviews')
         .select('product_id, rating')
 
-      //  Rating map
       const map: Record<string, { total: number; count: number }> = {}
 
       r?.forEach((rev) => {
@@ -96,7 +96,6 @@ export default function ProductsPage() {
         map[rev.product_id].count++
       })
 
-      //  Enrich products
       const enriched: ProductWithExtras[] =
         p?.map((prod: ProductWithExtras) => {
           const stats = map[prod.id]
@@ -115,63 +114,74 @@ export default function ProductsPage() {
     fetchData()
   }, [])
 
-  //  FILTER + SORT LOGIC
-
+  //  FILTER + SORT
   let filtered = [...products]
 
-  // Category
+  // Attach distance
+  if (coords) {
+    filtered = filtered.map((p) => {
+      if (!p.vendor) return p
+
+      const { latitude, longitude } = p.vendor
+
+      if (latitude == null || longitude == null) return p
+
+      const distance = getDistance(coords.lat, coords.lng, latitude, longitude)
+
+      return { ...p, distance }
+    })
+  }
+  // 🏷 Category
   if (selectedCategory !== 'all') {
     filtered = filtered.filter((p) => p.category_id === selectedCategory)
   }
 
-  // Search
+  //  Search
   if (search) {
     filtered = filtered.filter((p) =>
       p.name.toLowerCase().includes(search.toLowerCase()),
     )
   }
 
-  //  ALWAYS attach distance if coords exist
-  if (coords) {
-    filtered = filtered.map((p) => {
-      if (!p.vendors || p.vendors.length === 0) return p
-
-      const vendor = p.vendors[0]
-
-      if (!vendor.latitude || !vendor.longitude) return p
-
-      const distance = getDistance(
-        coords.lat,
-        coords.lng,
-        vendor.latitude,
-        vendor.longitude,
-      )
-
-      return { ...p, distance }
-
-      return { ...p, distance }
-    })
+  //  Top Rated filter (independent)
+  if (topRatedOnly) {
+    filtered = filtered.filter((p) => (p.rating || 0) >= 4)
   }
 
-  // Sorting
-  if (sort === 'low') {
-    filtered.sort((a, b) => a.price - b.price)
-  }
+  //  Nearby filter (independent)
+  const MAX_DISTANCE_KM = 10 // adjust (5–20km works well)
 
-  if (sort === 'high') {
-    filtered.sort((a, b) => b.price - a.price)
-  }
-
-  if (sort === 'rating') {
-    filtered.sort((a, b) => (b.rating || 0) - (a.rating || 0))
-  }
-
-  //  Nearby sorting (Amazon-style)
-  if (sort === 'nearby' && coords) {
+  // PRIORITY: Nearby sorting
+  if (nearbyOnly && coords) {
     filtered = filtered
-      .filter((p) => p.distance !== undefined)
+      .filter((p) => p.distance != null)
       .sort((a, b) => (a.distance || 0) - (b.distance || 0))
   }
+
+  {
+    // Normal sorting
+    if (sort === 'latest') {
+      filtered.sort(
+        (a, b) =>
+          new Date(b.created_at || '').getTime() -
+          new Date(a.created_at || '').getTime(),
+      )
+    }
+
+    if (sort === 'low') {
+      filtered.sort((a, b) => a.price - b.price)
+    }
+
+    if (sort === 'high') {
+      filtered.sort((a, b) => b.price - a.price)
+    }
+
+    if (sort === 'rating') {
+      filtered.sort((a, b) => (b.rating || 0) - (a.rating || 0))
+    }
+  }
+
+  //  Sorting (still works)
 
   return (
     <div className='max-w-7xl mx-auto px-6 py-10'>
@@ -179,15 +189,8 @@ export default function ProductsPage() {
         Explore Products
       </h1>
 
-      {/* 📍 Indicator */}
-      {coords && (
-        <p className='text-sm text-gray-600 mb-6'>
-          Showing products near you 📍
-        </p>
-      )}
-
       {/* FILTERS */}
-      <div className='flex flex-col md:flex-row gap-4 mb-8'>
+      <div className='flex flex-col md:flex-row gap-4 mb-6'>
         <input
           type='text'
           placeholder='Search products...'
@@ -218,9 +221,36 @@ export default function ProductsPage() {
           <option value='low'>Price: Low → High</option>
           <option value='high'>Price: High → Low</option>
           <option value='rating'>Top Rated ⭐</option>
-          <option value='nearby'>Nearby 📍</option>
         </select>
       </div>
+
+      {/* EXTRA FILTERS */}
+      <div className='flex gap-6 mb-6 flex-wrap'>
+        <label className='flex items-center gap-2 cursor-pointer'>
+          <input
+            type='checkbox'
+            checked={nearbyOnly}
+            onChange={(e) => setNearbyOnly(e.target.checked)}
+          />
+          Nearby only 📍
+        </label>
+
+        <label className='flex items-center gap-2 cursor-pointer'>
+          <input
+            type='checkbox'
+            checked={topRatedOnly}
+            onChange={(e) => setTopRatedOnly(e.target.checked)}
+          />
+          Top Rated ⭐ (4+)
+        </label>
+      </div>
+
+      {/* WARNINGS */}
+      {nearbyOnly && !coords && (
+        <p className='text-sm text-red-500 mb-4'>
+          Enable location to use Nearby filter
+        </p>
+      )}
 
       {/* GRID */}
       <div className='grid grid-cols-2 md:grid-cols-4 gap-6'>

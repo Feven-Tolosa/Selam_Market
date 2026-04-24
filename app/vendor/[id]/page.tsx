@@ -7,6 +7,7 @@ import Link from 'next/link'
 import toast from 'react-hot-toast'
 import Image from 'next/image'
 import { useChatStore } from '@/store/chatStore'
+import ReportButton from '@/components/chat/ReportButton'
 
 type Vendor = {
   id: string
@@ -465,13 +466,16 @@ export default function VendorPublicPage() {
           </div>
 
           {/* ACTIONS */}
-          <div className='bg-white border p-6 rounded-xl space-y-3'>
+          <div className='bg-white border p-6 rounded-xl space-y-3 grid grid-cols-1 gap-3'>
             <button
               onClick={() => openChat(vendor.id)}
-              className='w-full bg-[#10b5cb] text-white py-2 rounded flex items-center justify-center gap-2 ease-in-out duration-300 hover:scale-105 transition'
+              className='w-full bg-[#10b5cb] text-white py-2 rounded gap-2 ease-in-out duration-300 hover:scale-105 transition grid grid-cols-1 md:grid-cols-2 items-center justify-center'
             >
               💬 Chat Vendor
             </button>
+            <div className='grid grid-cols-1 gap-3'>
+              <ReportButton type='vendor' targetId={vendor.id} />
+            </div>
           </div>
         </div>
       </div>

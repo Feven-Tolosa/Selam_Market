@@ -31,4 +31,37 @@ export const en: Translation = {
   search: 'Search',
   browseProducts: 'Browse Products',
   becomeVendor: 'Become a Vendor',
+  categoryPage: {
+    title: 'Browse Categories',
+    loading: 'Loading categories...',
+    empty: 'No categories found',
+  },
+
+  featured: {
+    title: 'Featured Products',
+    description:
+      'Discover our top-rated products from trusted vendors. Handpicked for you!',
+    loading: 'Loading featured products...',
+    empty: 'No featured products found.',
+  },
+
+  vendorOnboarding: {
+    title: 'Become a Vendor',
+    subtitle: 'Register your business',
+
+    businessName: 'Business Name',
+    contactInfo: 'Contact Info',
+    location: 'Location',
+    description: 'Description',
+
+    licenseTitle: 'Business License (Upload - Max 5MB)',
+    licenseHint: 'Click to upload or scan',
+    uploadHint: 'JPG, PNG, or PDF',
+
+    submit: 'Request Vendor Account',
+    submitting: 'Submitting...',
+
+    loginError: 'You must be logged in',
+    licenseError: 'Please upload your business license',
+  },
 }

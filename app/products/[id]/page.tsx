@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabaseClient'
 import { useParams, useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
 import Image from 'next/image'
+import ReportButton from '@/components/chat/ReportButton'
 
 type Product = {
   id: string
@@ -277,12 +278,13 @@ export default function ProductPage() {
               Add to Cart
             </button>
 
-            <button
+            {/* <button
               onClick={addToWishlist}
               className='border border-[#10b5cb] text-[#10b5cb] px-6 py-2 rounded'
             >
               Save
-            </button>
+            </button> */}
+            <ReportButton type='product' targetId={product.id} />
           </div>
           {/* ⭐ REVIEW FORM */}
           <div className='bg-gray-50 p-6 rounded-xl space-y-4'>
@@ -312,6 +314,7 @@ export default function ProductPage() {
               {submitting ? 'Submitting...' : 'Submit Review'}
             </button>
           </div>
+
           {/* ⭐ REVIEWS LIST */}
           <div>
             <h2 className='text-xl font-semibold mb-4'>Reviews</h2>

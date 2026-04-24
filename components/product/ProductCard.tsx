@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
+import ReportButton from '../chat/ReportButton'
 
 export interface Product {
   id: string
@@ -62,18 +63,20 @@ export default function ProductCard({ product }: { product: Product }) {
         </div>
 
         {/* Price */}
-        <p className='text-[#10b5cb] font-semibold'>
-          ${product.price.toFixed(2)}
-        </p>
+        <div className='flex items-center justify-between'>
+          <p className='text-[#10b5cb] font-semibold'>
+            ${product.price.toFixed(2)}
+          </p>
+        </div>
 
         {/* Category */}
         {product.category_name && (
           <p className='text-gray-400 text-xs'>{product.category_name}</p>
         )}
-        {product.distance !== undefined && (
-          <span className='text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full'>
-            📍 {product.distance.toFixed(1)} km away
-          </span>
+        {product.distance != null && (
+          <p className='text-xs text-gray-500'>
+            {product.distance.toFixed(1)} km away
+          </p>
         )}
       </div>
     </Link>

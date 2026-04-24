@@ -27,4 +27,37 @@ export type Translation = {
   search: string
   browseProducts: string
   becomeVendor: string
+
+  categoryPage: {
+    title: string
+    loading: string
+    empty: string
+  }
+
+  featured: {
+    title: string
+    description: string
+    loading: string
+    empty: string
+  }
+
+  vendorOnboarding: {
+    title: string
+    subtitle: string
+
+    businessName: string
+    contactInfo: string
+    location: string
+    description: string
+
+    licenseTitle: string
+    licenseHint: string
+    uploadHint: string
+
+    submit: string
+    submitting: string
+
+    loginError: string
+    licenseError: string
+  }
 }

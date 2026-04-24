@@ -161,7 +161,11 @@ export default function CartPage() {
       const res = await fetch('/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ items: cleanItems, userEmail }),
+        body: JSON.stringify({
+          items: cleanItems,
+          userEmail,
+          userId,
+        }),
       })
 
       const data: { checkout_url?: string } = await res.json()
@@ -177,9 +181,9 @@ export default function CartPage() {
   if (loading) return <p className='p-8 text-center'>Loading cart...</p>
   if (!cartItems.length)
     return (
-      <div className='p-8 text-center'>
-        <h1 className='text-2xl font-bold mb-4'>Your cart is empty</h1>
-        <Link href='/' className='text-[#10b5cb] hover:underline'>
+      <div className='p-12 text-center'>
+        <h1 className='text-2xl font-bold mb-4'>Your cart is empty 🛒</h1>
+        <Link href='/products' className='text-[#10b5cb] hover:underline'>
           Continue Shopping
         </Link>
       </div>
@@ -210,7 +214,9 @@ export default function CartPage() {
         <div className='md:col-span-2 space-y-6'>
           {Object.entries(vendorsMap).map(([vendorId, items]) => (
             <div key={vendorId} className='border rounded-lg p-4 space-y-4'>
-              <h2 className='font-semibold text-xl mb-2'>Vendor: {vendorId}</h2>
+              <h2 className='font-semibold text-xl mb-2'>
+                Vendor: {vendorId.slice(0, 6)}...
+              </h2>
               {items.map((item) => {
                 const p = item.product
                 if (!p) return null
@@ -239,7 +245,10 @@ export default function CartPage() {
                         value={item.quantity}
                         disabled={updatingId === item.id}
                         onChange={(e) =>
-                          updateQuantity(item.id, Number(e.target.value))
+                          updateQuantity(
+                            item.id,
+                            Math.max(1, Number(e.target.value)),
+                          )
                         }
                         className='w-20 p-1 border rounded text-center'
                       />
@@ -292,12 +301,12 @@ export default function CartPage() {
           <h2 className='text-2xl font-semibold'>Order Summary</h2>
           <div className='flex justify-between text-lg'>
             <span>Subtotal</span>
-            <span>{subtotal.toFixed(2)}</span>
+            <span>ETB {subtotal.toFixed(2)}</span>
           </div>
           <hr />
           <div className='flex justify-between font-bold text-xl'>
             <span>Total</span>
-            <span>{subtotal.toFixed(2)}</span>
+            <span>ETB {subtotal.toFixed(2)}</span>
           </div>
           <button
             onClick={handleCheckout}

@@ -3,16 +3,15 @@ import axios from 'axios'
 import { supabase } from '@/lib/supabaseClient'
 
 export async function GET(req: Request) {
+  const { searchParams } = new URL(req.url)
+  const tx_ref = searchParams.get('tx_ref')
+
+  if (!tx_ref) {
+    return NextResponse.json({ error: 'Missing tx_ref' }, { status: 400 })
+  }
+
   try {
-    const { searchParams } = new URL(req.url)
-    const tx_ref = searchParams.get('tx_ref')
-
-    if (!tx_ref) {
-      return NextResponse.json({ error: 'Missing tx_ref' }, { status: 400 })
-    }
-
-    //  Verify payment
-    const verifyRes = await axios.get(
+    const verify = await axios.get(
       `https://api.chapa.co/v1/transaction/verify/${tx_ref}`,
       {
         headers: {
@@ -21,86 +20,100 @@ export async function GET(req: Request) {
       },
     )
 
-    const payment = verifyRes.data.data
+    const data = verify.data.data
 
-    if (payment.status !== 'success') {
-      return NextResponse.redirect(
-        `${process.env.NEXT_PUBLIC_BASE_URL}/payment-failed`,
-      )
+    if (data.status !== 'success') {
+      return NextResponse.json({ error: 'Payment not successful' })
     }
 
-    const userEmail = payment.email
+    const userEmail = data.meta?.userEmail
 
-    //  Get user
+    if (!userEmail) {
+      return NextResponse.json({ error: 'Missing email in metadata' })
+    }
+
+    // ✅ 1. Get user
     const { data: user } = await supabase
-      .from('profiles')
+      .from('users')
       .select('id')
       .eq('email', userEmail)
       .single()
 
-    if (!user) throw new Error('User not found')
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' })
+    }
 
-    //  Get active cart
-    const { data: cart } = await supabase
+    // ✅ 2. Get user's carts
+    const { data: carts } = await supabase
       .from('carts')
       .select('id')
       .eq('user_id', user.id)
       .eq('status', 'pending')
-      .single()
 
-    if (!cart) {
-      return NextResponse.redirect(
-        `${process.env.NEXT_PUBLIC_BASE_URL}/payment-success`,
-      )
+    if (!carts || carts.length === 0) {
+      return NextResponse.json({ error: 'No active cart' })
     }
 
-    //  Get cart items
+    const cartIds = carts.map((c) => c.id)
+
+    // ✅ 3. Get cart items
     const { data: cartItems } = await supabase
       .from('cart_items')
-      .select('product_id, quantity, price')
-      .eq('cart_id', cart.id)
+      .select('*, product:product_id(*)')
+      .in('cart_id', cartIds)
 
     if (!cartItems || cartItems.length === 0) {
-      throw new Error('Cart empty')
+      return NextResponse.json({ error: 'No cart items' })
     }
 
-    //  Create order
-    const { data: order } = await supabase
+    // ✅ 4. Calculate total
+    const total = cartItems.reduce(
+      (sum, i) => sum + i.product.price * i.quantity,
+      0,
+    )
+
+    // ✅ 5. Create order
+    const { data: order, error: orderError } = await supabase
       .from('orders')
       .insert({
         user_id: user.id,
-        tx_ref,
-        amount: payment.amount,
+        email: userEmail,
+        total,
         status: 'paid',
-        currency: payment.currency,
       })
       .select()
       .single()
 
-    //  Insert order items
+    if (orderError) {
+      console.error(orderError)
+      return NextResponse.json({ error: 'Order creation failed' })
+    }
+
+    // ✅ 6. Create order items (THIS enables vendor dashboard)
     const orderItems = cartItems.map((item) => ({
       order_id: order.id,
-      product_id: item.product_id,
+      product_id: item.product.id,
+      vendor_id: item.product.vendor_id,
       quantity: item.quantity,
-      price: item.price,
+      price: item.product.price,
     }))
 
     await supabase.from('order_items').insert(orderItems)
 
-    //  Clear cart
-    await supabase.from('cart_items').delete().eq('cart_id', cart.id)
+    // ✅ 7. CLEAN CART (FIXED)
+    await supabase.from('cart_items').delete().in('cart_id', cartIds)
 
-    //  Mark cart completed
+    // Optional: mark carts completed
     await supabase
       .from('carts')
       .update({ status: 'completed' })
-      .eq('id', cart.id)
+      .in('id', cartIds)
 
     return NextResponse.redirect(
       `${process.env.NEXT_PUBLIC_BASE_URL}/payment-success`,
     )
   } catch (err) {
-    console.error('Verify error:', err)
-    return NextResponse.json({ error: 'Verification failed' }, { status: 500 })
+    console.error('Verification error:', err)
+    return NextResponse.json({ error: 'Verification failed' })
   }
 }

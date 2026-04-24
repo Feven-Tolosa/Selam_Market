@@ -6,8 +6,10 @@ import { Users, Store, ShoppingCart, Star, Key, Lock } from 'lucide-react'
 export default function AdminSidebar({ active }: { active?: string }) {
   const menu = [
     { name: 'Dashboard', href: '/admin', icon: Lock },
+    { name: 'Users', href: '/admin/users', icon: Users },
     { name: 'Requests', href: '/admin/requests', icon: Key },
     { name: 'Vendors', href: '/admin/vendors', icon: Store },
+    { name: 'reports', href: '/admin/reports', icon: Star },
   ]
 
   return (

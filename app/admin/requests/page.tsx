@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import toast from 'react-hot-toast'
 import Link from 'next/link'
@@ -21,8 +21,10 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true)
   const [vendorRequests, setVendorRequests] = useState<VendorRequest[]>([])
 
+  // ✅ Fetch Data (refined)
   const fetchData = async () => {
     setLoading(true)
+
     const { data, error } = await supabase
       .from('vendor_requests')
       .select('*')
@@ -30,11 +32,21 @@ export default function AdminDashboard() {
 
     if (error) {
       toast.error(error.message)
+      console.error(error)
       setLoading(false)
       return
     }
 
-    setVendorRequests(data || [])
+    // ✅ Remove duplicate requests per user (frontend safety)
+    const uniqueRequestsMap = new Map<string, VendorRequest>()
+
+    for (const req of data || []) {
+      if (!uniqueRequestsMap.has(req.user_id)) {
+        uniqueRequestsMap.set(req.user_id, req)
+      }
+    }
+
+    setVendorRequests(Array.from(uniqueRequestsMap.values()))
     setLoading(false)
   }
 
@@ -42,14 +54,16 @@ export default function AdminDashboard() {
     fetchData()
   }, [])
 
-  if (loading) return <p className='p-10'>Loading vendor requests...</p>
+  // ✅ Memoized categorization (performance improvement)
+  const { pendingVendors, approvedVendors, rejectedVendors } = useMemo(() => {
+    return {
+      pendingVendors: vendorRequests.filter((v) => v.status === 'pending'),
+      approvedVendors: vendorRequests.filter((v) => v.status === 'approved'),
+      rejectedVendors: vendorRequests.filter((v) => v.status === 'rejected'),
+    }
+  }, [vendorRequests])
 
-  // Categorize vendors
-  const pendingVendors = vendorRequests.filter((v) => v.status === 'pending')
-  const approvedVendors = vendorRequests.filter((v) => v.status === 'approved')
-  const rejectedVendors = vendorRequests.filter((v) => v.status === 'rejected')
-
-  // Helper for status badge color
+  // ✅ Status color helper
   const statusColor = (status: string) => {
     switch (status) {
       case 'pending':
@@ -63,42 +77,55 @@ export default function AdminDashboard() {
     }
   }
 
+  // ✅ Card Renderer (cleaned)
   const renderVendorCard = (vendor: VendorRequest) => (
-    <div
+    <Link
+      href={`/admin/vendors/${vendor.id}`}
       key={vendor.id}
       className='relative bg-white rounded-lg shadow-md p-4 group hover:shadow-xl transition-transform transform hover:-translate-y-1 duration-300 cursor-pointer'
     >
-      <h4 className='font-bold text-lg mb-2'>{vendor.store_name}</h4>
-      {/* View Details button */}
-      <Link
-        href={`/admin/vendors/${vendor.id}`}
-        className='block bg-[#10b5cb] text-white text-center py-2 rounded font-semibold'
-      >
-        View Details
-      </Link>
+      <h4 className='font-bold text-lg mb-2 line-clamp-1'>
+        {vendor.store_name}
+      </h4>
 
-      {/* Hover info card */}
+      <div className='block bg-[#10b5cb] text-white text-center py-2 rounded font-semibold'>
+        View Details
+      </div>
+
+      {/* Hover Info */}
       <div className='absolute top-6 left-4 right-4 mt-4 p-3 bg-white border rounded-lg shadow-lg opacity-0 group-hover:opacity-100 scale-95 group-hover:scale-100 transition-all duration-300 pointer-events-none'>
         <div className='flex justify-between items-center mb-1'>
-          <h3 className='font-semibold text-sm'>{vendor.store_name}</h3>
+          <h3 className='font-semibold text-sm truncate'>
+            {vendor.store_name}
+          </h3>
+
           <span
-            className={`px-2 py-0.5 rounded text-xs font-semibold ${statusColor(vendor.status)}`}
+            className={`px-2 py-0.5 rounded text-xs font-semibold ${statusColor(
+              vendor.status,
+            )}`}
           >
             {vendor.status.toUpperCase()}
           </span>
         </div>
+
         <p className='text-xs text-gray-600 mb-1 line-clamp-2'>
           {vendor.store_description}
         </p>
+
         <p className='text-xs text-gray-500'>
-          <strong>Phone:</strong> {vendor.phone}
+          <strong>Phone:</strong> {vendor.phone || 'N/A'}
         </p>
+
         <p className='text-xs text-gray-500'>
-          <strong>Location:</strong> {vendor.location}
+          <strong>Location:</strong> {vendor.location || 'N/A'}
         </p>
       </div>
-    </div>
+    </Link>
   )
+
+  if (loading) {
+    return <p className='p-10'>Loading vendor requests...</p>
+  }
 
   return (
     <div className='p-6 bg-gray-50 min-h-screen'>
@@ -106,7 +133,7 @@ export default function AdminDashboard() {
         Vendor Requests
       </h1>
 
-      {/* Pending Vendors */}
+      {/* Pending */}
       {pendingVendors.length > 0 && (
         <>
           <h2 className='text-xl font-semibold mb-4 text-gray-700'>
@@ -118,7 +145,7 @@ export default function AdminDashboard() {
         </>
       )}
 
-      {/* Approved Vendors */}
+      {/* Approved */}
       {approvedVendors.length > 0 && (
         <>
           <h2 className='text-xl font-semibold mb-4 text-gray-700'>
@@ -130,7 +157,7 @@ export default function AdminDashboard() {
         </>
       )}
 
-      {/* Rejected Vendors */}
+      {/* Rejected */}
       {rejectedVendors.length > 0 && (
         <>
           <h2 className='text-xl font-semibold mb-4 text-gray-700'>
