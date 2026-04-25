@@ -23,6 +23,17 @@ type CartItem = {
   status: 'cart' | 'ordered'
 }
 
+/**
+ * Supabase raw response type (IMPORTANT FIX)
+ * product may come as Product[] depending on join inference
+ */
+type RawCartItem = {
+  id: string
+  cart_id: string
+  quantity: number
+  product: Product | Product[] | null
+}
+
 type CheckoutItem = {
   id: string
   name: string
@@ -39,7 +50,6 @@ export default function CartPage() {
   const [checkingOut, setCheckingOut] = useState(false)
   const [recommendedProducts, setRecommendedProducts] = useState<Product[]>([])
 
-  // Get logged-in user from users table
   useEffect(() => {
     const getUser = async () => {
       const { data, error } = await supabase.auth.getUser()
@@ -51,7 +61,6 @@ export default function CartPage() {
     getUser()
   }, [])
 
-  //  Fetch cart items
   const fetchCartItems = useCallback(async () => {
     if (!userId) return
     setLoading(true)
@@ -62,9 +71,8 @@ export default function CartPage() {
         .select('id, status')
         .eq('user_id', userId)
 
-      if (!carts || carts.length === 0) {
+      if (!carts?.length) {
         setCartItems([])
-        setLoading(false)
         return
       }
 
@@ -77,16 +85,24 @@ export default function CartPage() {
         )
         .in('cart_id', cartIds)
 
-      if (!items) {
+      if (!items?.length) {
         setCartItems([])
-        setLoading(false)
         return
       }
 
-      const enriched = items.map((item) => {
+      const enriched: CartItem[] = (items as RawCartItem[]).map((item) => {
         const cart = carts.find((c) => c.id === item.cart_id)
+
+        // 🔥 FIX: normalize product (array → object)
+        const product = Array.isArray(item.product)
+          ? (item.product[0] ?? null)
+          : item.product
+
         return {
-          ...item,
+          id: item.id,
+          cart_id: item.cart_id,
+          quantity: item.quantity,
+          product,
           status: cart?.status !== 'pending' ? 'ordered' : 'cart',
         }
       })
@@ -103,7 +119,6 @@ export default function CartPage() {
     fetchCartItems()
   }, [fetchCartItems])
 
-  //  Recommended products
   useEffect(() => {
     const fetchRecommended = async () => {
       const { data } = await supabase.from('products').select('*').limit(4)
@@ -112,10 +127,10 @@ export default function CartPage() {
     fetchRecommended()
   }, [])
 
-  //  Update quantity
   const updateQuantity = async (id: string, quantity: number) => {
     if (quantity < 1) return
     setUpdatingId(id)
+
     const prev = [...cartItems]
 
     setCartItems((items) =>
@@ -132,9 +147,9 @@ export default function CartPage() {
     setUpdatingId(null)
   }
 
-  //  Remove item
   const removeItem = async (id: string) => {
     const prev = [...cartItems]
+
     setCartItems((items) => items.filter((i) => i.id !== id))
 
     const { error } = await supabase.from('cart_items').delete().eq('id', id)
@@ -142,11 +157,12 @@ export default function CartPage() {
     if (error) setCartItems(prev)
   }
 
-  //  Checkout
   const handleCheckout = async () => {
     if (!userEmail) return toast('Login required')
+
     const activeItems = cartItems.filter((i) => i.status === 'cart')
-    if (activeItems.length === 0) return toast('No active cart items')
+    if (!activeItems.length) return toast('No active cart items')
+
     setCheckingOut(true)
 
     const cleanItems: CheckoutItem[] = activeItems
@@ -170,16 +186,20 @@ export default function CartPage() {
       })
 
       const data: { checkout_url?: string } = await res.json()
-      if (data.checkout_url) window.location.href = data.checkout_url
+
+      if (data.checkout_url) {
+        window.location.href = data.checkout_url
+      }
     } catch (err) {
       console.error(err)
-      alert('Checkout failed')
+      toast.error('Checkout failed')
     } finally {
       setCheckingOut(false)
     }
   }
 
   if (loading) return <p className='p-8 text-center'>Loading cart...</p>
+
   if (!cartItems.length)
     return (
       <div className='p-12 text-center'>
@@ -190,8 +210,8 @@ export default function CartPage() {
       </div>
     )
 
-  //  Multi-vendor grouping
   const cartProducts = cartItems.filter((i) => i.status === 'cart')
+
   const vendorsMap: Record<string, CartItem[]> = {}
   cartProducts.forEach((item) => {
     const vendorId = item.product?.vendor_id || 'unknown'
@@ -211,55 +231,55 @@ export default function CartPage() {
       </h1>
 
       <div className='grid md:grid-cols-3 gap-8'>
-        {/* CART ITEMS */}
         <div className='md:col-span-2 space-y-6'>
           {Object.entries(vendorsMap).map(([vendorId, items]) => (
             <div key={vendorId} className='border rounded-lg p-4 space-y-4'>
-              <h2 className='font-semibold text-xl mb-2'>
+              <h2 className='font-semibold text-xl'>
                 Vendor: {vendorId.slice(0, 6)}...
               </h2>
+
               {items.map((item) => {
                 const p = item.product
                 if (!p) return null
+
                 return (
                   <div
                     key={item.id}
-                    className='flex items-center gap-4 border-b last:border-b-0 pb-2'
+                    className='flex items-center gap-4 border-b pb-2'
                   >
                     <Image
                       src={p.image_url || '/placeholder.png'}
                       alt={p.name}
                       width={100}
                       height={100}
-                      className='rounded object-cover'
+                      className='rounded'
                     />
-                    <div className='flex-1 space-y-1'>
+
+                    <div className='flex-1'>
                       <h3 className='font-semibold'>{p.name}</h3>
-                      <p className='text-[#10b5cb] font-semibold'>
-                        {p.price.toFixed(2)}
-                      </p>
+                      <p className='text-[#10b5cb]'>ETB {p.price.toFixed(2)}</p>
                     </div>
-                    <div className='flex flex-col items-center gap-2'>
-                      <input
-                        type='number'
-                        min={1}
-                        value={item.quantity}
-                        disabled={updatingId === item.id}
-                        onChange={(e) =>
-                          updateQuantity(
-                            item.id,
-                            Math.max(1, Number(e.target.value)),
-                          )
-                        }
-                        className='w-20 p-1 border rounded text-center'
-                      />
-                      <button
-                        onClick={() => removeItem(item.id)}
-                        className='text-red-500 hover:underline text-sm'
-                      >
-                        Remove
-                      </button>
-                    </div>
+
+                    <input
+                      type='number'
+                      min={1}
+                      value={item.quantity}
+                      disabled={updatingId === item.id}
+                      onChange={(e) =>
+                        updateQuantity(
+                          item.id,
+                          Math.max(1, Number(e.target.value)),
+                        )
+                      }
+                      className='w-20 border p-1 text-center'
+                    />
+
+                    <button
+                      onClick={() => removeItem(item.id)}
+                      className='text-red-500 text-sm'
+                    >
+                      Remove
+                    </button>
                   </div>
                 )
               })}
@@ -297,22 +317,18 @@ export default function CartPage() {
           )}
         </div>
 
-        {/* SUMMARY */}
-        <div className='border p-6 rounded-lg h-fit shadow-md space-y-4'>
+        <div className='border p-6 rounded-lg space-y-4'>
           <h2 className='text-2xl font-semibold'>Order Summary</h2>
-          <div className='flex justify-between text-lg'>
+
+          <div className='flex justify-between'>
             <span>Subtotal</span>
             <span>ETB {subtotal.toFixed(2)}</span>
           </div>
-          <hr />
-          <div className='flex justify-between font-bold text-xl'>
-            <span>Total</span>
-            <span>ETB {subtotal.toFixed(2)}</span>
-          </div>
+
           <button
             onClick={handleCheckout}
             disabled={checkingOut}
-            className='w-full bg-[#10b5cb] text-white py-3 rounded hover:bg-[#0da0b5] transition font-semibold disabled:opacity-50'
+            className='w-full bg-[#10b5cb] text-white py-3 rounded'
           >
             {checkingOut ? 'Processing...' : 'Proceed to Checkout'}
           </button>
