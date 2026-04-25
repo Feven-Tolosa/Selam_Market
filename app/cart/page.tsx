@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import Image from 'next/image'
 import Link from 'next/link'
+import toast from 'react-hot-toast'
 
 type Product = {
   id: string
@@ -143,9 +144,9 @@ export default function CartPage() {
 
   //  Checkout
   const handleCheckout = async () => {
-    if (!userEmail) return alert('Login required')
+    if (!userEmail) return toast('Login required')
     const activeItems = cartItems.filter((i) => i.status === 'cart')
-    if (activeItems.length === 0) return alert('No active cart items')
+    if (activeItems.length === 0) return toast('No active cart items')
     setCheckingOut(true)
 
     const cleanItems: CheckoutItem[] = activeItems

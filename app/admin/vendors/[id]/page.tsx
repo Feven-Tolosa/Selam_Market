@@ -21,50 +21,54 @@ type VendorRequest = {
 export default function VendorDetails() {
   const { id } = useParams()
   const router = useRouter()
+
   const [vendor, setVendor] = useState<VendorRequest | null>(null)
   const [recentVendors, setRecentVendors] = useState<VendorRequest[]>([])
   const [loading, setLoading] = useState(true)
   const [licenseOpen, setLicenseOpen] = useState(false)
 
-  // APPROVE or RE-APPROVE vendor
+  // ✅ APPROVE vendor + auto start trial
   const approveVendor = async () => {
     if (!vendor) return
 
-    // 1. Insert into vendors table
-    const { error: insertError } = await supabase.from('vendors').insert({
-      user_id: vendor.user_id,
-      store_name: vendor.store_name,
-      description: vendor.store_description,
-      phone: vendor.phone,
-      location: vendor.location,
-    })
+    const start = new Date()
+    const end = new Date()
+    end.setDate(start.getDate() + 7)
 
-    if (insertError) {
-      // Avoid duplicate insert crash
-      if (!insertError.message.includes('duplicate')) {
-        return toast.error(insertError.message)
-      }
-    }
-
-    // 2. Update request status
-    const { error } = await supabase
+    // 1. Update request status
+    const { error: requestError } = await supabase
       .from('vendor_requests')
       .update({ status: 'approved' })
       .eq('id', vendor.id)
 
-    if (error) return toast.error(error.message)
+    if (requestError) return toast.error(requestError.message)
 
-    toast.success('Vendor approved')
+    // 2. Create/update vendor with trial
+    const { error: vendorError } = await supabase.from('vendors').upsert({
+      user_id: vendor.user_id,
+      store_name: vendor.store_name,
+
+      trial_start: start.toISOString(),
+      trial_end: end.toISOString(),
+      subscription_status: 'trial',
+      is_active: true,
+      message: 'Your free trial has started 🎉',
+    })
+
+    if (vendorError) return toast.error(vendorError.message)
+
+    toast.success('Vendor approved & trial started 🚀')
+
     fetchVendor()
     fetchRecent()
   }
 
-  // REMOVE approved vendor
+  // ✅ REMOVE vendor safely
   const removeVendor = async () => {
     if (!confirm('Are you sure you want to remove this vendor?')) return
     if (!vendor) return
 
-    // 1. Get vendor products
+    // 1. Get products
     const { data: products, error: prodError } = await supabase
       .from('products')
       .select('id')
@@ -75,23 +79,9 @@ export default function VendorDetails() {
     const productIds = products?.map((p) => p.id) || []
 
     if (productIds.length > 0) {
-      // 🔥 2. Delete reviews FIRST
-      const { error: reviewError } = await supabase
-        .from('reviews')
-        .delete()
-        .in('product_id', productIds)
+      await supabase.from('reviews').delete().in('product_id', productIds)
+      await supabase.from('cart_items').delete().in('product_id', productIds)
 
-      if (reviewError) return toast.error(reviewError.message)
-
-      // 🔥 3. Delete cart items
-      const { error: cartError } = await supabase
-        .from('cart_items')
-        .delete()
-        .in('product_id', productIds)
-
-      if (cartError) return toast.error(cartError.message)
-
-      // 🔥 4. Delete products
       const { error: deleteProductsError } = await supabase
         .from('products')
         .delete()
@@ -100,7 +90,7 @@ export default function VendorDetails() {
       if (deleteProductsError) return toast.error(deleteProductsError.message)
     }
 
-    // 🔥 5. Delete vendor
+    // Delete vendor
     const { error: deleteVendorError } = await supabase
       .from('vendors')
       .delete()
@@ -108,32 +98,35 @@ export default function VendorDetails() {
 
     if (deleteVendorError) return toast.error(deleteVendorError.message)
 
-    // 🔥 6. Update request status
-    const { error: updateError } = await supabase
+    // Update request
+    await supabase
       .from('vendor_requests')
       .update({ status: 'rejected' })
       .eq('id', vendor.id)
 
-    if (updateError) return toast.error(updateError.message)
+    toast.success('Vendor removed')
 
-    toast.success('Vendor removed successfully')
     fetchVendor()
     fetchRecent()
   }
 
   const fetchVendor = async () => {
     if (!id) return
+
     const { data, error } = await supabase
       .from('vendor_requests')
       .select('*')
       .eq('id', id)
       .single()
+
     if (error) {
       toast.error(error.message)
       router.back()
       return
     }
+
     setVendor(data)
+    setLoading(false)
   }
 
   const fetchRecent = async () => {
@@ -142,30 +135,31 @@ export default function VendorDetails() {
       .select('*')
       .order('created_at', { ascending: false })
       .limit(3)
+
     setRecentVendors(data || [])
   }
 
   useEffect(() => {
     fetchVendor()
     fetchRecent()
-    setLoading(false)
   }, [id])
 
-  if (loading) return <p className='p-10'>Loading...</p>
-  if (!vendor) return <p className='p-10'>Vendor not found.</p>
-
   const updateStatus = async (status: 'approved' | 'rejected') => {
+    if (!vendor) return
+
     const { error } = await supabase
       .from('vendor_requests')
       .update({ status })
       .eq('id', vendor.id)
+
     if (error) return toast.error(error.message)
+
     toast.success(`Vendor ${status}`)
+
     fetchVendor()
     fetchRecent()
   }
 
-  // Status badge helper
   const statusColor = (status: string) => {
     switch (status) {
       case 'pending':
@@ -179,42 +173,40 @@ export default function VendorDetails() {
     }
   }
 
+  if (loading) return <p className='p-10'>Loading...</p>
+  if (!vendor) return <p className='p-10'>Vendor not found.</p>
+
   return (
     <div className='p-6 bg-gray-50 min-h-screen'>
       <button
         onClick={() => router.back()}
         className='mb-4 text-blue-500 underline'
       >
-        &larr; Back
+        ← Back
       </button>
 
-      {/* Vendor Info Card */}
+      {/* Vendor Card */}
       <div className='bg-white rounded-lg shadow p-6 mb-6'>
         <div className='flex justify-between items-center mb-3'>
           <h1 className='text-2xl font-bold text-[#10b5cb]'>
             {vendor.store_name}
           </h1>
+
           <span
             className={`px-2 py-1 rounded text-sm font-semibold ${statusColor(vendor.status)}`}
           >
             {vendor.status.toUpperCase()}
           </span>
         </div>
-        <p className='mb-2'>
+
+        <p>
           <strong>Description:</strong> {vendor.store_description}
         </p>
-        <p className='mb-1'>
+        <p>
           <strong>Phone:</strong> {vendor.phone}
         </p>
-        <p className='mb-1'>
+        <p>
           <strong>Location:</strong> {vendor.location}
-        </p>
-        <p className='mb-1'>
-          <strong>User ID:</strong> {vendor.user_id}
-        </p>
-        <p className='mb-1'>
-          <strong>Submitted:</strong>{' '}
-          {new Date(vendor.created_at).toLocaleString()}
         </p>
 
         {vendor.license_url && (
@@ -227,39 +219,37 @@ export default function VendorDetails() {
         )}
 
         <div className='mt-4 flex gap-2'>
-          {/* Pending */}
           {vendor.status === 'pending' && (
             <>
               <button
                 onClick={approveVendor}
-                className='bg-green-500 text-white px-3 py-1 rounded hover:opacity-90'
+                className='bg-green-500 text-white px-3 py-1 rounded'
               >
                 Approve
               </button>
+
               <button
                 onClick={() => updateStatus('rejected')}
-                className='bg-red-500 text-white px-3 py-1 rounded hover:opacity-90'
+                className='bg-red-500 text-white px-3 py-1 rounded'
               >
                 Reject
               </button>
             </>
           )}
 
-          {/* Re-accept rejected */}
           {vendor.status === 'rejected' && (
             <button
               onClick={approveVendor}
-              className='bg-blue-500 text-white px-3 py-1 rounded hover:opacity-90'
+              className='bg-blue-500 text-white px-3 py-1 rounded'
             >
               Accept Again
             </button>
           )}
 
-          {/* Remove approved */}
           {vendor.status === 'approved' && (
             <button
               onClick={removeVendor}
-              className='bg-red-600 text-white px-3 py-1 rounded hover:opacity-90'
+              className='bg-red-600 text-white px-3 py-1 rounded'
             >
               Remove Vendor
             </button>
@@ -267,29 +257,25 @@ export default function VendorDetails() {
         </div>
       </div>
 
-      {/* Recent vendors */}
+      {/* Recent */}
       <div className='bg-white rounded-lg shadow p-6'>
         <h2 className='text-xl font-semibold mb-4'>Last 3 Vendor Requests</h2>
-        <table className='w-full text-left border'>
+
+        <table className='w-full border'>
           <thead className='bg-gray-100'>
             <tr>
-              <th className='px-4 py-2 border'>Store Name</th>
-              <th className='px-4 py-2 border'>Status</th>
-              <th className='px-4 py-2 border'>Submitted</th>
+              <th className='p-2 border'>Store</th>
+              <th className='p-2 border'>Status</th>
+              <th className='p-2 border'>Date</th>
             </tr>
           </thead>
+
           <tbody>
             {recentVendors.map((v) => (
-              <tr key={v.id} className='hover:bg-gray-50'>
-                <td className='px-4 py-2 border'>{v.store_name}</td>
-                <td className='px-4 py-2 border'>
-                  <span
-                    className={`px-2 py-0.5 rounded text-xs font-semibold ${statusColor(v.status)}`}
-                  >
-                    {v.status.toUpperCase()}
-                  </span>
-                </td>
-                <td className='px-4 py-2 border'>
+              <tr key={v.id}>
+                <td className='p-2 border'>{v.store_name}</td>
+                <td className='p-2 border'>{v.status}</td>
+                <td className='p-2 border'>
                   {new Date(v.created_at).toLocaleString()}
                 </td>
               </tr>
@@ -302,29 +288,17 @@ export default function VendorDetails() {
       <Dialog
         open={licenseOpen}
         onClose={() => setLicenseOpen(false)}
-        className='fixed z-50 inset-0 overflow-y-auto flex items-center justify-center p-4'
+        className='fixed inset-0 flex items-center justify-center p-4'
       >
-        <div
-          className='fixed inset-0 bg-black bg-opacity-50'
-          aria-hidden='true'
-        />
-        <Dialog.Panel className='bg-white rounded-lg p-6 z-10 w-full max-w-2xl'>
-          <Dialog.Title className='text-xl font-bold mb-4'>
-            Business License
-          </Dialog.Title>
+        <div className='fixed inset-0 bg-black/50' />
+
+        <Dialog.Panel className='bg-white p-6 rounded z-10 max-w-2xl w-full'>
           {vendor.license_url?.endsWith('.pdf') ? (
-            <iframe
-              src={vendor.license_url}
-              className='w-full h-96'
-              title='License PDF'
-            />
+            <iframe src={vendor.license_url} className='w-full h-96' />
           ) : (
-            <img
-              src={vendor.license_url!}
-              alt='License'
-              className='w-full max-h-96 object-contain'
-            />
+            <img src={vendor.license_url} className='w-full' />
           )}
+
           <button
             onClick={() => setLicenseOpen(false)}
             className='mt-4 w-full bg-[#10b5cb] text-white py-2 rounded'
