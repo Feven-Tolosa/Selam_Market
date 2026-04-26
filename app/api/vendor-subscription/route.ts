@@ -52,7 +52,7 @@ export async function POST(req: Request) {
 
         // ✅ Same structure as cart checkout
         callback_url: `${baseUrl}/api/verify-subscription`,
-        return_url: `${baseUrl}/api/subscription/success`,
+        return_url: `${baseUrl}/vendor/subscription/success`,
 
         customization: {
           title: 'Selam Market',
