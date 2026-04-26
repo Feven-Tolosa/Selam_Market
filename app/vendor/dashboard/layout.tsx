@@ -46,6 +46,12 @@ export default function VendorLayout({
           >
             Settings
           </Link>
+          <Link
+            href='/vendor/dashboard/subscription'
+            className='block px-4 py-2 rounded hover:bg-[#10b5cb]/10'
+          >
+            Subscription
+          </Link>
         </nav>
       </aside>
 
