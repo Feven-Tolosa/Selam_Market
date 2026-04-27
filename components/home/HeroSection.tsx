@@ -227,18 +227,6 @@ export default function HeroSection() {
         </div>
       </section>
 
-      {/* Scroll to Footer Button - Appears after scrolling */}
-      {/* <button
-        onClick={scrollToFooter}
-        className={`fixed bottom-8 right-8 z-50 bg-[#10b5cb] hover:bg-[#0e9db0] text-white p-3 rounded-full shadow-lg transition-all duration-300 hover:scale-110 hover:shadow-xl group ${
-          showScrollButton ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10 pointer-events-none'
-        }`}
-        aria-label="Scroll to footer"
-      >
-        <ChevronDown size={24} className="animate-bounce" />
-        
-      </button> */}
-
       {/* Animated Scroll Indicator (always visible at bottom) */}
       <div
         className='absolute bottom-8 left-1/2 transform -translate-x-1/2 z-20 flex flex-col items-center gap-2 cursor-pointer'

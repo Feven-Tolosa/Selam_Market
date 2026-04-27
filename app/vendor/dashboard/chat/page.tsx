@@ -35,7 +35,7 @@ export default function VendorChatPage() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
 
-  // ✅ LOAD USER
+  // USER
   useEffect(() => {
     const load = async () => {
       const { data } = await supabase.auth.getUser()
@@ -44,102 +44,179 @@ export default function VendorChatPage() {
     load()
   }, [])
 
-  // ✅ LOAD CONVERSATIONS
+  // LOAD CONVERSATIONS + USERS
   useEffect(() => {
     if (!userId) return
 
     const load = async () => {
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from('conversations')
         .select('*')
         .eq('vendor_id', userId)
 
-      if (error) console.error(error)
+      const convs = data ?? []
+      setConversations(convs)
 
-      setConversations(data ?? [])
+      // preload customer emails
+      const ids = [...new Set(convs.map((c) => c.customer_id))]
+
+      if (ids.length > 0) {
+        const { data: users } = await supabase
+          .from('users')
+          .select('id, email')
+          .in('id', ids)
+
+        const map: Record<string, string> = {}
+        users?.forEach((u: User) => {
+          map[u.id] = u.email
+        })
+
+        setUsersMap(map)
+      }
     }
 
     load()
   }, [userId])
 
-  // ✅ LOAD MESSAGES + USER EMAILS
+  // LOAD MESSAGES + REALTIME
   useEffect(() => {
     if (!activeConversation) return
 
+    let isMounted = true
+
     const load = async () => {
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from('messages')
         .select('*')
         .eq('conversation_id', activeConversation.id)
         .order('created_at', { ascending: true })
 
-      if (error) {
-        console.error(error)
-        return
+      if (!isMounted) return
+
+      const msgs = data ?? []
+      setMessages(msgs)
+
+      const ids = [...new Set(msgs.map((m) => m.sender_id))]
+
+      if (ids.length > 0) {
+        const { data: users } = await supabase
+          .from('users')
+          .select('id, email')
+          .in('id', ids)
+
+        setUsersMap((prev) => {
+          const updated = { ...prev }
+          users?.forEach((u: User) => {
+            updated[u.id] = u.email
+          })
+          return updated
+        })
       }
-
-      setMessages(data ?? [])
-
-      // 🔥 Get unique sender IDs
-      const ids = [...new Set(data?.map((m) => m.sender_id))]
-
-      // ✅ Fetch emails from users table
-      const { data: users } = await supabase
-        .from('users')
-        .select('id, email')
-        .in('id', ids)
-
-      const map: Record<string, string> = {}
-
-      users?.forEach((u: User) => {
-        map[u.id] = u.email
-      })
-
-      setUsersMap(map)
     }
 
     load()
+
+    const channel = supabase
+      .channel(`vendor-chat-${activeConversation.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'messages',
+          filter: `conversation_id=eq.${activeConversation.id}`,
+        },
+        (payload) => {
+          const msg = payload.new as Message
+
+          setMessages((prev) => {
+            if (prev.some((m) => m.id === msg.id)) return prev
+            return [...prev, msg]
+          })
+        },
+      )
+      .subscribe()
+
+    return () => {
+      isMounted = false
+      supabase.removeChannel(channel)
+    }
   }, [activeConversation])
 
-  // ✅ SEND MESSAGE
+  // SEND MESSAGE (OPTIMISTIC)
   const sendMessage = async () => {
     if (!newMessage.trim() || !userId || !activeConversation) return
 
-    await supabase.from('messages').insert({
+    const tempId = `temp-${Date.now()}`
+
+    const optimistic: Message = {
+      id: tempId,
       conversation_id: activeConversation.id,
       sender_id: userId,
       message: newMessage,
-    })
+      file_url: null,
+      file_type: null,
+      created_at: new Date().toISOString(),
+    }
 
+    setMessages((prev) => [...prev, optimistic])
     setNewMessage('')
+
+    const { data, error } = await supabase
+      .from('messages')
+      .insert({
+        conversation_id: activeConversation.id,
+        sender_id: userId,
+        message: optimistic.message,
+      })
+      .select()
+      .single()
+
+    if (error) return
+
+    setMessages((prev) => prev.map((m) => (m.id === tempId ? data : m)))
   }
 
-  // ✅ FILE UPLOAD
+  // FILE UPLOAD (OPTIMISTIC)
   const uploadFile = async (file: File) => {
     if (!activeConversation || !userId) return
 
+    const tempId = `temp-${Date.now()}`
+    const localUrl = URL.createObjectURL(file)
+
+    const optimistic: Message = {
+      id: tempId,
+      conversation_id: activeConversation.id,
+      sender_id: userId,
+      message: null,
+      file_url: localUrl,
+      file_type: file.type,
+      created_at: new Date().toISOString(),
+    }
+
+    setMessages((prev) => [...prev, optimistic])
+
     const path = `chat/${Date.now()}-${file.name}`
 
-    const { error } = await supabase.storage
-      .from('chat-files')
-      .upload(path, file)
-
-    if (error) {
-      console.error(error)
-      return
-    }
+    await supabase.storage.from('chat-files').upload(path, file)
 
     const { data } = supabase.storage.from('chat-files').getPublicUrl(path)
 
-    await supabase.from('messages').insert({
-      conversation_id: activeConversation.id,
-      sender_id: userId,
-      file_url: data.publicUrl,
-      file_type: file.type,
-    })
+    const { data: inserted } = await supabase
+      .from('messages')
+      .insert({
+        conversation_id: activeConversation.id,
+        sender_id: userId,
+        file_url: data.publicUrl,
+        file_type: file.type,
+      })
+      .select()
+      .single()
+
+    setMessages((prev) => prev.map((m) => (m.id === tempId ? inserted : m)))
   }
 
-  // ✅ AUTO SCROLL
+  // AUTO SCROLL
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
@@ -167,12 +244,10 @@ export default function VendorChatPage() {
       <div className='flex-1 flex flex-col'>
         {activeConversation ? (
           <>
-            {/* HEADER */}
             <div className='p-4 border-b font-semibold bg-gray-50'>
               Chat with: {usersMap[activeConversation.customer_id] || '...'}
             </div>
 
-            {/* MESSAGES */}
             <div className='flex-1 p-4 space-y-3 overflow-y-auto bg-gray-100'>
               {messages.map((msg) => {
                 const isMe = msg.sender_id === userId
@@ -187,7 +262,6 @@ export default function VendorChatPage() {
                         isMe ? 'bg-[#10b5cb] text-white' : 'bg-white border'
                       }`}
                     >
-                      {/* Sender email */}
                       <div className='text-xs opacity-70 mb-1'>
                         {usersMap[msg.sender_id] || '...'}
                       </div>
@@ -207,7 +281,6 @@ export default function VendorChatPage() {
               <div ref={bottomRef} />
             </div>
 
-            {/* INPUT */}
             <div className='p-3 border-t flex gap-2 bg-white'>
               <button
                 onClick={() => fileInputRef.current?.click()}

@@ -58,6 +58,7 @@ export default function ChatOverlay() {
         .single()
 
       const vendorUserId = vendor?.user_id
+      if (!vendorUserId) return
 
       const { data: existing } = await supabase
         .from('conversations')
@@ -86,9 +87,11 @@ export default function ChatOverlay() {
     init()
   }, [vendorId, userId])
 
-  // LOAD MESSAGES + USERS
+  // LOAD MESSAGES + REALTIME
   useEffect(() => {
     if (!activeConversation) return
+
+    let isMounted = true
 
     const load = async () => {
       const { data } = await supabase
@@ -97,20 +100,26 @@ export default function ChatOverlay() {
         .eq('conversation_id', activeConversation.id)
         .order('created_at', { ascending: true })
 
-      setMessages(data ?? [])
+      if (!isMounted) return
 
-      const ids = [...new Set(data?.map((m) => m.sender_id))]
-      const { data: users } = await supabase
-        .from('users')
-        .select('id, name')
-        .in('id', ids)
+      const msgs = data ?? []
+      setMessages(msgs)
 
-      const map: Record<string, string> = {}
-      users?.forEach((u: User) => {
-        map[u.id] = u.name
-      })
+      const ids = [...new Set(msgs.map((m) => m.sender_id))]
 
-      setUsersMap(map)
+      if (ids.length > 0) {
+        const { data: users } = await supabase
+          .from('users')
+          .select('id, name')
+          .in('id', ids)
+
+        const map: Record<string, string> = {}
+        users?.forEach((u: User) => {
+          map[u.id] = u.name
+        })
+
+        setUsersMap(map)
+      }
     }
 
     load()
@@ -127,32 +136,76 @@ export default function ChatOverlay() {
         },
         (payload) => {
           const msg = payload.new as Message
-          setMessages((prev) => [...prev, msg])
+
+          setMessages((prev) => {
+            // prevent duplicates
+            if (prev.some((m) => m.id === msg.id)) return prev
+            return [...prev, msg]
+          })
         },
       )
       .subscribe()
 
     return () => {
+      isMounted = false
       supabase.removeChannel(channel)
     }
   }, [activeConversation])
 
-  // SEND TEXT
+  // SEND TEXT (OPTIMISTIC)
   const sendMessage = async () => {
     if (!newMessage.trim() || !userId || !activeConversation) return
 
-    await supabase.from('messages').insert({
+    const tempId = `temp-${Date.now()}`
+
+    const optimisticMessage: Message = {
+      id: tempId,
       conversation_id: activeConversation.id,
       sender_id: userId,
       message: newMessage,
-    })
+      file_url: null,
+      file_type: null,
+      created_at: new Date().toISOString(),
+    }
 
+    // instantly show message
+    setMessages((prev) => [...prev, optimisticMessage])
     setNewMessage('')
+
+    const { data, error } = await supabase
+      .from('messages')
+      .insert({
+        conversation_id: activeConversation.id,
+        sender_id: userId,
+        message: optimisticMessage.message,
+      })
+      .select()
+      .single()
+
+    if (error) return
+
+    // replace temp message with real one
+    setMessages((prev) => prev.map((m) => (m.id === tempId ? data : m)))
   }
 
-  // FILE UPLOAD
+  // FILE UPLOAD (OPTIMISTIC)
   const uploadFile = async (file: File) => {
     if (!activeConversation || !userId) return
+
+    const tempId = `temp-${Date.now()}`
+    const localUrl = URL.createObjectURL(file)
+
+    const optimisticMessage: Message = {
+      id: tempId,
+      conversation_id: activeConversation.id,
+      sender_id: userId,
+      message: null,
+      file_url: localUrl,
+      file_type: file.type,
+      created_at: new Date().toISOString(),
+    }
+
+    setMessages((prev) => [...prev, optimisticMessage])
 
     const path = `chat/${Date.now()}-${file.name}`
 
@@ -160,12 +213,18 @@ export default function ChatOverlay() {
 
     const { data } = supabase.storage.from('chat-files').getPublicUrl(path)
 
-    await supabase.from('messages').insert({
-      conversation_id: activeConversation.id,
-      sender_id: userId,
-      file_url: data.publicUrl,
-      file_type: file.type,
-    })
+    const { data: inserted } = await supabase
+      .from('messages')
+      .insert({
+        conversation_id: activeConversation.id,
+        sender_id: userId,
+        file_url: data.publicUrl,
+        file_type: file.type,
+      })
+      .select()
+      .single()
+
+    setMessages((prev) => prev.map((m) => (m.id === tempId ? inserted : m)))
   }
 
   // AUTO SCROLL
@@ -177,13 +236,11 @@ export default function ChatOverlay() {
 
   return (
     <div className='fixed bottom-5 right-5 w-[380px] h-[500px] bg-white rounded-xl shadow flex flex-col'>
-      {/* HEADER */}
       <div className='p-3 border-b flex justify-between'>
         <span>Chat</span>
         <button onClick={closeChat}>✕</button>
       </div>
 
-      {/* MESSAGES */}
       <div className='flex-1 overflow-y-auto p-3 space-y-2 bg-gray-50'>
         {messages.map((msg) => {
           const isMine = msg.sender_id === userId
@@ -212,7 +269,6 @@ export default function ChatOverlay() {
         <div ref={bottomRef} />
       </div>
 
-      {/* INPUT */}
       <div className='p-3 border-t flex gap-2'>
         <button onClick={() => fileInputRef.current?.click()}>📎</button>
 
