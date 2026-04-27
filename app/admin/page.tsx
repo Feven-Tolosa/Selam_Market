@@ -202,36 +202,6 @@ export default function AdminDashboard() {
         </ResponsiveContainer>
       </div>
 
-      {/* PIE CHART FIXED */}
-      <div className='bg-white p-5 rounded-xl shadow-sm mb-6'>
-        <h2 className='font-semibold mb-4'>Vendors per Category</h2>
-
-        {vendorAnalytics.length > 0 ? (
-          <div className='h-[320px] w-full'>
-            <ResponsiveContainer width='100%' height='100%'>
-              <PieChart>
-                <Pie
-                  data={vendorAnalytics}
-                  dataKey='value'
-                  nameKey='name'
-                  cx='50%'
-                  cy='50%'
-                  outerRadius={110}
-                  label
-                >
-                  {vendorAnalytics.map((_, i) => (
-                    <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-        ) : (
-          <p className='text-gray-400'>No vendor data</p>
-        )}
-      </div>
-
       {/* CATEGORY SECTION */}
       <div className='bg-white rounded-2xl shadow-sm mb-6 overflow-hidden'>
         {/* HEADER */}
