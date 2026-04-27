@@ -19,6 +19,12 @@ type Vendor = {
   store_name: string
 }
 
+// 🔥 Raw type from Supabase
+type RawVendor = {
+  id: string
+  business_name: string
+}
+
 export default function SearchPage() {
   const searchParams = useSearchParams()
   const query = searchParams.get('q') || ''
@@ -33,20 +39,31 @@ export default function SearchPage() {
 
       setLoading(true)
 
-      //  Search Products
+      // ✅ PRODUCTS
       const { data: productData } = await supabase
         .from('products')
         .select('*')
         .ilike('name', `%${query}%`)
 
-      //  Search Vendors (from users table or vendor table)
+      // ✅ VENDORS
       const { data: vendorData } = await supabase
         .from('users')
         .select('id, business_name')
         .ilike('business_name', `%${query}%`)
 
       setProducts(productData || [])
-      setVendors(vendorData || [])
+
+      // 🔥 FIX: map to correct Vendor type
+      const formattedVendors: Vendor[] = (
+        (vendorData as RawVendor[]) || []
+      ).map((v) => ({
+        id: v.id,
+        business_name: v.business_name,
+        store_name: v.business_name, // map here
+      }))
+
+      setVendors(formattedVendors)
+
       setLoading(false)
     }
 

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useMemo } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -12,7 +12,6 @@ type Product = {
   price: number
   image_url: string | null
   vendor_id: string
-  category_name?: string
 }
 
 type CartItem = {
@@ -23,10 +22,6 @@ type CartItem = {
   status: 'cart' | 'ordered'
 }
 
-/**
- * Supabase raw response type (IMPORTANT FIX)
- * product may come as Product[] depending on join inference
- */
 type RawCartItem = {
   id: string
   cart_id: string
@@ -50,10 +45,11 @@ export default function CartPage() {
   const [checkingOut, setCheckingOut] = useState(false)
   const [recommendedProducts, setRecommendedProducts] = useState<Product[]>([])
 
+  /* ---------------- USER ---------------- */
   useEffect(() => {
     const getUser = async () => {
-      const { data, error } = await supabase.auth.getUser()
-      if (!error && data.user) {
+      const { data } = await supabase.auth.getUser()
+      if (data.user) {
         setUserId(data.user.id)
         setUserEmail(data.user.email ?? null)
       }
@@ -61,8 +57,10 @@ export default function CartPage() {
     getUser()
   }, [])
 
+  /* ---------------- FETCH CART ---------------- */
   const fetchCartItems = useCallback(async () => {
     if (!userId) return
+
     setLoading(true)
 
     try {
@@ -85,31 +83,27 @@ export default function CartPage() {
         )
         .in('cart_id', cartIds)
 
-      if (!items?.length) {
-        setCartItems([])
-        return
-      }
+      const enriched: CartItem[] =
+        (items as RawCartItem[])?.map((item) => {
+          const product = Array.isArray(item.product)
+            ? (item.product[0] ?? null)
+            : item.product
 
-      const enriched: CartItem[] = (items as RawCartItem[]).map((item) => {
-        const cart = carts.find((c) => c.id === item.cart_id)
+          const cart = carts.find((c) => c.id === item.cart_id)
 
-        // 🔥 FIX: normalize product (array → object)
-        const product = Array.isArray(item.product)
-          ? (item.product[0] ?? null)
-          : item.product
-
-        return {
-          id: item.id,
-          cart_id: item.cart_id,
-          quantity: item.quantity,
-          product,
-          status: cart?.status !== 'pending' ? 'ordered' : 'cart',
-        }
-      })
+          return {
+            id: item.id,
+            cart_id: item.cart_id,
+            quantity: item.quantity,
+            product,
+            status: cart?.status === 'pending' ? 'cart' : 'ordered',
+          }
+        }) ?? []
 
       setCartItems(enriched)
     } catch (err) {
-      console.error('Cart fetch error', err)
+      console.error(err)
+      toast.error('Failed to load cart')
     } finally {
       setLoading(false)
     }
@@ -119,16 +113,56 @@ export default function CartPage() {
     fetchCartItems()
   }, [fetchCartItems])
 
+  /* ---------------- VISIBILITY REFRESH ---------------- */
   useEffect(() => {
-    const fetchRecommended = async () => {
-      const { data } = await supabase.from('products').select('*').limit(4)
-      if (data) setRecommendedProducts(data)
+    const handleVisibility = () => {
+      if (!document.hidden) fetchCartItems()
     }
-    fetchRecommended()
+    document.addEventListener('visibilitychange', handleVisibility)
+    return () =>
+      document.removeEventListener('visibilitychange', handleVisibility)
+  }, [fetchCartItems])
+
+  /* ---------------- RECOMMENDED ---------------- */
+  useEffect(() => {
+    supabase
+      .from('products')
+      .select('*')
+      .limit(4)
+      .then(({ data }) => data && setRecommendedProducts(data))
   }, [])
 
+  /* ---------------- DERIVED STATE ---------------- */
+  const cartProducts = useMemo(
+    () => cartItems.filter((i) => i.status === 'cart'),
+    [cartItems],
+  )
+
+  const vendorsMap = useMemo(() => {
+    const map: Record<string, CartItem[]> = {}
+
+    cartProducts.forEach((item) => {
+      const vendorId = item.product?.vendor_id || 'unknown'
+      if (!map[vendorId]) map[vendorId] = []
+      map[vendorId].push(item)
+    })
+
+    return map
+  }, [cartProducts])
+
+  const subtotal = useMemo(
+    () =>
+      cartProducts.reduce(
+        (sum, i) => sum + (i.product?.price ?? 0) * i.quantity,
+        0,
+      ),
+    [cartProducts],
+  )
+
+  /* ---------------- ACTIONS ---------------- */
   const updateQuantity = async (id: string, quantity: number) => {
     if (quantity < 1) return
+
     setUpdatingId(id)
 
     const prev = [...cartItems]
@@ -142,7 +176,10 @@ export default function CartPage() {
       .update({ quantity })
       .eq('id', id)
 
-    if (error) setCartItems(prev)
+    if (error) {
+      setCartItems(prev)
+      toast.error('Update failed')
+    }
 
     setUpdatingId(null)
   }
@@ -154,18 +191,20 @@ export default function CartPage() {
 
     const { error } = await supabase.from('cart_items').delete().eq('id', id)
 
-    if (error) setCartItems(prev)
+    if (error) {
+      setCartItems(prev)
+      toast.error('Remove failed')
+    }
   }
 
   const handleCheckout = async () => {
-    if (!userEmail) return toast('Login required')
+    if (!userEmail) return toast.error('Login required')
 
-    const activeItems = cartItems.filter((i) => i.status === 'cart')
-    if (!activeItems.length) return toast('No active cart items')
+    if (!cartProducts.length) return toast.error('Cart is empty')
 
     setCheckingOut(true)
 
-    const cleanItems: CheckoutItem[] = activeItems
+    const items: CheckoutItem[] = cartProducts
       .filter((i) => i.product)
       .map((i) => ({
         id: i.product!.id,
@@ -178,51 +217,36 @@ export default function CartPage() {
       const res = await fetch('/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          items: cleanItems,
-          userEmail,
-          userId,
-        }),
+        body: JSON.stringify({ items, userEmail, userId }),
       })
 
-      const data: { checkout_url?: string } = await res.json()
+      const data = await res.json()
 
       if (data.checkout_url) {
         window.location.href = data.checkout_url
+        return
       }
-    } catch (err) {
-      console.error(err)
+
+      toast.error(data.error || 'Checkout failed')
+    } catch {
       toast.error('Checkout failed')
     } finally {
       setCheckingOut(false)
     }
   }
 
+  /* ---------------- UI ---------------- */
   if (loading) return <p className='p-8 text-center'>Loading cart...</p>
 
-  if (!cartItems.length)
+  if (!cartProducts.length)
     return (
       <div className='p-12 text-center'>
         <h1 className='text-2xl font-bold mb-4'>Your cart is empty 🛒</h1>
-        <Link href='/products' className='text-[#10b5cb] hover:underline'>
+        <Link href='/products' className='text-[#10b5cb]'>
           Continue Shopping
         </Link>
       </div>
     )
-
-  const cartProducts = cartItems.filter((i) => i.status === 'cart')
-
-  const vendorsMap: Record<string, CartItem[]> = {}
-  cartProducts.forEach((item) => {
-    const vendorId = item.product?.vendor_id || 'unknown'
-    if (!vendorsMap[vendorId]) vendorsMap[vendorId] = []
-    vendorsMap[vendorId].push(item)
-  })
-
-  const subtotal = cartProducts.reduce(
-    (sum, i) => sum + (i.product?.price ?? 0) * i.quantity,
-    0,
-  )
 
   return (
     <div className='max-w-7xl mx-auto p-8 space-y-8'>
@@ -232,93 +256,71 @@ export default function CartPage() {
 
       <div className='grid md:grid-cols-3 gap-8'>
         <div className='md:col-span-2 space-y-6'>
-          {Object.entries(vendorsMap).map(([vendorId, items]) => (
-            <div key={vendorId} className='border rounded-lg p-4 space-y-4'>
-              <h2 className='font-semibold text-xl'>
-                Vendor: {vendorId.slice(0, 6)}...
-              </h2>
+          {Object.entries(vendorsMap).map(([vendorId, items]) => {
+            const vendorTotal = items.reduce(
+              (sum, i) => sum + (i.product?.price ?? 0) * i.quantity,
+              0,
+            )
 
-              {items.map((item) => {
-                const p = item.product
-                if (!p) return null
+            return (
+              <div key={vendorId} className='border p-4 rounded-lg'>
+                <h2 className='font-semibold mb-2'>
+                  Vendor: {vendorId.slice(0, 6)}...
+                </h2>
 
-                return (
-                  <div
-                    key={item.id}
-                    className='flex items-center gap-4 border-b pb-2'
-                  >
-                    <Image
-                      src={p.image_url || '/placeholder.png'}
-                      alt={p.name}
-                      width={100}
-                      height={100}
-                      className='rounded'
-                    />
+                {items.map((item) => {
+                  const p = item.product
+                  if (!p) return null
 
-                    <div className='flex-1'>
-                      <h3 className='font-semibold'>{p.name}</h3>
-                      <p className='text-[#10b5cb]'>ETB {p.price.toFixed(2)}</p>
-                    </div>
-
-                    <input
-                      type='number'
-                      min={1}
-                      value={item.quantity}
-                      disabled={updatingId === item.id}
-                      onChange={(e) =>
-                        updateQuantity(
-                          item.id,
-                          Math.max(1, Number(e.target.value)),
-                        )
-                      }
-                      className='w-20 border p-1 text-center'
-                    />
-
-                    <button
-                      onClick={() => removeItem(item.id)}
-                      className='text-red-500 text-sm'
+                  return (
+                    <div
+                      key={item.id}
+                      className='flex items-center gap-4 border-b py-2'
                     >
-                      Remove
-                    </button>
-                  </div>
-                )
-              })}
-            </div>
-          ))}
+                      <Image
+                        src={p.image_url || '/placeholder.png'}
+                        alt={p.name}
+                        width={90}
+                        height={90}
+                        className='rounded'
+                      />
 
-          {/* RECOMMENDED PRODUCTS */}
-          {recommendedProducts.length > 0 && (
-            <div className='mt-12'>
-              <h2 className='text-2xl font-semibold mb-4'>
-                Recommended for You
-              </h2>
-              <div className='grid md:grid-cols-4 gap-6'>
-                {recommendedProducts.map((p) => (
-                  <Link
-                    key={p.id}
-                    href={`/products/${p.id}`}
-                    className='border p-4 rounded-lg hover:shadow-lg transition flex flex-col items-center'
-                  >
-                    <Image
-                      src={p.image_url || '/placeholder.png'}
-                      alt={p.name}
-                      width={150}
-                      height={150}
-                      className='object-cover rounded-lg'
-                    />
-                    <h3 className='mt-2 font-semibold text-center'>{p.name}</h3>
-                    <p className='text-[#10b5cb] font-semibold mt-1'>
-                      {p.price.toFixed(2)}
-                    </p>
-                  </Link>
-                ))}
+                      <div className='flex-1'>
+                        <h3>{p.name}</h3>
+                        <p className='text-[#10b5cb]'>ETB {p.price}</p>
+                      </div>
+
+                      <input
+                        type='number'
+                        min={1}
+                        value={item.quantity}
+                        disabled={updatingId === item.id}
+                        onChange={(e) =>
+                          updateQuantity(item.id, Number(e.target.value))
+                        }
+                        className='w-16 border text-center'
+                      />
+
+                      <button
+                        onClick={() => removeItem(item.id)}
+                        className='text-red-500'
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  )
+                })}
+
+                <div className='text-right font-semibold mt-2'>
+                  Vendor Total: ETB {vendorTotal.toFixed(2)}
+                </div>
               </div>
-            </div>
-          )}
+            )
+          })}
         </div>
 
-        <div className='border p-6 rounded-lg space-y-4'>
-          <h2 className='text-2xl font-semibold'>Order Summary</h2>
+        <div className='border p-6 rounded-lg space-y-4 h-fit'>
+          <h2 className='text-xl font-semibold'>Order Summary</h2>
 
           <div className='flex justify-between'>
             <span>Subtotal</span>
@@ -330,7 +332,7 @@ export default function CartPage() {
             disabled={checkingOut}
             className='w-full bg-[#10b5cb] text-white py-3 rounded'
           >
-            {checkingOut ? 'Processing...' : 'Proceed to Checkout'}
+            {checkingOut ? 'Processing...' : 'Checkout'}
           </button>
         </div>
       </div>

@@ -3,15 +3,27 @@
 import { useEffect, useState, useRef } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 
+type Customer = {
+  id: string
+  fullname: string
+  email: string
+}
+
 type Conversation = {
   id: string
   customer_id: string
   created_at: string
-  customer: {
-    id: string
-    fullname: string
-    email: string
-  }
+  customer: Customer
+}
+
+/**
+ * 🔥 Raw Supabase response
+ */
+type RawConversation = {
+  id: string
+  customer_id: string
+  created_at: string
+  customer: Customer[] | null
 }
 
 type Message = {
@@ -31,8 +43,7 @@ export default function VendorChat() {
   const [newMessage, setNewMessage] = useState('')
   const bottomRef = useRef<HTMLDivElement>(null)
 
-  // GET CURRENT VENDOR USER
-
+  /* ========= GET USER ========= */
   useEffect(() => {
     const loadUser = async () => {
       const { data, error } = await supabase.auth.getUser()
@@ -42,8 +53,7 @@ export default function VendorChat() {
     loadUser()
   }, [])
 
-  // LOAD CONVERSATIONS
-
+  /* ========= FETCH CONVERSATIONS ========= */
   useEffect(() => {
     if (!userId) return
 
@@ -65,15 +75,36 @@ export default function VendorChat() {
         .eq('vendor_id', userId)
         .order('created_at', { ascending: false })
 
-      if (error) return console.error('Conversations fetch error:', error)
-      setConversations(data || [])
+      if (error) {
+        console.error('Conversations fetch error:', error)
+        return
+      }
+
+      // 🔥 FIX: normalize
+      const formatted: Conversation[] = ((data as RawConversation[]) ?? [])
+        .map((item) => {
+          const customer = Array.isArray(item.customer)
+            ? (item.customer[0] ?? null)
+            : item.customer
+
+          if (!customer) return null
+
+          return {
+            id: item.id,
+            customer_id: item.customer_id,
+            created_at: item.created_at,
+            customer,
+          }
+        })
+        .filter((c): c is Conversation => c !== null)
+
+      setConversations(formatted)
     }
 
     fetchConversations()
   }, [userId])
 
-  // LOAD MESSAGES + REALTIME
-
+  /* ========= MESSAGES ========= */
   useEffect(() => {
     if (!activeConversation) return
     let isMounted = true
@@ -114,12 +145,12 @@ export default function VendorChat() {
     }
   }, [activeConversation])
 
-  // SEND MESSAGE
-
+  /* ========= SEND ========= */
   const sendMessage = async () => {
     if (!newMessage.trim() || !activeConversation || !userId) return
 
     const text = newMessage.trim()
+
     const tempMessage: Message = {
       id: crypto.randomUUID(),
       conversation_id: activeConversation.id,
@@ -151,8 +182,6 @@ export default function VendorChat() {
     setMessages((prev) => prev.map((m) => (m.id === tempMessage.id ? data : m)))
   }
 
-  // ENTER KEY SEND
-
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       e.preventDefault()
@@ -160,19 +189,18 @@ export default function VendorChat() {
     }
   }
 
-  // AUTO SCROLL
-
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
-  // UI
+  /* ========= UI ========= */
 
   return (
     <div className='flex gap-4'>
-      {/* CONVERSATION LIST */}
+      {/* SIDEBAR */}
       <div className='w-60 border-r overflow-y-auto'>
         <h2 className='p-3 font-semibold'>Customers</h2>
+
         {conversations.map((conv) => (
           <button
             key={conv.id}
@@ -186,7 +214,7 @@ export default function VendorChat() {
         ))}
       </div>
 
-      {/* CHAT WINDOW */}
+      {/* CHAT */}
       <div className='flex-1 flex flex-col h-[500px] border rounded'>
         <div className='p-3 border-b font-semibold'>
           {activeConversation
@@ -194,7 +222,6 @@ export default function VendorChat() {
             : 'Select a conversation'}
         </div>
 
-        {/* MESSAGES */}
         <div className='flex-1 overflow-y-auto p-3 space-y-2'>
           {activeConversation &&
             messages.map((msg) => {
@@ -213,7 +240,6 @@ export default function VendorChat() {
           <div ref={bottomRef} />
         </div>
 
-        {/* INPUT */}
         {activeConversation && (
           <div className='p-3 border-t flex gap-2'>
             <input

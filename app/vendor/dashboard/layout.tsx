@@ -41,12 +41,6 @@ export default function VendorLayout({
             Messages
           </Link>
           <Link
-            href='/vendor/dashboard/settings'
-            className='block px-4 py-2 rounded hover:bg-[#10b5cb]/10'
-          >
-            Settings
-          </Link>
-          <Link
             href='/vendor/dashboard/subscription'
             className='block px-4 py-2 rounded hover:bg-[#10b5cb]/10'
           >

@@ -29,6 +29,19 @@ type OrderItemRow = {
   order: OrderInfo | null
 }
 
+/**
+ * 🔥 RAW TYPE (Supabase response)
+ */
+type RawOrderItemRow = {
+  id: string
+  order_id: string
+  vendor_id: string
+  quantity: number
+  price: number
+  product: ProductInfo[] | null
+  order: OrderInfo[] | null
+}
+
 type OrderItem = {
   id: string
   order_id: string
@@ -96,7 +109,28 @@ export default function VendorOrdersPage() {
       return
     }
 
-    const rows = (data ?? []) as OrderItemRow[]
+    // 🔥 FIX: normalize data
+    const rows: OrderItemRow[] = ((data as RawOrderItemRow[]) ?? []).map(
+      (item) => {
+        const product = Array.isArray(item.product)
+          ? (item.product[0] ?? null)
+          : item.product
+
+        const order = Array.isArray(item.order)
+          ? (item.order[0] ?? null)
+          : item.order
+
+        return {
+          id: item.id,
+          order_id: item.order_id,
+          vendor_id: item.vendor_id,
+          quantity: item.quantity,
+          price: item.price,
+          product,
+          order,
+        }
+      },
+    )
 
     const map: Record<string, Order> = {}
 
@@ -172,9 +206,7 @@ export default function VendorOrdersPage() {
 
   /* ================= UI ================= */
 
-  if (loading) {
-    return <p className='p-6'>Loading orders...</p>
-  }
+  if (loading) return <p className='p-6'>Loading orders...</p>
 
   if (orders.length === 0) {
     return (
@@ -191,11 +223,7 @@ export default function VendorOrdersPage() {
       <h1 className='text-2xl font-bold text-[#10b5cb]'>Vendor Orders</h1>
 
       {orders.map((order) => (
-        <div
-          key={order.id}
-          className='border rounded-xl p-4 bg-white shadow-sm'
-        >
-          {/* HEADER */}
+        <div key={order.id} className='border rounded-xl p-4 shadow-sm'>
           <div className='flex justify-between items-center mb-3'>
             <div>
               <p className='font-semibold'>Order #{order.id.slice(0, 8)}</p>
@@ -220,7 +248,6 @@ export default function VendorOrdersPage() {
             </div>
           </div>
 
-          {/* ITEMS */}
           <div className='space-y-3'>
             {order.items.map((item) => (
               <div
@@ -244,7 +271,6 @@ export default function VendorOrdersPage() {
             ))}
           </div>
 
-          {/* TOTAL */}
           <div className='text-right mt-4 font-bold text-lg'>
             Total: ETB {order.total.toFixed(2)}
           </div>
