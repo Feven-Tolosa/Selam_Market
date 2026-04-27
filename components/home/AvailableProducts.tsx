@@ -1,6 +1,7 @@
 import { supabase } from '@/lib/supabaseClient'
 import Link from 'next/link'
 import ProductCard from '../product/ProductCard'
+import { getTranslation } from '@/lib/i18n' // or server version if needed
 
 type ProductWithExtras = {
   id: string
@@ -17,7 +18,9 @@ type ProductWithExtras = {
 }
 
 export default async function AvailableProducts() {
-  //  Fetch products
+  const t = getTranslation()
+
+  // Fetch products
   const { data: products } = await supabase
     .from('products')
     .select(
@@ -70,10 +73,11 @@ export default async function AvailableProducts() {
         <div className='flex items-center justify-between mb-10'>
           <div>
             <h2 className='text-3xl font-bold text-gray-900'>
-              Available products
+              {t.availableProducts.title}
             </h2>
+
             <p className='text-gray-500 mt-1 text-sm'>
-              Browse our latest offerings from top vendors.
+              {t.availableProducts.subtitle}
             </p>
           </div>
 
@@ -81,14 +85,14 @@ export default async function AvailableProducts() {
             href='/products'
             className='text-sm font-medium text-[#10b5cb] hover:underline'
           >
-            View all →
+            {t.availableProducts.viewAll}
           </Link>
         </div>
 
         {/* Grid */}
         {enrichedProducts.length === 0 ? (
           <p className='text-center text-gray-500'>
-            No featured products available.
+            {t.availableProducts.empty}
           </p>
         ) : (
           <div className='grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8'>

@@ -28,12 +28,6 @@ export type Translation = {
   browseProducts: string
   becomeVendor: string
 
-  categoryPage: {
-    title: string
-    loading: string
-    empty: string
-  }
-
   featured: {
     title: string
     description: string
@@ -59,5 +53,35 @@ export type Translation = {
 
     loginError: string
     licenseError: string
+  }
+  categoriesSection: {
+    badge: string
+    title: string
+    highlight: string
+    description: string
+    loading: string
+    empty: string
+  }
+  howItWorks: {
+    title: string
+    subtitle: string
+    step1: {
+      title: string
+      desc: string
+    }
+    step2: {
+      title: string
+      desc: string
+    }
+    step3: {
+      title: string
+      desc: string
+    }
+  }
+  availableProducts: {
+    title: string
+    subtitle: string
+    viewAll: string
+    empty: string
   }
 }

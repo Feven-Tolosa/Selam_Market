@@ -31,10 +31,14 @@ export const en: Translation = {
   search: 'Search',
   browseProducts: 'Browse Products',
   becomeVendor: 'Become a Vendor',
-  categoryPage: {
-    title: 'Browse Categories',
+  categoriesSection: {
+    badge: 'Shop by Category',
+    title: 'Browse',
+    highlight: 'Categories',
+    description:
+      'Explore our wide range of products across different categories',
     loading: 'Loading categories...',
-    empty: 'No categories found',
+    empty: 'No categories available.',
   },
 
   featured: {
@@ -63,5 +67,28 @@ export const en: Translation = {
 
     loginError: 'You must be logged in',
     licenseError: 'Please upload your business license',
+  },
+  howItWorks: {
+    title: 'How It Works',
+    subtitle: 'Follow these simple steps to shop from local vendors.',
+
+    step1: {
+      title: 'Choose Product',
+      desc: 'Browse and select from hundreds of local products.',
+    },
+    step2: {
+      title: 'Fast Ordering',
+      desc: 'Place your order in seconds with our easy-to-use platform.',
+    },
+    step3: {
+      title: 'Enjoy & Support',
+      desc: 'Receive your order quickly and support local businesses with every purchase.',
+    },
+  },
+  availableProducts: {
+    title: 'Available products',
+    subtitle: 'Browse our latest offerings from top vendors.',
+    viewAll: 'View all →',
+    empty: 'No featured products available.',
   },
 }

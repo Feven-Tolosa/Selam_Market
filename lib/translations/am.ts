@@ -30,8 +30,11 @@ export const am: Translation = {
   browseProducts: 'ምርቶችን ይመልከቱ',
   becomeVendor: 'ነጋዴ ይሁኑ',
 
-  categoryPage: {
-    title: 'ምድቦችን ይመልከቱ',
+  categoriesSection: {
+    badge: 'በምድብ ይግዙ',
+    title: 'ምድቦችን',
+    highlight: 'ይመልከቱ',
+    description: 'በተለያዩ ምድቦች ያሉ ምርቶችን ያግኙ',
     loading: 'ምድቦች በመጫን ላይ...',
     empty: 'ምንም ምድቦች አልተገኙም',
   },
@@ -41,6 +44,24 @@ export const am: Translation = {
     description: 'ከታመኑ ነጋዴዎች የተመረጡ ከፍተኛ ደረጃ ምርቶችን ያግኙ።',
     loading: 'ተመራጭ ምርቶች በመጫን ላይ...',
     empty: 'ምንም ተመራጭ ምርቶች አልተገኙም',
+  },
+
+  howItWorks: {
+    title: 'እንደሚሰራ የሚያመለክት',
+    subtitle: 'የተለያዩ ምድቦች ያሉ ምርቶችን ያግኙ',
+
+    step1: {
+      title: 'ምርትን ይምረጡ',
+      desc: 'መረጃዎችን ያግኙ እና ምርቶችን ይምረጡ',
+    },
+    step2: {
+      title: 'ፍጥነት ተጠቀም',
+      desc: 'አሁን ተጠቀም እና ተቀላቀሉ',
+    },
+    step3: {
+      title: 'ይታማኑ & ይደግፉ',
+      desc: 'አሁን ተጠቀም እና ተቀላቀሉ',
+    },
   },
 
   vendorOnboarding: {
@@ -61,5 +82,11 @@ export const am: Translation = {
 
     loginError: 'መግባት አለብዎት',
     licenseError: 'እባክዎ ፈቃድ ያስገቡ',
+  },
+  availableProducts: {
+    title: 'ያሉ ምርቶች',
+    subtitle: 'ከምርጥ ነጋዴዎች የቀረቡ አዳዲስ ምርቶችን ይመልከቱ።',
+    viewAll: 'ሁሉንም ይመልከቱ →',
+    empty: 'ምንም ምርቶች አልተገኙም',
   },
 }
