@@ -11,40 +11,41 @@ import {
   Heart,
 } from 'lucide-react'
 import { useEffect, useState, useRef } from 'react'
+import { getTranslation } from '@/lib/i18n'
 
 export default function WhyLocal() {
+  const t = getTranslation()
+
   const [isVisible, setIsVisible] = useState(false)
   const sectionRef = useRef<HTMLElement>(null)
 
   const features = [
     {
       icon: Store,
-      title: 'Support Local Vendors',
-      description: 'Buy directly from trusted vendors in your community.',
+      title: t.whyLocal.features.support.title,
+      description: t.whyLocal.features.support.desc,
       delay: 0,
     },
     {
       icon: Truck,
-      title: 'Fast Local Delivery',
-      description: 'Get your products faster with local delivery options.',
+      title: t.whyLocal.features.delivery.title,
+      description: t.whyLocal.features.delivery.desc,
       delay: 100,
     },
     {
       icon: ShieldCheck,
-      title: 'Secure Transactions',
-      description: 'All vendors are verified to ensure safe transactions.',
+      title: t.whyLocal.features.secure.title,
+      description: t.whyLocal.features.secure.desc,
       delay: 200,
     },
     {
       icon: Users,
-      title: 'Community First',
-      description: 'Help grow small businesses and local entrepreneurs.',
+      title: t.whyLocal.features.community.title,
+      description: t.whyLocal.features.community.desc,
       delay: 300,
     },
   ]
 
-  // const stats = []
-  //the change i made for the stats section
   interface Stat {
     icon: React.ElementType
     value: string | number
@@ -55,26 +56,25 @@ export default function WhyLocal() {
     {
       icon: Store,
       value: '500+',
-      label: 'Local Vendors',
+      label: t.whyLocal.stats.vendors,
     },
     {
       icon: Users,
       value: '10K+',
-      label: 'Happy Customers',
+      label: t.whyLocal.stats.customers,
     },
     {
       icon: Clock,
       value: '24/7',
-      label: 'Customer Support',
+      label: t.whyLocal.stats.support,
     },
     {
       icon: Heart,
       value: '100%',
-      label: 'Satisfaction Guarantee',
+      label: t.whyLocal.stats.satisfaction,
     },
   ]
 
-  // Intersection Observer to trigger animations when section comes into view
   useEffect(() => {
     const observer = new IntersectionObserver(
       ([entry]) => {
@@ -98,7 +98,6 @@ export default function WhyLocal() {
       ref={sectionRef}
       className='py-24 bg-gradient-to-br from-gray-50 via-white to-gray-50 relative overflow-hidden'
     >
-      {/* Animated Background with website colors */}
       <div
         className='absolute inset-0 opacity-5'
         style={{
@@ -111,7 +110,6 @@ export default function WhyLocal() {
       <div className='absolute bottom-20 right-10 w-96 h-96 bg-[#10b5cb]/5 rounded-full blur-3xl animate-pulse-slow delay-1000'></div>
 
       <div className='container mx-auto px-6 relative z-10'>
-        {/* Animated Header */}
         <div
           className={`text-center mb-16 transition-all duration-700 transform ${
             isVisible ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'
@@ -119,18 +117,17 @@ export default function WhyLocal() {
         >
           <div className='inline-block mb-4'>
             <span className='bg-[#10b5cb]/10 text-[#10b5cb] text-sm font-semibold px-5 py-2 rounded-full border border-[#10b5cb]/20 animate-pulse-slow'>
-              Why Choose Us
+              {t.whyLocal.badge}
             </span>
           </div>
 
-          <h2 className='text-3xl font-bold'>Why Shop Local?</h2>
+          <h2 className='text-3xl font-bold'>{t.whyLocal.title}</h2>
+
           <p className='text-muted-foreground mt-3 max-w-xl mx-auto'>
-            Discover the advantages of supporting local businesses and vendors
-            in your area.
+            {t.whyLocal.subtitle}
           </p>
         </div>
 
-        {/* Features Grid */}
         <div className='grid md:grid-cols-2 lg:grid-cols-4 gap-8'>
           {features.map((feature, index) => {
             const Icon = feature.icon
@@ -150,13 +147,11 @@ export default function WhyLocal() {
                   transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)',
                 }}
               >
-                {/* Border on hover - using website color only */}
                 <div
                   className={`absolute inset-0 border-2 border-[#10b5cb] opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl`}
                 ></div>
 
                 <div className='relative bg-white p-6 rounded-2xl'>
-                  {/* Icon with animation */}
                   <div className='w-16 h-16 flex items-center justify-center rounded-xl bg-[#10b5cb]/10 mb-5 group-hover:scale-110 group-hover:rotate-12 transition-all duration-300'>
                     <Icon className='w-8 h-8 text-[#10b5cb]' />
                   </div>
@@ -168,15 +163,12 @@ export default function WhyLocal() {
                   <p className='text-gray-500 leading-relaxed'>
                     {feature.description}
                   </p>
-
-                  {/* Animated arrow on hover */}
                 </div>
               </div>
             )
           })}
         </div>
 
-        {/* Stats Section */}
         <div
           className={`mt-20 pt-10 border-t border-gray-200 transition-all duration-700 delay-500 ${
             isVisible ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'

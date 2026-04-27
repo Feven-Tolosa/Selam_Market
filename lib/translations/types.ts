@@ -84,4 +84,43 @@ export type Translation = {
     viewAll: string
     empty: string
   }
+  whyLocal: {
+    badge: string
+    title: string
+    subtitle: string
+
+    features: {
+      support: {
+        title: string
+        desc: string
+      }
+      delivery: {
+        title: string
+        desc: string
+      }
+      secure: {
+        title: string
+        desc: string
+      }
+      community: {
+        title: string
+        desc: string
+      }
+    }
+
+    stats: {
+      vendors: string
+      customers: string
+      support: string
+      satisfaction: string
+    }
+  }
+  productCard: {
+    topRated: string
+  }
+  topDeals: {
+    title: string
+    subtitle: string
+    loading: string
+  }
 }

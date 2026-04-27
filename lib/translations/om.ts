@@ -93,4 +93,43 @@ export const om: Translation = {
     viewAll: 'Hunda ilaali →',
     empty: 'Oomishni hin jiru',
   },
+  whyLocal: {
+    badge: 'Maaliif Nu Filatta',
+    title: 'Maaliif Naannoo Irraa Bita?',
+    subtitle: 'Faayidaa daldala naannoo deeggaruu irraa argamu hubadhu.',
+
+    features: {
+      support: {
+        title: 'Daldaltoota Naannoo Deegari',
+        desc: 'Daldaltoota amanamoo irraa kallattiin bita.',
+      },
+      delivery: {
+        title: 'Geejjiba Saffisaa',
+        desc: 'Oomisha kee saffisaan argadhu.',
+      },
+      secure: {
+        title: 'Bittaa Nageenya Qabu',
+        desc: 'Daldaltoonni hundi mirkanaa’an.',
+      },
+      community: {
+        title: 'Hawaasa Dura',
+        desc: 'Daldala xixiqqoo fi abbootii hojii deegari.',
+      },
+    },
+
+    stats: {
+      vendors: 'Daldaltoota',
+      customers: 'Maamiltoota',
+      support: 'Deeggarsa',
+      satisfaction: 'Qulqullina',
+    },
+  },
+  productCard: {
+    topRated: 'Sadarkaa ol’aanaa',
+  },
+  topDeals: {
+    title: 'Gatii Filatamaa',
+    subtitle: 'Gatii gaarii daldaltoota naannoo kee irraa argadhu.',
+    loading: 'Gatii fe’aa jira...',
+  },
 }

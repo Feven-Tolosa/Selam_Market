@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { Heart, ShoppingCart } from 'lucide-react'
+import { getTranslation } from '@/lib/i18n'
 
 interface Product {
   id: string
@@ -15,6 +16,7 @@ interface Product {
 }
 
 export default function ProductCard({ product }: { product: Product }) {
+  const t = getTranslation()
   const isTopRated = (product.rating || 0) >= 4.5
 
   const renderStars = () => {
@@ -44,7 +46,7 @@ export default function ProductCard({ product }: { product: Product }) {
       {/* Top Rated Badge */}
       {isTopRated && (
         <div className='absolute top-2 left-2 bg-yellow-400 text-white text-xs font-semibold px-2 py-1 rounded z-10'>
-          Top Rated
+          {t.productCard.topRated}
         </div>
       )}
 

@@ -89,4 +89,43 @@ export const am: Translation = {
     viewAll: 'ሁሉንም ይመልከቱ →',
     empty: 'ምንም ምርቶች አልተገኙም',
   },
+  whyLocal: {
+    badge: 'ለምን እኛን ይምረጡ',
+    title: 'ለምን ከአካባቢ ይግዙ?',
+    subtitle: 'በአካባቢዎ ያሉ ንግዶችን እና ነጋዴዎችን በመደገፍ የሚገኙ ጥቅሞችን ያግኙ።',
+
+    features: {
+      support: {
+        title: 'አካባቢ ነጋዴዎችን ይደግፉ',
+        desc: 'በአካባቢዎ ካሉ እምነት የሚገባቸው ነጋዴዎች ቀጥታ ይግዙ።',
+      },
+      delivery: {
+        title: 'ፈጣን የአካባቢ መድረስ',
+        desc: 'በአካባቢ አገልግሎት ምክንያት ምርቶችዎን ፈጣን ያግኙ።',
+      },
+      secure: {
+        title: 'ደህንነቱ የተጠበቀ ግብይት',
+        desc: 'ሁሉም ነጋዴዎች የተረጋገጡ ናቸው።',
+      },
+      community: {
+        title: 'ማህበረሰብ ቀዳሚ',
+        desc: 'አነስተኛ ንግዶችን እና ኢንተርፕረነሮችን ይደግፉ።',
+      },
+    },
+
+    stats: {
+      vendors: 'ነጋዴዎች',
+      customers: 'ደስተኛ ደንበኞች',
+      support: 'የደንበኛ ድጋፍ',
+      satisfaction: 'የእርካታ ዋስትና',
+    },
+  },
+  productCard: {
+    topRated: 'ከፍተኛ ደረጃ',
+  },
+  topDeals: {
+    title: 'ምርጥ ቅናሾች',
+    subtitle: 'በአካባቢዎ ካሉ ነጋዴዎች የሚገኙ ጥሩ ዋጋዎችን ያግኙ።',
+    loading: 'ቅናሾች በመጫን ላይ...',
+  },
 }

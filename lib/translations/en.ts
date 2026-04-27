@@ -91,4 +91,44 @@ export const en: Translation = {
     viewAll: 'View all →',
     empty: 'No featured products available.',
   },
+  whyLocal: {
+    badge: 'Why Choose Us',
+    title: 'Why Shop Local?',
+    subtitle:
+      'Discover the advantages of supporting local businesses and vendors in your area.',
+
+    features: {
+      support: {
+        title: 'Support Local Vendors',
+        desc: 'Buy directly from trusted vendors in your community.',
+      },
+      delivery: {
+        title: 'Fast Local Delivery',
+        desc: 'Get your products faster with local delivery options.',
+      },
+      secure: {
+        title: 'Secure Transactions',
+        desc: 'All vendors are verified to ensure safe transactions.',
+      },
+      community: {
+        title: 'Community First',
+        desc: 'Help grow small businesses and local entrepreneurs.',
+      },
+    },
+
+    stats: {
+      vendors: 'Local Vendors',
+      customers: 'Happy Customers',
+      support: 'Customer Support',
+      satisfaction: 'Satisfaction Guarantee',
+    },
+  },
+  productCard: {
+    topRated: 'Top Rated',
+  },
+  topDeals: {
+    title: 'Top Deals',
+    subtitle: 'Discover great prices from local vendors near you.',
+    loading: 'Loading deals...',
+  },
 }
