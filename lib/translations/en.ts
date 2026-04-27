@@ -131,4 +131,38 @@ export const en: Translation = {
     subtitle: 'Discover great prices from local vendors near you.',
     loading: 'Loading deals...',
   },
+  newsletter: {
+    title: 'Subscribe to our newsletter',
+    subtitle: 'Get updates about new products and vendors.',
+    placeholder: 'Enter your email',
+    button: 'Subscribe',
+
+    emailRequired: 'Email is required',
+    invalidEmail: 'Please enter a valid email',
+    success: 'Successfully subscribed!',
+    error: 'Something went wrong. Please try again.',
+  },
+  footer: {
+    marketplace: 'Marketplace',
+    forVendors: 'For Vendors',
+    support: 'Support',
+
+    browseProducts: 'Browse Products',
+    categories: 'Categories',
+    vendors: 'Vendors',
+
+    becomeVendor: 'Become a Vendor',
+    vendorDashboard: 'Vendor Dashboard',
+    vendorGuide: 'Vendor Guide',
+
+    helpCenter: 'Help Center',
+    contactUs: 'Contact Us',
+    privacyPolicy: 'Privacy Policy',
+
+    appStore: 'App Store',
+    googlePlay: 'Google Play',
+
+    location: 'Location',
+    copyright: 'All rights reserved',
+  },
 }

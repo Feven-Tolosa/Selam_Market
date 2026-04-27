@@ -128,4 +128,38 @@ export const am: Translation = {
     subtitle: 'በአካባቢዎ ካሉ ነጋዴዎች የሚገኙ ጥሩ ዋጋዎችን ያግኙ።',
     loading: 'ቅናሾች በመጫን ላይ...',
   },
+  newsletter: {
+    title: 'ለእኛ የዜና መጽሔት ይመዝገቡ',
+    subtitle: 'ስለ አዲስ ምርቶች እና ነጋዴዎች ዝማኔዎችን ያግኙ።',
+    placeholder: 'ኢሜይልዎን ያስገቡ',
+    button: 'ይመዝገቡ',
+
+    emailRequired: 'ኢሜይል ያስፈልጋል',
+    invalidEmail: 'ትክክለኛ ኢሜይል ያስገቡ',
+    success: 'በተሳካ ሁኔታ ተመዝግበዋል!',
+    error: 'ስህተት ተፈጥሯል፣ እንደገና ይሞክሩ።',
+  },
+  footer: {
+    marketplace: 'ገበያ',
+    forVendors: 'ለነጋዴዎች',
+    support: 'ድጋፍ',
+
+    browseProducts: 'ምርቶችን ይመልከቱ',
+    categories: 'ምድቦች',
+    vendors: 'ነጋዴዎች',
+
+    becomeVendor: 'ነጋዴ ይሁኑ',
+    vendorDashboard: 'የነጋዴ መቆጣጠሪያ',
+    vendorGuide: 'የነጋዴ መመሪያ',
+
+    helpCenter: 'የእርዳታ ማዕከል',
+    contactUs: 'ያግኙን',
+    privacyPolicy: 'የግል መረጃ ፖሊሲ',
+
+    appStore: 'አፕ ስቶር',
+    googlePlay: 'ጎግል ፕሌይ',
+
+    location: 'አካባቢ',
+    copyright: 'መብቶች ተጠብቀዋል',
+  },
 }

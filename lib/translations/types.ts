@@ -123,4 +123,38 @@ export type Translation = {
     subtitle: string
     loading: string
   }
+  newsletter: {
+    title: string
+    subtitle: string
+    placeholder: string
+    button: string
+
+    emailRequired: string
+    invalidEmail: string
+    success: string
+    error: string
+  }
+  footer: {
+    marketplace: string
+    forVendors: string
+    support: string
+
+    browseProducts: string
+    categories: string
+    vendors: string
+
+    becomeVendor: string
+    vendorDashboard: string
+    vendorGuide: string
+
+    helpCenter: string
+    contactUs: string
+    privacyPolicy: string
+
+    appStore: string
+    googlePlay: string
+
+    location: string
+    copyright: string
+  }
 }

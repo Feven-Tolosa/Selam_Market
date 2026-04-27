@@ -228,7 +228,7 @@ export default function HeroSection() {
       </section>
 
       {/* Scroll to Footer Button - Appears after scrolling */}
-      <button
+      {/* <button
         onClick={scrollToFooter}
         className={`fixed bottom-8 right-8 z-50 bg-[#10b5cb] hover:bg-[#0e9db0] text-white p-3 rounded-full shadow-lg transition-all duration-300 hover:scale-110 hover:shadow-xl group ${
           showScrollButton ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10 pointer-events-none'
@@ -237,15 +237,20 @@ export default function HeroSection() {
       >
         <ChevronDown size={24} className="animate-bounce" />
         
-      </button>
+      </button> */}
 
       {/* Animated Scroll Indicator (always visible at bottom) */}
-      <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-20 flex flex-col items-center gap-2 cursor-pointer" onClick={scrollToFooter}>
-        <span className="text-white/70 text-xs uppercase tracking-wider">Scroll Down</span>
-        <div className="w-6 h-10 border-2 border-white/40 rounded-full flex justify-center">
-          <div className="w-1.5 h-2 bg-white/60 rounded-full mt-2 animate-scroll-down"></div>
+      <div
+        className='absolute bottom-8 left-1/2 transform -translate-x-1/2 z-20 flex flex-col items-center gap-2 cursor-pointer'
+        onClick={scrollToFooter}
+      >
+        <span className='text-white/70 text-xs uppercase tracking-wider'>
+          Scroll Down
+        </span>
+        <div className='w-6 h-10 border-2 border-white/40 rounded-full flex justify-center'>
+          <div className='w-1.5 h-2 bg-white/60 rounded-full mt-2 animate-scroll-down'></div>
         </div>
-        <ChevronDown size={18} className="text-white/60 animate-bounce" />
+        <ChevronDown size={18} className='text-white/60 animate-bounce' />
       </div>
 
       <style jsx>{`
@@ -259,20 +264,21 @@ export default function HeroSection() {
             transform: translateY(8px);
           }
         }
-        
+
         @keyframes bounce {
-          0%, 100% {
+          0%,
+          100% {
             transform: translateY(0);
           }
           50% {
             transform: translateY(5px);
           }
         }
-        
+
         .animate-scroll-down {
           animation: scroll-down 1.5s ease-in-out infinite;
         }
-        
+
         .animate-bounce {
           animation: bounce 1s ease-in-out infinite;
         }

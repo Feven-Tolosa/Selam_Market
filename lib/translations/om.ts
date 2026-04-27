@@ -132,4 +132,38 @@ export const om: Translation = {
     subtitle: 'Gatii gaarii daldaltoota naannoo kee irraa argadhu.',
     loading: 'Gatii fe’aa jira...',
   },
+  newsletter: {
+    title: 'Newsleetter keenya irratti galmaa’i',
+    subtitle: 'Odeeffannoo oomishaalee fi daldaltoota haaraa argadhu.',
+    placeholder: 'Imeelii kee galchi',
+    button: 'Galmaa’i',
+
+    emailRequired: 'Imeelii barbaachisa',
+    invalidEmail: 'Imeelii sirrii galchi',
+    success: 'Milkaa’inaan galmaa’e!',
+    error: 'Dogoggorri uumame, irra deebi’i yaali.',
+  },
+  footer: {
+    marketplace: 'Gabaa',
+    forVendors: 'Daldaltootaaf',
+    support: 'Deeggarsa',
+
+    browseProducts: 'Oomisha Ilaali',
+    categories: 'Ramaddii',
+    vendors: 'Daldaltoota',
+
+    becomeVendor: 'Daldalaa Ta’i',
+    vendorDashboard: 'Daashboordii Daldalaa',
+    vendorGuide: 'Qajeelfama Daldalaa',
+
+    helpCenter: 'Giddugala Gargaarsa',
+    contactUs: 'Nu Quunnami',
+    privacyPolicy: 'Imaammata Dhuunfaa',
+
+    appStore: 'App Store',
+    googlePlay: 'Google Play',
+
+    location: 'Bakka',
+    copyright: 'Mirgi seeraan eegameera',
+  },
 }
