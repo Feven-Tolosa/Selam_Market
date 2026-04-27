@@ -3,7 +3,6 @@
 export const dynamic = 'force-dynamic'
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { supabase } from '@/lib/supabaseClient'
 import Image from 'next/image'
 import Link from 'next/link'
 
@@ -40,32 +39,26 @@ export default function SearchPage() {
 
       setLoading(true)
 
-      // ✅ PRODUCTS
-      const { data: productData } = await supabase
-        .from('products')
-        .select('*')
-        .ilike('name', `%${query}%`)
+      try {
+        const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`)
+        const data = await res.json()
 
-      // ✅ VENDORS
-      const { data: vendorData } = await supabase
-        .from('users')
-        .select('id, business_name')
-        .ilike('business_name', `%${query}%`)
+        setProducts(data.products || [])
 
-      setProducts(productData || [])
+        const formattedVendors: Vendor[] = (data.vendors || []).map(
+          (v: RawVendor) => ({
+            id: v.id,
+            business_name: v.business_name,
+            store_name: v.business_name,
+          }),
+        )
 
-      // 🔥 FIX: map to correct Vendor type
-      const formattedVendors: Vendor[] = (
-        (vendorData as RawVendor[]) || []
-      ).map((v) => ({
-        id: v.id,
-        business_name: v.business_name,
-        store_name: v.business_name, // map here
-      }))
-
-      setVendors(formattedVendors)
-
-      setLoading(false)
+        setVendors(formattedVendors)
+      } catch (err) {
+        console.error(err)
+      } finally {
+        setLoading(false)
+      }
     }
 
     search()
