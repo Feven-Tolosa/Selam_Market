@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { Users, Store, ShoppingCart, Star, Key, Lock } from 'lucide-react'
+import { Users, Store, Send, Star, Key, Lock } from 'lucide-react'
 
 export default function AdminSidebar({ active }: { active?: string }) {
   const menu = [
@@ -10,7 +10,7 @@ export default function AdminSidebar({ active }: { active?: string }) {
     { name: 'Requests', href: '/admin/requests', icon: Key },
     { name: 'Vendors', href: '/admin/vendors', icon: Store },
     { name: 'reports', href: '/admin/reports', icon: Star },
-    { name: 'Messages', href: '/admin/vendor-chat', icon: ShoppingCart },
+    { name: 'Messages', href: '/admin/vendor-chat', icon: Send },
   ]
 
   return (
