@@ -10,6 +10,7 @@ export default function AdminSidebar({ active }: { active?: string }) {
     { name: 'Requests', href: '/admin/requests', icon: Key },
     { name: 'Vendors', href: '/admin/vendors', icon: Store },
     { name: 'reports', href: '/admin/reports', icon: Star },
+    { name: 'Messages', href: '/admin/vendor-chat', icon: ShoppingCart },
   ]
 
   return (

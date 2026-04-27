@@ -46,6 +46,12 @@ export default function VendorLayout({
           >
             Subscription
           </Link>
+          <Link
+            href='/vendor/dashboard/contact-admin'
+            className='block px-4 py-2 rounded hover:bg-[#10b5cb]/10'
+          >
+            Contact Admin
+          </Link>
         </nav>
       </aside>
 
