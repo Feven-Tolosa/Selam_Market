@@ -1,11 +1,12 @@
 'use client'
 
+export const dynamic = 'force-dynamic'
+
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 
 export default function PaymentSuccessPage() {
-  const router = useRouter()
   const searchParams = useSearchParams()
   const tx_ref = searchParams.get('tx_ref')
   const [verifying, setVerifying] = useState(false)
@@ -58,14 +59,14 @@ export default function PaymentSuccessPage() {
       <div className='space-y-2'>
         <Link
           href='/products'
-          className='block px-6 py-2 bg-[#10b5cb] text-white rounded hover:bg-[#0da0b5]'
+          className='block px-6 py-2 bg-[#10b5cb] text-white rounded'
         >
           Continue Shopping
         </Link>
 
         <Link
           href='/cart'
-          className='block px-6 py-2 border border-[#10b5cb] text-[#10b5cb] rounded hover:bg-[#10b5cb] hover:text-white'
+          className='block px-6 py-2 border border-[#10b5cb] text-[#10b5cb] rounded'
         >
           View Cart
         </Link>
