@@ -6,6 +6,7 @@ import Navbar from '@/components/layout/Navbar'
 import { Toaster } from 'react-hot-toast'
 import { VendorProvider } from '@/lib/VendorContext'
 import ChatOverlay from '@/components/chat/ChatOverlay'
+import Script from 'next/script'
 
 const jetbrainsMono = JetBrains_Mono({
   subsets: ['latin'],
@@ -49,6 +50,20 @@ export default function RootLayout({
           <Toaster />
           <ChatOverlay />
         </VendorProvider>
+        <Script id='chatling-config' strategy='beforeInteractive'>
+          {`
+    window.chtlConfig = {
+      chatbotId: "4254945597"
+    };
+  `}
+        </Script>
+
+        {/* Chatling embed */}
+        <Script
+          id='chatling-script'
+          src='https://chatling.ai/js/embed.js'
+          strategy='afterInteractive'
+        />
       </body>
     </html>
   )
