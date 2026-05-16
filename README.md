@@ -1,4 +1,4 @@
-###🛍️ Selam Local Vendor Marketplace Platform
+#🛍️ Selam Local Vendor Marketplace Platform
 
 A modern AI-powered multi-vendor marketplace built to empower local businesses with a seamless digital selling experience. The platform combines scalable architecture, real-time functionality, premium UI/UX, and intelligent customer support to create a powerful e-commerce ecosystem.
 
