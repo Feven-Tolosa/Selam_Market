@@ -1,70 +1,166 @@
-### Selam Marketplace
+###🛍️ Selam Local Vendor Marketplace Platform
 
-A modern marketplace for Ethiopian products, connecting local vendors with customers worldwide. Built with Next.js, Supabase, and a modern React stack.
+A modern AI-powered multi-vendor marketplace built to empower local businesses with a seamless digital selling experience. The platform combines scalable architecture, real-time functionality, premium UI/UX, and intelligent customer support to create a powerful e-commerce ecosystem.
 
-# Features
+---
 
-Multi-vendor marketplace
-Real-time chat overlay for vendors and customers
-Vendor dashboard with trial management
-Product listing with category filtering
-Cart system supporting multi-vendor orders
-Notifications via react-hot-toast
-Fully responsive UI
-Server-Side Rendering (SSR) with hydration-safe fonts
+## 🚀 Live Demo
 
-# 🛠 Tech Stack
+https://selam-markets.vercel.app/
 
-Framework: Next.js 13 (App Router)
-UI & Fonts: Next.js Google Fonts (JetBrains Mono, Geist, Geist Mono)
-Backend: Supabase (Auth, Database, Realtime)
-Styling: Tailwind CSS
-State Management: React Context (VendorProvider)
-Notifications: react-hot-toast
-Image Handling: Next.js Image component
+## 💻 GitHub Repository
 
-# 📦 Project Structure
+https://github.com/Feven-Tolosa/Selam_Market
 
-/app
-/products
-/layout.tsx # Root layout with fonts, navbar, and providers
-/components
-/layout
-Navbar.tsx
-/chat
-ChatOverlay.tsx
-/lib
-VendorContext.tsx
-supabaseClient.ts
-utils.ts
-/pages (if using any pages route)
+---
 
-# ⚡ Getting Started
+# ✨ Key Features
 
-1. Clone the repo
-   git clone https://github.com/yourusername/selam-marketplace.git
-   cd selam-marketplace
-2. Install dependencies
-   npm install
+## 🏪 Multi-Vendor Marketplace
 
-# or
+* Vendor onboarding & account management
+* Dedicated vendor dashboards
+* Product upload & inventory management
+* Vendor-specific product organization
 
-yarn 3. Setup environment variables
-Create a .env.local file at the root:
+## 🛒 E-Commerce Functionality
 
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key 4. Run the development server
+* Product browsing & category filtering
+* Responsive product detail pages
+* Shopping cart & checkout flow
+* Optimized shopping experience
+
+## 🔐 Authentication & Security
+
+* Secure user authentication
+* Role-based access control
+* Protected routes & sessions
+* Supabase Row Level Security (RLS)
+
+## ⚡ Real-Time System
+
+* Real-time updates using Supabase
+* Instant synchronization across the platform
+* Dynamic user interactions
+* Live platform responsiveness
+
+## 🤖 AI Support Agent — Powered by Copilot
+
+An intelligent AI-powered support assistant integrated directly into the platform.
+
+### Features:
+
+* Instant customer support
+* Smart platform guidance
+* Vendor assistance & onboarding help
+* Shopping assistance for users
+* Interactive conversational support
+* Enhanced user engagement experience
+
+## 💼 Admin Dashboard
+
+* Vendor management tools
+* Product moderation system
+* User monitoring & management
+* Platform administration features
+
+## 🎨 Premium UI/UX
+
+* Modern responsive interface
+* Mobile-friendly design
+* Clean component architecture
+* Smooth and intuitive user experience
+* Optimized for scalability and performance
+
+---
+
+# 🛠️ Tech Stack
+
+## Frontend
+
+* Next.js
+* React
+* TypeScript
+* Tailwind CSS
+
+## Backend & Database
+
+* Supabase
+* PostgreSQL
+
+## Authentication
+
+* Supabase Auth
+
+## Deployment
+
+* Vercel
+
+---
+
+# 📦 Installation
+
+Clone the repository:
+
+```bash id="yr7qep"
+git clone https://github.com/Feven-Tolosa/Selam_Market.git
+```
+
+Move into the project directory:
+
+```bash id="r2lvtj"
+cd Selam_Market
+```
+
+Install dependencies:
+
+```bash id="1mjlwm"
+npm install
+```
+
+Create a `.env.local` file:
+
+```env id="jv5jsv"
+NEXT_PUBLIC_SUPABASE_URL=your_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_key
+```
+
+Run the development server:
+
+```bash id="4qmqce"
 npm run dev
+```
 
-# or
+---
 
-yarn dev
+# 🌍 Vision
 
-Visit http://localhost:3000
-to view the app.
+This platform was designed to bridge the gap between local vendors and digital commerce by providing:
 
-# 🛒 Cart & Vendor Features
+* A scalable online marketplace
+* AI-enhanced customer support
+* Modern user experiences
+* Efficient vendor management
+* Real-time digital interactions
 
-Cart supports multi-vendor orders
-Vendors can set trial periods and receive payment notifications
-Vendors and customers can chat in real-time via the overlay
+---
+
+# 🔮 Future Improvements
+
+* Online payment integration
+* Vendor analytics dashboard
+* AI product recommendations
+* Order history & invoice generation
+* Multi-language support
+* Advanced search & filtering
+
+---
+
+# 👩‍💻 Author
+
+### **Feven Tolosa**
+
+Software Engineering Student & Full-Stack Developer
+
+🌐 [Portfolio Website](https://f-vs-portflio-zpwp.vercel.app/)
+💻 [GitHub Profile](https://github.com/Feven-Tolosa)
