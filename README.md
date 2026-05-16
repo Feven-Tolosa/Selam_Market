@@ -147,12 +147,9 @@ This platform was designed to bridge the gap between local vendors and digital c
 
 # 🔮 Future Improvements
 
-* Online payment integration
 * Vendor analytics dashboard
 * AI product recommendations
 * Order history & invoice generation
-* Multi-language support
-* Advanced search & filtering
 
 ---
 
